@@ -363,9 +363,7 @@ namespace Server
                     rCount++;
                     if (rCount < clientsDataGridView.RowCount) { contents += ';'; }
                 }
-                HostSendPublic("JSOff Breaker==");
-                HostSendPublic(CommandMsg(string.Format("{0}:{1}", "uGrid", contents)));
-                HostSendPublic("JSOn Breaker==");
+
                 JavaScriptSerializer json = new();
                 var msg = CommandMsg(string.Format("{0}:{1}", "uGrid", contents));
                 HostSendPublic(json.Serialize(msg));
