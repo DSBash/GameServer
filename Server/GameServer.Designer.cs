@@ -331,13 +331,11 @@
             this.clientsDataGridView.MinimumSize = new System.Drawing.Size(75, 0);
             this.clientsDataGridView.MultiSelect = false;
             this.clientsDataGridView.Name = "clientsDataGridView";
-            this.clientsDataGridView.ReadOnly = true;
             this.clientsDataGridView.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
             this.clientsDataGridView.RowHeadersVisible = false;
             this.clientsDataGridView.RowHeadersWidth = 40;
             this.clientsDataGridView.RowHeadersWidthSizeMode = System.Windows.Forms.DataGridViewRowHeadersWidthSizeMode.DisableResizing;
             this.clientsDataGridView.RowTemplate.Height = 24;
-            this.clientsDataGridView.RowTemplate.ReadOnly = true;
             this.clientsDataGridView.RowTemplate.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.clientsDataGridView.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.clientsDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
@@ -357,7 +355,6 @@
             this.identifier.MaxInputLength = 20;
             this.identifier.MinimumWidth = 20;
             this.identifier.Name = "identifier";
-            this.identifier.ReadOnly = true;
             this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.identifier.Width = 20;
             // 
@@ -368,21 +365,18 @@
             this.name.MaxInputLength = 20;
             this.name.MinimumWidth = 50;
             this.name.Name = "name";
-            this.name.ReadOnly = true;
             this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             // 
             // color
             // 
             this.color.HeaderText = "";
             this.color.Name = "color";
-            this.color.ReadOnly = true;
             // 
             // latency
             // 
             this.latency.HeaderText = "Ping";
             this.latency.MinimumWidth = 20;
             this.latency.Name = "latency";
-            this.latency.ReadOnly = true;
             this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
             this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             this.latency.Width = 20;
@@ -393,7 +387,6 @@
             this.dc.HeaderText = "DC";
             this.dc.MinimumWidth = 28;
             this.dc.Name = "dc";
-            this.dc.ReadOnly = true;
             this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.dc.Text = "DC";
             this.dc.UseColumnTextForButtonValue = true;
