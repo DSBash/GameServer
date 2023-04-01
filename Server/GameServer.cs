@@ -62,7 +62,7 @@ namespace Server
         private MyClient clientObject;
 
 
-        /*Used to enable Console Output*/
+        /* Used to enable Console Output */
         /*        [DllImport("kernel32.dll", SetLastError = true)]
                 [return: MarshalAs(UnmanagedType.Bool)]
                 static extern bool AllocConsole();
@@ -84,7 +84,6 @@ namespace Server
                 Disconnect();
             }
         }
-
 
         // Console & Chats
         private void Console(string msg = "")                                                       // Console message / Clear if empty 
@@ -461,7 +460,6 @@ namespace Server
             }
         }
 
-
         // Ping
         private void Ping_Tick(object sender, EventArgs e)
         {
@@ -550,7 +548,6 @@ namespace Server
             return success;
         }
 
-
         /* TCP Send, Begin & End Writes */
         // Client
         private void Send(string msg)                                                               // Client version 
@@ -584,7 +581,6 @@ namespace Server
                 }
             }
         }
-
         // Host
         private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host prepare to send Private message 
         {
@@ -797,7 +793,8 @@ namespace Server
                 }
             }
         }
-        /*END NETWORK*/
+        
+        /* END NETWORK */
 
 
 
