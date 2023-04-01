@@ -12,19 +12,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
-namespace Server {
-
-    public partial class GameServer : Form {
-
-
-        public class AddPlayer {
+namespace Server
+{
+    public partial class GameServer : Form
+    {
+        public class AddPlayer
+        {
             public int Id { get; set; }
             public string Name { get; set; }
             public int[] Color { get; set; }
         }
-
 
         private bool exit = false;
         private Task send = null;
@@ -33,7 +31,8 @@ namespace Server {
         private bool listening = false;
         private Thread listener = null;
         private Thread disconnect = null;
-        private struct MyPlayers {
+        private class MyPlayers
+        {
             public long id;
             public Color color;
             public StringBuilder username;
@@ -49,7 +48,8 @@ namespace Server {
         // Client Specific
         private bool connected = false;
         private Thread client = null;
-        private struct MyClient {
+        private class MyClient
+        {
             public string username;
             public string key;
             public Color color;
@@ -62,14 +62,15 @@ namespace Server {
         private MyClient clientObject;
 
 
-        //Used to enable Console Output
+        /*Used to enable Console Output*/
         /*        [DllImport("kernel32.dll", SetLastError = true)]
                 [return: MarshalAs(UnmanagedType.Bool)]
                 static extern bool AllocConsole();
         */
 
         // Form
-        public GameServer() {
+        public GameServer()
+        {
             InitializeComponent();
             //AllocConsole();
         }
@@ -91,179 +92,49 @@ namespace Server {
             if (!exit) {
                 txtConsole.Invoke((MethodInvoker)delegate {
                     if (msg.Length > 0) {
-                        txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm"), msg, Environment.NewLine));
+                        txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine));
                     } else {
                         txtConsole.Clear();
                     }
                 });
             }
         }
-        private void PublicChat(string msg = "")                                                    // Console message / Clear if empty 
+        private void PublicChat(string username, string msg = "")                                   // Console message / Clear if empty 
         {
             if (!exit) {
                 txtLobby.Invoke((MethodInvoker)delegate {
-                    if (msg.Length > 0) {
-                        string formattedMSG = string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm"), msg, Environment.NewLine);
-                        //msg
-                        txtLobby.AppendText(formattedMSG, cmdColor.BackColor);
-                    } else {
+                    if (msg == null || msg.Length < 1) {
                         txtLobby.Clear();
+                    } else {
+                        string formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm"), username, msg);
+                        string playerColor = "255,0,0,0,0";
+                        foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                            if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
+                                playerColor = row.Cells[2].Value?.ToString();
+                                break;
+                            }
+                        }
+                        string[] colParts = playerColor.Split(',');
+                        Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+
+                        txtLobby.AppendText(formattedMSG, msgColor);
+                        txtLobby.Focus();
+                        txtLobby.SelectionStart = txtLobby.Text.Length;
+                        txtMessage.Focus();
                     }
                 });
             }
         }
-        private void CmdClear_Click(object sender, EventArgs e) {
-            if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
-            if (tabSections.SelectedTab.Name == "tLobby") { PublicChat(); }
-        }
 
         // Message formatters
-        private string ErrorMsg(string msg)                                                         // Format MSG 
+        private string ErrorMsg(string msg)                                                         // Format Errors 
         {
             return string.Format("ERROR: {0}", msg);
         }
-        private string SystemMsg(string msg) {
+        private string SystemMsg(string msg)                                                        // Format System 
+        {
             return string.Format("SYSTEM: {0}", msg);
         }
-
-
-
-        // Controls
-        private void CmdColor_Click(object sender, EventArgs e)                                     // Color Chooser
-        {
-            ColorDialog MyDialog = new() {
-                AllowFullOpen = true,
-                ShowHelp = true,
-                Color = cmdColor.BackColor            // Sets the initial color select to the current text color.             
-            };
-            if (MyDialog.ShowDialog() == DialogResult.OK) {                         // Update the text box color if the user clicks OK
-                cmdColor.BackColor = MyDialog.Color;
-            }
-        }
-        private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles Key Mask 
-        {
-            if (txtRoomKey.PasswordChar == '*') {
-                txtRoomKey.PasswordChar = '\0';
-            } else {
-                txtRoomKey.PasswordChar = '*';
-            }
-        }
-        private void CmdHost_Click(object sender, EventArgs e)                                      // Host start 
-        {
-            if (listening) {
-                listening = false;
-                RemoveFromGrid(0);
-            } else if (listener == null || !listener.IsAlive) {
-                string address = txtAddress.Text.Trim();
-                string number = txtPort.Text.Trim();
-                string username = txtName.Text.Trim();
-                bool error = false;
-                IPAddress ip = null;
-                if (address.Length < 1) {
-                    error = true;
-                    Console(SystemMsg("Address is required"));
-                } else {
-                    try {
-                        ip = Dns.GetHostEntry(address)
-                            .AddressList
-                            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
-                    } catch {
-                        error = true;
-                        Console(SystemMsg("Address is not valid"));
-                    }
-                }
-                int port = -1;
-                if (number.Length < 1) {
-                    error = true;
-                    Console(SystemMsg("Port number is required"));
-                } else if (!int.TryParse(number, out port)) {
-                    error = true;
-                    Console(SystemMsg("Port number is not valid"));
-                } else if (port < 0 || port > 65535) {
-                    error = true;
-                    Console(SystemMsg("Port number is out of range"));
-                }
-                if (username.Length < 1) {
-                    error = true;
-                    Console(SystemMsg("Username is required"));
-                }
-                if (!error) {
-                    listener = new Thread(() => Listener(ip, port)) {
-                        IsBackground = true
-                    };
-                    listener.Start();
-                    ClearDataGrid();
-
-
-
-                    AddToGrid(0, username, cmdColor.BackColor);
-                    tabSections.SelectTab(1);
-                }
-            }
-        }
-        private void CmdJoin_Click(object sender, EventArgs e)                                      // Client start 
-        {
-            if (connected) {
-                clientObject.client.Close();
-            } else if (client == null || !client.IsAlive) {
-                string address = txtAddress.Text.Trim();
-                string number = txtPort.Text.Trim();
-                string username = txtName.Text.Trim();
-                bool error = false;
-                IPAddress ip = null;
-                if (address.Length < 1) {
-                    error = true;
-                    Console(SystemMsg("Address is required"));
-                } else {
-                    try {
-                        ip = Dns.GetHostEntry(address)
-                            .AddressList
-                            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
-                    } catch {
-                        error = true;
-                        Console(SystemMsg("Address is not valid"));
-                    }
-                }
-                int port = -1;
-                if (number.Length < 1) {
-                    error = true;
-                    Console(SystemMsg("Port number is required"));
-                } else if (!int.TryParse(number, out port)) {
-                    error = true;
-                    Console(SystemMsg("Port number is not valid"));
-                } else if (port < 0 || port > 65535) {
-                    error = true;
-                    Console(SystemMsg("Port number is out of range"));
-                }
-                if (username.Length < 1) {
-                    error = true;
-                    Console(SystemMsg("Username is required"));
-                }
-                if (!error) {
-                    client = new Thread(() => Connection(ip, port, username, txtRoomKey.Text)) {
-                        IsBackground = true
-                    };
-                    client.Start();
-                }
-            }
-        }
-        private void CmdDisconnect_Click(object sender, EventArgs e)                                // Disconnect 
-        {
-            Disconnect();
-        }
-        private void ClientsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)      // Grid Button CLicks / Ping & DC 
-        {
-            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["dc"].Index) {
-                long.TryParse(clientsDataGridView.Rows[e.RowIndex].Cells["identifier"].Value.ToString(), out long id);
-                Disconnect(id);
-            }
-            /*            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["latency"].Index) {
-                            var BtnCell = (DataGridViewTextBoxCell)clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                            BtnCell.Value = Ping(GetPlayerAddress(e.RowIndex));
-                        }*/
-        }
-
-
 
         // Message box & Send
         private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Send on <Enter> 
@@ -274,7 +145,7 @@ namespace Server {
                 if (txtMessage.Text.Length > 0) {
                     string msg = txtMessage.Text;
                     txtMessage.Clear();
-                    PublicChat(string.Format("{0} (You): {1}", txtName.Text.Trim(), msg));
+                    PublicChat(txtName.Text.Trim(), msg);
                     if (listening) {
                         HostSendPublic(string.Format("{0}: {1}", txtName.Text.Trim(), msg));
                     }
@@ -297,36 +168,29 @@ namespace Server {
             }
         }
 
-
         // DataGrid management
-        private void AddToGrid(long id, string name, Color color)                                                // Add Client 
+        private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
             if (!exit) {
                 clientsDataGridView.Invoke((MethodInvoker)delegate {
-
                     int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;         // convert COLOURS to string  - From Color to ARGB
                     //Color myColor = Color.FromArgb(cA,cR,cG,cB);                                  // From ARGB to Color
-                    string colorString = string.Format("{0},{1},{2},{3}", cA,cR,cG,cB);
-                    
-                    if (clientsDataGridView.RowCount > (int)id) { 
+                    string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
+                    if (clientsDataGridView.RowCount > (int)id) {
                         DataGridViewCell cellID = clientsDataGridView.Rows[(int)id].Cells[0];
                         cellID.Value = id.ToString();
                         DataGridViewCell cellName = clientsDataGridView.Rows[(int)id].Cells[1];
-                        cellName.Value =name.ToString();
+                        cellName.Value = name.ToString();
                         DataGridViewCell cellCol = clientsDataGridView.Rows[(int)id].Cells[2];
-                        cellCol.Value =colorString;
+                        cellCol.Value = colorString;
                         DataGridViewCell cellLat = clientsDataGridView.Rows[(int)id].Cells[3];
-                        cellLat.Value ="0";
+                        cellLat.Value = "0";
                     } else {
-                        string[] row = new string[] { id.ToString(), txtName.Text, colorString, "0" };
+                        string[] row = new string[] { id.ToString(), name, colorString, "0" };
                         clientsDataGridView.Rows.Add(row);
-
                     }
-
-
-                    
-                    clientsDataGridView.DefaultCellStyle.BackColor = color;
-
+                    DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
+                    nrow.DefaultCellStyle.BackColor = color;
                     lblConnections.Visible = true;
                     lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
                 });
@@ -383,7 +247,7 @@ namespace Server {
                     };
                     string json = JsonConvert.SerializeObject(player);
                     HostSendPublic(json + "\n");
-                }  
+                }
                 // Old working code
                 /*                string contents = "";
                                 int rCount = 0;
@@ -402,7 +266,8 @@ namespace Server {
         }
 
 
-
+     
+        /* Network */
         // Host, Join, and DC
         private void Connected(bool status)                                                         // isClient toggle 
         {
@@ -429,6 +294,7 @@ namespace Server {
                         cmdDisconnect.Enabled = true;
                         cmdJoin.Text = "Connect";
                         tPing.Enabled = false;
+                        ClearDataGrid();
                         Console(SystemMsg("You are now disconnected"));
                     }
                 });
@@ -460,6 +326,7 @@ namespace Server {
                         newSize = new(600, 560);
                         cmdHost.Text = "Host";
                         tPing.Enabled = false;
+                        ClearDataGrid();
                         Console(SystemMsg("Server has stopped"));
                     }
                 });
@@ -533,7 +400,8 @@ namespace Server {
                             MyPlayers obj = new() {
                                 id = GetLowestFreeID(clientsDataGridView),                          // find < available number from grid
                                 username = new StringBuilder(),
-                                client = listener.AcceptTcpClient()
+                                client = listener.AcceptTcpClient(),
+                                color = new Color()
                             };
                             obj.stream = obj.client.GetStream();
                             obj.buffer = new byte[obj.client.ReceiveBufferSize];
@@ -593,16 +461,19 @@ namespace Server {
             }
         }
 
+
         // Ping
-        private void Ping_Tick(object sender, EventArgs e) {
-            /*            if (listening || connected) {
-                            for (int i = 0; i <= players.Count; i++) {
-                                var pingCell = (DataGridViewTextBoxCell)clientsDataGridView.Rows[i].Cells[2];
-                                pingCell.Value = Ping(GetPlayerAddress(i));
-                            }
-                        }*/
+        private void Ping_Tick(object sender, EventArgs e)
+        {
+            if (listening || connected) {
+                for (int i = 1; i <= players.Count; i++) {
+                    var pingCell = (DataGridViewTextBoxCell)clientsDataGridView.Rows[i].Cells[3];
+                    pingCell.Value = Ping(GetPlayerAddress(i));
+                }
+            }
         }
-        static double Ping(string address) {
+        static double Ping(string address)
+        {
             long totalTime = 0;
             Ping ping = new();
 
@@ -614,17 +485,18 @@ namespace Server {
             }
             return totalTime / 4;
         }
-        private void CmdPing_Click(object sender, EventArgs e) {
-
-            UpdateDataContents();
-
-            /*            for (int i = 0; i <= players.Count; i++) {
-                            players.TryGetValue(i, out MyPlayers obj);
-                            var pingTest = Ping(GetPlayerAddress(i));
-                            Console(string.Format("Ping for {1}:{0}", pingTest, obj.username));
-                        }*/
+        private void CmdPing_Click(object sender, EventArgs e)
+        {
+            if (listening || connected) {
+                for (int i = 0; i <= players.Count; i++) {
+                    players.TryGetValue(i, out MyPlayers obj);
+                    var pingTest = Ping(GetPlayerAddress(i));
+                    Console(string.Format("Ping for {1}:{0}", pingTest, obj.username));
+                }
+            }
         }
-        static string GetPlayerAddress(int id) {
+        static string GetPlayerAddress(int id)
+        {
             if (id != 0) {
                 players.TryGetValue(id, out MyPlayers obj);
                 string ipAddress = ((IPEndPoint)obj.client.Client.RemoteEndPoint).Address.ToString();
@@ -632,9 +504,7 @@ namespace Server {
             } else return "127.0.0.1";
         }
 
-
-
-        // Room Key management
+        // Join Requests
         private bool Authorize()                                                                    // Client request 
         {
             bool success = false;
@@ -681,6 +551,93 @@ namespace Server {
         }
 
 
+        /* TCP Send, Begin & End Writes */
+        // Client
+        private void Send(string msg)                                                               // Client version 
+        {
+            if (!listening) {
+                if (send == null || send.IsCompleted) {
+                    send = Task.Factory.StartNew(() => BeginWrite(msg));
+                } else {
+                    send.ContinueWith(antecendent => BeginWrite(msg));
+                }
+            }
+        }
+        private void BeginWrite(string msg)                                                         // Client version 
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(msg);
+            if (clientObject.client.Connected) {
+                try {
+                    clientObject.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(Write), null);
+                } catch (Exception ex) {
+                    Console(ErrorMsg(ex.Message));
+                }
+            }
+        }
+        private void Write(IAsyncResult result)                                                     // Client write 
+        {
+            if (clientObject.client.Connected) {
+                try {
+                    clientObject.stream.EndWrite(result);
+                } catch (Exception ex) {
+                    Console(ErrorMsg(ex.Message));
+                }
+            }
+        }
+
+        // Host
+        private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host prepare to send Private message 
+        {
+            if (send == null || send.IsCompleted) {
+                send = Task.Factory.StartNew(() => HostBeginPrivate(msg, obj));
+            } else {
+                send.ContinueWith(antecendent => HostBeginPrivate(msg, obj));
+            }
+        }
+        private void HostSendPublic(string msg, long id = -1)                                       // Host prepare to send Public message 
+        {
+            if (send == null || send.IsCompleted) {
+                send = Task.Factory.StartNew(() => HostBeginPublic(msg, id));
+            } else {
+                send.ContinueWith(antecendent => HostBeginPublic(msg, id));
+            }
+        }
+        private void HostBeginPrivate(string msg, MyPlayers obj)                                    // Host BeginWrite Private message to stream 
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(msg);
+            if (obj.client.Connected) {
+                try {
+                    obj.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(HostEndWrite), obj);
+                } catch (Exception ex) {
+                    Console(ErrorMsg(ex.Message));
+                }
+            }
+        }
+        private void HostBeginPublic(string msg, long id = -1)                                      // Host BeginWrite Public -- set ID to lesser than zero to send to everyone
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(msg);
+            foreach (KeyValuePair<long, MyPlayers> obj in players) {
+                if (id != obj.Value.id && obj.Value.client.Connected) {
+                    try {
+                        obj.Value.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(HostEndWrite), obj.Value);
+                    } catch (Exception ex) {
+                        Console(ErrorMsg(ex.Message));
+                    }
+                }
+            }
+        }
+        private void HostEndWrite(IAsyncResult result)                                              // Host EndWrite 
+        {
+            MyPlayers obj = (MyPlayers)result.AsyncState;
+            if (obj.client.Connected) {
+                try {
+                    obj.stream.EndWrite(result);
+                } catch (Exception ex) {
+                    Console(ErrorMsg(ex.Message));
+                }
+            }
+        }
+
         // TCP Read
         private void ReadAuth(IAsyncResult result)                                                  // H+C - Private MSG Readers 
         {
@@ -710,18 +667,6 @@ namespace Server {
                                 string[] colParts = data.ElementAt(2).Value.Split(',');             // COLOURS
                                 Color myColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
                                 obj.color = myColor;
-
-                                // host gets COLOURS and adds to MyPlayers
-                                //int cA = data["color"].color.A; int cR = data["color"].color.R; int cG = data["color"].color.G; int cB = data["color"].color.B;         // From Color to ARGB
-                                // From ARGB to Color
-                                //.ElementAt(2).Value
-
-                                
-
-
-
-
-
                                 HostSendPrivate("{\"status\": \"authorized\"}", obj);
                             }
                             obj.data.Clear();
@@ -788,9 +733,8 @@ namespace Server {
                         if (obj.stream.DataAvailable) {
                             obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
                         } else {
-                            string msg = string.Format("{0}: {1}", obj.username, obj.data);
-                            PublicChat(msg);
-                            HostSendPublic(msg, obj.id);
+                            PublicChat(obj.username.ToString(), obj.data.ToString());
+                            HostSendPublic(obj.data.ToString(), obj.id);
                             obj.data.Clear();
                             obj.handle.Set();
                         }
@@ -819,22 +763,26 @@ namespace Server {
                         if (clientObject.stream.DataAvailable) {
                             clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(Read), null);
                         } else {
-                            string test = clientObject.data.ToString();
-                            if (clientObject.data.ToString().StartsWith("{\"Id\"")) { 
+                            string clientData = clientObject.data.ToString();
+
+                            if (clientData.Contains("/msg")) {
+                                string[] toNfrom = clientData.Split(' ');
+                                string to = toNfrom[0].Replace(":", "");
+                            }
+
+                            if (clientData.StartsWith("{\"Id\"")) {
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                                foreach (string message in messages) {                                
+                                foreach (string message in messages) {
                                     AddPlayer player = JsonConvert.DeserializeObject<AddPlayer>(message);
                                     Color argbColor = Color.FromArgb(player.Color[0], player.Color[1], player.Color[2], player.Color[3]);
                                     AddToGrid(player.Id, player.Name, argbColor);
-
                                 }
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
                                 return;
                             }
-
-
-                            PublicChat(clientObject.data.ToString());
+                            string[] dataParts = clientData.Split(':');
+                            PublicChat(dataParts[0], dataParts[1]);
                             clientObject.data.Clear();
                             clientObject.handle.Set();
                         }
@@ -849,100 +797,196 @@ namespace Server {
                 }
             }
         }
+        /*END NETWORK*/
 
 
 
-        // TCP Send, Begin & End Writes
-        private void Send(string msg)                                                               // Client version
+
+        // Controls
+        private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
         {
-            if (!listening) {
-                if (send == null || send.IsCompleted) {
-                    send = Task.Factory.StartNew(() => BeginWrite(msg));
+            ColorDialog MyDialog = new() {
+                AllowFullOpen = true,
+                ShowHelp = true,
+                //Color = cmdColor.BackColor            // Sets the initial color select to the current text color.             
+            };
+
+            if (tabSections.SelectedTab.Name == "tConsole") {
+                if (MyDialog.ShowDialog() == DialogResult.OK) {                         // Update the text box color if the user clicks OK
+                    txtConsole.BackColor = MyDialog.Color;
+                };
+            }
+            if (tabSections.SelectedTab.Name == "tLobby") {
+                if (MyDialog.ShowDialog() == DialogResult.OK) {                         // Update the text box color if the user clicks OK
+                    txtLobby.BackColor = MyDialog.Color;
+                };
+            }
+
+        }
+        private void Clear_Click(object sender, EventArgs e)                                        // Clear the repective Textbox 
+        {
+            if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
+            if (tabSections.SelectedTab.Name == "tLobby") { PublicChat(null, null); }
+        }
+        private void CmdColor_Click(object sender, EventArgs e)                                     // Color Chooser 
+        {
+            ColorDialog MyDialog = new() {
+                AllowFullOpen = true,
+                ShowHelp = true,
+                Color = cmdColor.BackColor            // Sets the initial color select to the current text color.             
+            };
+            if (MyDialog.ShowDialog() == DialogResult.OK) {                         // Update the text box color if the user clicks OK
+                cmdColor.BackColor = MyDialog.Color;
+            }
+        }
+
+        private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles Key Mask 
+        {
+            if (txtRoomKey.PasswordChar == '*') {
+                txtRoomKey.PasswordChar = '\0';
+            } else {
+                txtRoomKey.PasswordChar = '*';
+            }
+        }
+        private void CmdHost_Click(object sender, EventArgs e)                                      // Host start 
+        {
+            if (listening) {
+                listening = false;
+                RemoveFromGrid(0);
+            } else if (listener == null || !listener.IsAlive) {
+                string address = txtAddress.Text.Trim();
+                string number = txtPort.Text.Trim();
+                if (txtName.Text.Trim() == "Player 1") { txtName.Text = "Host"; cmdColor.BackColor = Color.Yellow; }
+                string username = txtName.Text.Trim();
+                bool error = false;
+                IPAddress ip = null;
+                if (address.Length < 1) {
+                    error = true;
+                    Console(SystemMsg("Address is required"));
                 } else {
-                    send.ContinueWith(antecendent => BeginWrite(msg));
-                }
-            }
-        }
-        private void BeginWrite(string msg)                                                         // Client version
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(msg);
-            if (clientObject.client.Connected) {
-                try {
-                    clientObject.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(Write), null);
-                } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
-                }
-            }
-        }
-        private void Write(IAsyncResult result)                                                     // Client write
-        {
-            if (clientObject.client.Connected) {
-                try {
-                    clientObject.stream.EndWrite(result);
-                } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
-                }
-            }
-        }
-
-
-        private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host prepare to send Private message 
-        {
-            if (send == null || send.IsCompleted) {
-                send = Task.Factory.StartNew(() => HostBeginPrivate(msg, obj));
-            } else {
-                send.ContinueWith(antecendent => HostBeginPrivate(msg, obj));
-            }
-        }
-        private void HostSendPublic(string msg, long id = -1)                                       // Host prepare to send Public message 
-        {
-            if (send == null || send.IsCompleted) {
-                send = Task.Factory.StartNew(() => HostBeginPublic(msg, id));
-            } else {
-                send.ContinueWith(antecendent => HostBeginPublic(msg, id));
-            }
-        }
-        private void HostBeginPrivate(string msg, MyPlayers obj)                                    // Host BeginWrite Private message to stream 
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(msg);
-            if (obj.client.Connected) {
-                try {
-                    obj.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(HostEndWrite), obj);
-                } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
-                }
-            }
-        }
-        private void HostBeginPublic(string msg, long id = -1)                                      // Host BeginWrite Public -- set ID to lesser than zero to send to everyone
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(msg);
-            foreach (KeyValuePair<long, MyPlayers> obj in players) {
-                if (id != obj.Value.id && obj.Value.client.Connected) {
                     try {
-                        obj.Value.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(HostEndWrite), obj.Value);
-                    } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        ip = Dns.GetHostEntry(address)
+                            .AddressList
+                            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                    } catch {
+                        error = true;
+                        Console(SystemMsg("Address is not valid"));
                     }
+                }
+                int port = -1;
+                if (number.Length < 1) {
+                    error = true;
+                    Console(SystemMsg("Port number is required"));
+                } else if (!int.TryParse(number, out port)) {
+                    error = true;
+                    Console(SystemMsg("Port number is not valid"));
+                } else if (port < 0 || port > 65535) {
+                    error = true;
+                    Console(SystemMsg("Port number is out of range"));
+                }
+                if (username.Length < 1) {
+                    error = true;
+                    Console(SystemMsg("Username is required"));
+                }
+                if (!error) {
+                    listener = new Thread(() => Listener(ip, port)) {
+                        IsBackground = true
+                    };
+                    listener.Start();
+                    ClearDataGrid();
+                    AddToGrid(0, username, cmdColor.BackColor);
+                    tabSections.SelectTab(1);
+                    txtMessage.Focus();
+                    txtMessage.SelectionStart = txtMessage.Text.Length;
                 }
             }
         }
-        private void HostEndWrite(IAsyncResult result)                                              // Host EndWrite
+        private void CmdJoin_Click(object sender, EventArgs e)                                      // Client start 
         {
-            MyPlayers obj = (MyPlayers)result.AsyncState;
-            if (obj.client.Connected) {
-                try {
-                    obj.stream.EndWrite(result);
-                } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+            if (connected) {
+                clientObject.client.Close();
+            } else if (client == null || !client.IsAlive) {
+                string address = txtAddress.Text.Trim();
+                string number = txtPort.Text.Trim();
+                if (txtName.Text.Trim() == "Player 1") { cmdColor.BackColor = Color.Red; }
+                if (txtName.Text.Trim() == "Player 2") { cmdColor.BackColor = Color.Green; }
+                if (txtName.Text.Trim() == "Player 3") { cmdColor.BackColor = Color.Blue; }
+                string username = txtName.Text.Trim();
+                bool error = false;
+                IPAddress ip = null;
+                if (address.Length < 1) {
+                    error = true;
+                    Console(SystemMsg("Address is required"));
+                } else {
+                    try {
+                        ip = Dns.GetHostEntry(address)
+                            .AddressList
+                            .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                    } catch {
+                        error = true;
+                        Console(SystemMsg("Address is not valid"));
+                    }
+                }
+                int port = -1;
+                if (number.Length < 1) {
+                    error = true;
+                    Console(SystemMsg("Port number is required"));
+                } else if (!int.TryParse(number, out port)) {
+                    error = true;
+                    Console(SystemMsg("Port number is not valid"));
+                } else if (port < 0 || port > 65535) {
+                    error = true;
+                    Console(SystemMsg("Port number is out of range"));
+                }
+                if (username.Length < 1) {
+                    error = true;
+                    Console(SystemMsg("Username is required"));
+                }
+                if (!error) {
+                    client = new Thread(() => Connection(ip, port, username, txtRoomKey.Text)) {
+                        IsBackground = true
+                    };
+                    client.Start();
                 }
             }
         }
+        private void CmdDisconnect_Click(object sender, EventArgs e)                                // Disconnect 
+        {
+            Disconnect();
+        }
+        private void ClientsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)      // Grid Button CLicks / Ping & DC 
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["dc"].Index) {      // Kick or DC button
+                long.TryParse(clientsDataGridView.Rows[e.RowIndex].Cells["identifier"].Value.ToString(), out long id);
+                Disconnect(id);
+            }
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["latency"].Index) { // Ping selected client
+                var BtnCell = (DataGridViewTextBoxCell)clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                BtnCell.Value = Ping(GetPlayerAddress(e.RowIndex));
+            }
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["name"].Index) {    // Private msg
+                string name = clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
+                string prevMSG = txtMessage.Text;
+                if (prevMSG.EndsWith("ype and press enter to send.")) { txtMessage.Text = prevMSG = ""; }
+                if (prevMSG.StartsWith("/msg")) {
+                    string[] msgParts = prevMSG.Split(' ');
+                    txtMessage.Text = string.Format("/msg {0} {1}", name, msgParts[2].Trim());
+                } else { txtMessage.Text = string.Format("/msg {0} {1}", name, prevMSG); }
+                txtMessage.Focus();
+                txtMessage.SelectionStart = txtMessage.Text.Length;
+            }
+        }
+        private void TabSections_MouseClick(object sender, MouseEventArgs e)                        // Tab Context Menu 
+        {
+            if (e.Button == MouseButtons.Right) {
+                ContextMenu cm = new ContextMenu();
+                cm.MenuItems.Add("BG Color");
+                cm.MenuItems.Add("Clear");
+                cm.MenuItems[0].Click += new EventHandler(BGC_Click);
+                cm.MenuItems[1].Click += new EventHandler(Clear_Click);
+                tabSections.ContextMenu = cm;
+            }
+        }
 
-
-        /*        private void clientsDataGridView_CellMouseMove(object sender, DataGridViewCellMouseEventArgs e) {
-                    if (e.RowIndex > -1 && e.ColumnIndex > -1) { 
-                    clientsDataGridView.DefaultCellStyle.BackColor = Color.FromName(clientsDataGridView.Rows[e.RowIndex].Cells[2].Value.ToString().Substring(clientsDataGridView.Rows[e.RowIndex].Cells[2].Value.ToString().IndexOf("[") + 1, clientsDataGridView.Rows[e.RowIndex].Cells[2].Value.ToString().IndexOf("]") - clientsDataGridView.Rows[e.RowIndex].Cells[2].Value.ToString().IndexOf("[") - 1).Trim()); // extract color name);
-                    }
-                }*/
     }
 }
