@@ -763,30 +763,27 @@ namespace Server
 
                             if (clientData.Contains("/msg")) {                                      // PM - Host Receive
                                 string[] pMSG = clientData.Split(':');
-                                // find which obj is destination
-
-                                for (int p = 1; p <= players.Count; p++) {          // PM - Det Dest
-                                    if (pMSG[1] == players[p].username.ToString()) {        // is a player        
-                                        HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);                       // PM - Private Send
+                                for (int p = 1; p <= players.Count; p++) {                          // Det Dest
+                                    if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
+                                        HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);   // PM - Private Send
                                         Console(SystemMsg("PM Sent."));
                                         obj.data.Clear();
                                         obj.handle.Set();
                                         break;
-                                    } else if (pMSG[1] == txtName.Text.Trim()) {                                                // is host
+                                    } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
                                         PrivateChat(obj.username.ToString(), pMSG[2]);
                                         obj.data.Clear();
                                         obj.handle.Set();
                                         break;
                                     } else { Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2]))); }
                                 }
-
-
-                            } else {
-                                PublicChat(obj.username.ToString(), obj.data.ToString());
-                                HostSendPublic(obj.data.ToString(), obj.id);
-                                obj.data.Clear();
-                                obj.handle.Set();
-                            }
+                                return;
+                            }                                                                       // Public MSG
+                            PublicChat(obj.username.ToString(), obj.data.ToString());               // Host
+                            HostSendPublic(obj.data.ToString(), obj.id);                            // Client
+                            obj.data.Clear();                         
+                            obj.handle.Set();
+                      
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
@@ -813,17 +810,17 @@ namespace Server
                         if (clientObject.stream.DataAvailable) {
                             clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(Read), null);
                         } else {
-                            string clientData = clientObject.data.ToString();
+                            string hostData = clientObject.data.ToString();
 
-                            if (clientData.Contains("/msg")) {                                      // PM - CLient Receives PM
-                                string[] msgFrom = clientData.Split(':');
+                            if (hostData.Contains("/msg")) {                                      // PM - Client Receives PM
+                                string[] msgFrom = hostData.Split(':');
                                 PrivateChat(msgFrom[1], msgFrom[2]);
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
                                 return;
                             }
 
-                            if (clientData.StartsWith("{\"Id\"")) {                                 // Grid - Client receive grid update
+                            if (hostData.StartsWith("{\"Id\"")) {                                 // Grid - Client receive grid update
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     AddPlayer player = JsonConvert.DeserializeObject<AddPlayer>(message);
@@ -835,18 +832,16 @@ namespace Server
                                 return;
                             }
 
-                            if (clientData.StartsWith("SYSTEM:")) {
-                                string[] sysParts = clientData.Split(':');
+                            if (hostData.StartsWith("SYSTEM:")) {                                 // Broadcasted System MSGs
+                                string[] sysParts = hostData.Split(':');
                                 Console(sysParts[2]);
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
                                 return;
                             }
 
-
-
-                            string[] dataParts = clientData.Split(':');
-                            PublicChat(dataParts[0], dataParts[1]);
+                            string[] dataParts = hostData.Split(':');
+                            PublicChat(dataParts[0], dataParts[1]);                                 // Post public chat msg
                             clientObject.data.Clear();
                             clientObject.handle.Set();
                         }
@@ -904,7 +899,6 @@ namespace Server
                 cmdColor.BackColor = MyDialog.Color;
             }
         }
-
         private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles Key Mask 
         {
             if (txtRoomKey.PasswordChar == '*') {
@@ -1044,7 +1038,7 @@ namespace Server
         private void TabSections_MouseClick(object sender, MouseEventArgs e)                        // Tab Context Menu 
         {
             if (e.Button == MouseButtons.Right) {
-                ContextMenu cm = new ContextMenu();
+                ContextMenu cm = new();
                 cm.MenuItems.Add("BG Color");
                 cm.MenuItems.Add("Clear");
                 cm.MenuItems[0].Click += new EventHandler(BGC_Click);
