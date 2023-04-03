@@ -13,12 +13,9 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
-namespace Server
-{
-    public partial class GameServer : Form
-    {
-        public class AddPlayer
-        {
+namespace Server {
+    public partial class GameServer : Form {
+        public class AddPlayer {
             public int Id { get; set; }
             public string Name { get; set; }
             public int[] Color { get; set; }
@@ -30,8 +27,7 @@ namespace Server
         private bool listening = false;
         private Thread listener = null;
         private Thread disconnect = null;
-        private class MyPlayers
-        {
+        private class MyPlayers {
             public long id;
             public Color color;
             public StringBuilder username;
@@ -47,8 +43,7 @@ namespace Server
         // Client Specific
         private bool connected = false;
         private Thread client = null;
-        private class MyClient
-        {
+        private class MyClient {
             public string username;
             public string key;
             public Color color;
@@ -68,8 +63,7 @@ namespace Server
         */
 
         // Form
-        public GameServer()
-        {
+        public GameServer() {
             InitializeComponent();
             //AllocConsole();
         }
@@ -96,33 +90,39 @@ namespace Server
         }
         private void PublicChat(string username, string msg = "")                                   // Console message / Clear if empty 
         {
-            txtLobby.Invoke((MethodInvoker)delegate {
-                if (msg == null || msg.Length < 1) {
-                    txtLobby.Clear();
-                } else {
-                    string formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-                    string playerColor = "255,0,0,0,0";
-                    foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                        if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
-                            playerColor = row.Cells[2].Value?.ToString();
-                            break;
-                        }
-                    }
-                    string[] colParts = playerColor.Split(',');
-                    Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+            if (msg == null || msg.Length < 1) {
+                txtLobby.Clear();
+            } else {
+                string formattedMSG = "";
+                if (username.Contains("to you")) {
+                    username = username.Replace("to you", "").Trim();
+                    formattedMSG = string.Format("{0}[{1}] {2} to you: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
+                } else { formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg); }
 
+                string playerColor = "255,0,0,0,0";
+                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                    if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
+                        playerColor = row.Cells[2].Value?.ToString();
+                        break;
+                    }
+                }
+                string[] colParts = playerColor.Split(',');
+                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+                txtLobby.Invoke((MethodInvoker)delegate {
                     txtLobby.AppendText(formattedMSG, msgColor);
                     txtLobby.Focus();
                     txtLobby.SelectionStart = txtLobby.Text.Length;
                     txtMessage.Focus();
-                }
-            });
+                });
+            }
         }
         private void PrivateChat(string username, string msg = "")                                  // Console message / Clear if empty 
         {
             if (msg == null || msg.Length < 1) {
                 txtLobby.Clear();
             } else {
+
+                if (username.Contains("to you")) { username = username.Replace("to you", "").Trim(); }
                 string formattedMSG = string.Format("{0}[{1}] {2} to you: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
                 string playerColor = "255,0,0,0,0";
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {
@@ -178,7 +178,7 @@ namespace Server
                                     string hostPM = msg.Substring(index);                           // take text after length of name
                                     if (row.Index > 0) {
                                         if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player
-                                            HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);                       // PM - format string to  - Private Send
+                                            HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);     // PM - format string to  - Private Send
                                             Console(SystemMsg("PM Sent."));
                                         }
                                     } else {
@@ -219,10 +219,10 @@ namespace Server
         // DataGrid management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
+            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;         // convert COLOURS to string  - From Color to ARGB
+                                                                                            //Color myColor = Color.FromArgb(cA,cR,cG,cB);                                  // From ARGB to Color
+            string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
             clientsDataGridView.Invoke((MethodInvoker)delegate {
-                int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;         // convert COLOURS to string  - From Color to ARGB
-                //Color myColor = Color.FromArgb(cA,cR,cG,cB);                                  // From ARGB to Color
-                string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
                 if (clientsDataGridView.RowCount > (int)id) {
                     DataGridViewCell cellID = clientsDataGridView.Rows[(int)id].Cells[0];
                     cellID.Value = id.ToString();
@@ -233,11 +233,15 @@ namespace Server
                     DataGridViewCell cellLat = clientsDataGridView.Rows[(int)id].Cells[3];
                     cellLat.Value = "0";
                 } else {
-                    string[] row = new string[] { id.ToString(), name, colorString, "0" };
+                    string dcText = "DC";
+                    if (id == 0) { dcText = "All"; }
+                    string[] row = new string[] { id.ToString(), name, colorString, "0", dcText };
                     clientsDataGridView.Rows.Add(row);
                 }
-                DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
-                nrow.DefaultCellStyle.BackColor = color;
+            });
+            DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
+            nrow.DefaultCellStyle.BackColor = color;
+            lblConnections.Invoke((MethodInvoker)delegate {
                 lblConnections.Visible = true;
                 lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
             });
@@ -248,63 +252,43 @@ namespace Server
             clientsDataGridView.Invoke((MethodInvoker)delegate {
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {
                     if (row.Cells["identifier"].Value.ToString() == id.ToString()) {
+
                         clientsDataGridView.Rows.RemoveAt(row.Index);
+
                         break;
                     }
                 }
-                if (listening) { UpdateDataContents(); }
+            });
+            lblConnections.Invoke((MethodInvoker)delegate {
                 lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
             });
+            if (listening) { UpdateDataContents(); }
         }
         private void ClearDataGrid()                                                                // Clear DataGrid 
         {
             clientsDataGridView.Invoke((MethodInvoker)delegate {
                 clientsDataGridView.Rows.Clear();
             });
-
-
-            /*            if (clientsDataGridView.InvokeRequired) {
-                            clientsDataGridView.BeginInvoke(() =>
-                            {
-                                clientsDataGridView.Rows.Clear();
-                            });
-                        } else {
-                            clientsDataGridView.Rows.Clear();
-                        }*/
         }
         private void UpdateDataContents()                                                           // Host Collect, format and send DataGrid contents 
         {
             if (clientsDataGridView.RowCount > 1) {
 
                 for (int row = 0; row < clientsDataGridView.Rows.Count; row++) {
-                    string[] argbColor = clientsDataGridView.Rows[row].Cells[2].Value.ToString().Split(',');
+                    string[] argbColor = clientsDataGridView.Rows[row].Cells[2].Value.ToString().Split(',');    // Seperate colour parts to INT components
                     int colA = Convert.ToInt32(argbColor[0]);
                     int colR = Convert.ToInt32(argbColor[1]);
                     int colG = Convert.ToInt32(argbColor[2]);
                     int colB = Convert.ToInt32(argbColor[3]);
-                    // Create player object
-                    AddPlayer player = new() {
+
+                    AddPlayer player = new() {                                                      // Create a player object to send
                         Id = row,
                         Name = clientsDataGridView.Rows[row].Cells[1].Value.ToString(),
                         Color = new int[] { colA, colR, colG, colB }
                     };
-                    string json = JsonConvert.SerializeObject(player);
-                    HostSendPublic(json + "\n");
+                    string json = JsonConvert.SerializeObject(player);                              // Fromat the object
+                    HostSendPublic(json + "\n");                                                    // Host Send Grid row
                 }
-                // Old working code
-                /*                string contents = "";
-                                int rCount = 0;
-                                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                                    contents += row.Cells[0].Value?.ToString() + "," ?? string.Empty;   // ID
-                                    contents += row.Cells[1].Value?.ToString() + "," ?? string.Empty;   // Name
-                                    contents += row.Cells[2].Value?.ToString() ?? string.Empty;         // Color    // get COLOURS to send
-                                    rCount++;
-                                    if (rCount < clientsDataGridView.RowCount) { contents += ';'; }
-                                }
-
-                                JavaScriptSerializer json = new();
-                                var msg = CommandMsg(string.Format("{0}:{1}", "uGrid", contents));
-                                HostSendPublic(json.Serialize(msg));*/
             }
         }
 
@@ -467,6 +451,9 @@ namespace Server
         private int GetLowestFreeID(DataGridView DGV)                                               // Lowest Free ID for clients from DGV 
         {
             int lowestFreeID = 1;               // Start with 1
+
+
+
             foreach (DataGridViewRow row in DGV.Rows) {
                 if (int.TryParse(row.Cells[0].Value.ToString(), out int id)) {
                     if (id == lowestFreeID) {
@@ -536,18 +523,18 @@ namespace Server
         private bool Authorize()                                                                    // Client Send - Auth request 
         {
             bool success = false;
-            Dictionary<string, string> data = new() {
+            Dictionary<string, string> handShake = new() {                                          // Collect info to send as object
                 { "username", clientObject.username },
                 { "roomkey", clientObject.key },
                 { "color" , Convert.ToString(cmdColor.BackColor.A) +","+ Convert.ToString(cmdColor.BackColor.R) +","+ Convert.ToString(cmdColor.BackColor.G) +","+ Convert.ToString(cmdColor.BackColor.B) }, // Send COLOURS to host
             };
-            JavaScriptSerializer json = new();
-            Send(json.Serialize(data));
+            JavaScriptSerializer json = new();                                                      // Format the Hand Shake object
+            Send(json.Serialize(handShake));                                                        // Client send HS to Host
             while (clientObject.client.Connected) {
                 try {
                     clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(ReadAuth), null);
                     clientObject.handle.WaitOne();
-                    if (connected) {
+                    if (connected) {                                                                // If Auth request was sucess
                         success = true;
                         break;
                     }
@@ -555,10 +542,10 @@ namespace Server
                     Console(ErrorMsg(ex.Message));
                 }
             }
-            if (!connected) {
+            if (!connected) {                                                                       // Connection refused
                 Console(SystemMsg("Unauthorized"));
             }
-            return success;
+            return success;                                                                         // Hand Shake end
         }
         private bool Authorize(MyPlayers obj)                                                       // Host check for auth 
         {
@@ -767,23 +754,22 @@ namespace Server
                                     if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
                                         HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);   // PM - Private Send
                                         Console(SystemMsg("PM Sent."));
-                                        obj.data.Clear();
-                                        obj.handle.Set();
                                         break;
                                     } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
-                                        PrivateChat(obj.username.ToString(), pMSG[2]);
-                                        obj.data.Clear();
-                                        obj.handle.Set();
+                                        PrivateChat(obj.username.ToString(), pMSG[2]); // PM to host 
                                         break;
-                                    } else { Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2]))); }
+                                    }
                                 }
+                                Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2])));
+                                obj.data.Clear();
+                                obj.handle.Set();
                                 return;
                             }                                                                       // Public MSG
                             PublicChat(obj.username.ToString(), obj.data.ToString());               // Host
                             HostSendPublic(obj.data.ToString(), obj.id);                            // Client
-                            obj.data.Clear();                         
+                            obj.data.Clear();
                             obj.handle.Set();
-                      
+
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
@@ -1015,8 +1001,9 @@ namespace Server
         }
         private void ClientsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)      // Grid Button CLicks / Ping & DC 
         {
-            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["dc"].Index) {      // Kick or DC button
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["dc"].Index) {      // DC button
                 long.TryParse(clientsDataGridView.Rows[e.RowIndex].Cells["identifier"].Value.ToString(), out long id);
+                if (id == 0) { id = -1; }
                 Disconnect(id);
             }
             if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["latency"].Index) { // Ping selected client
