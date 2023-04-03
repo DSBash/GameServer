@@ -47,6 +47,11 @@
             this.cmdHost = new System.Windows.Forms.Button();
             this.cmdJoin = new System.Windows.Forms.Button();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
+            this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
             this.txtMessage = new System.Windows.Forms.TextBox();
             this.cmdDisconnect = new System.Windows.Forms.Button();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -55,16 +60,10 @@
             this.gbSettings = new System.Windows.Forms.GroupBox();
             this.lblColor = new System.Windows.Forms.Label();
             this.cmdColor = new System.Windows.Forms.Button();
-            this.cmdPing = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
-            this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -331,6 +330,51 @@
             this.clientsDataGridView.TabStop = false;
             this.clientsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.ClientsDataGridView_CellClick);
             // 
+            // identifier
+            // 
+            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.identifier.HeaderText = "#";
+            this.identifier.MinimumWidth = 28;
+            this.identifier.Name = "identifier";
+            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.identifier.Visible = false;
+            this.identifier.Width = 28;
+            // 
+            // name
+            // 
+            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.name.HeaderText = "Name";
+            this.name.MaxInputLength = 20;
+            this.name.MinimumWidth = 50;
+            this.name.Name = "name";
+            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            // 
+            // color
+            // 
+            this.color.HeaderText = "";
+            this.color.Name = "color";
+            this.color.Visible = false;
+            // 
+            // latency
+            // 
+            this.latency.HeaderText = "Ping";
+            this.latency.MinimumWidth = 28;
+            this.latency.Name = "latency";
+            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.latency.Width = 28;
+            // 
+            // dc
+            // 
+            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dc.HeaderText = "DC";
+            this.dc.MinimumWidth = 28;
+            this.dc.Name = "dc";
+            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.dc.Text = "DC";
+            this.dc.UseColumnTextForButtonValue = true;
+            this.dc.Width = 28;
+            // 
             // txtMessage
             // 
             this.txtMessage.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -412,7 +456,6 @@
             // 
             // splitContainer2.Panel2
             // 
-            this.splitContainer2.Panel2.Controls.Add(this.cmdPing);
             this.splitContainer2.Panel2.Controls.Add(this.cmdDisconnect);
             this.splitContainer2.Panel2.Controls.Add(this.lblConnections);
             this.splitContainer2.Panel2.Controls.Add(this.clientsDataGridView);
@@ -468,18 +511,6 @@
             this.cmdColor.UseVisualStyleBackColor = false;
             this.cmdColor.Click += new System.EventHandler(this.CmdColor_Click);
             // 
-            // cmdPing
-            // 
-            this.cmdPing.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.cmdPing.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cmdPing.Location = new System.Drawing.Point(84, 0);
-            this.cmdPing.Name = "cmdPing";
-            this.cmdPing.Size = new System.Drawing.Size(56, 18);
-            this.cmdPing.TabIndex = 56;
-            this.cmdPing.Text = "Ping All";
-            this.cmdPing.UseVisualStyleBackColor = true;
-            this.cmdPing.Click += new System.EventHandler(this.CmdPing_Click);
-            // 
             // panel1
             // 
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
@@ -523,51 +554,6 @@
             // 
             this.tPing.Interval = 1000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
-            // 
-            // identifier
-            // 
-            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.identifier.HeaderText = "#";
-            this.identifier.MinimumWidth = 28;
-            this.identifier.Name = "identifier";
-            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.identifier.Visible = false;
-            this.identifier.Width = 28;
-            // 
-            // name
-            // 
-            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.name.HeaderText = "Name";
-            this.name.MaxInputLength = 20;
-            this.name.MinimumWidth = 50;
-            this.name.Name = "name";
-            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            // 
-            // color
-            // 
-            this.color.HeaderText = "";
-            this.color.Name = "color";
-            this.color.Visible = false;
-            // 
-            // latency
-            // 
-            this.latency.HeaderText = "Ping";
-            this.latency.MinimumWidth = 28;
-            this.latency.Name = "latency";
-            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.latency.Width = 28;
-            // 
-            // dc
-            // 
-            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.dc.HeaderText = "DC";
-            this.dc.MinimumWidth = 28;
-            this.dc.Name = "dc";
-            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.dc.Text = "DC";
-            this.dc.UseColumnTextForButtonValue = true;
-            this.dc.Width = 28;
             // 
             // GameServer
             // 
@@ -631,7 +617,6 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.GroupBox gbSettings;
-        private System.Windows.Forms.Button cmdPing;
         private System.Windows.Forms.RichTextBox txtLobby;
         private System.Windows.Forms.Timer tPing;
         private System.Windows.Forms.Label lblColor;

@@ -24,7 +24,6 @@ namespace Server
             public int[] Color { get; set; }
         }
 
-        private bool exit = false;
         private Task send = null;
 
         // Host Specific
@@ -76,7 +75,6 @@ namespace Server
         }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // Close connection on Exit 
         {
-            exit = true;
             if (connected) {
                 clientObject.client.Close();
             } else {
@@ -88,39 +86,58 @@ namespace Server
         // Console & Chats
         private void Console(string msg = "")                                                       // Console message / Clear if empty 
         {
-            if (!exit) {
-                txtConsole.Invoke((MethodInvoker)delegate {
-                    if (msg.Length > 0) {
-                        txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine));
-                    } else {
-                        txtConsole.Clear();
-                    }
-                });
-            }
+            txtConsole.Invoke((MethodInvoker)delegate {
+                if (msg.Length > 0) {
+                    txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine));
+                } else {
+                    txtConsole.Clear();
+                }
+            });
         }
         private void PublicChat(string username, string msg = "")                                   // Console message / Clear if empty 
         {
-            if (!exit) {
-                txtLobby.Invoke((MethodInvoker)delegate {
-                    if (msg == null || msg.Length < 1) {
-                        txtLobby.Clear();
-                    } else {
-                        string formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm"), username, msg);
-                        string playerColor = "255,0,0,0,0";
-                        foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                            if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
-                                playerColor = row.Cells[2].Value?.ToString();
-                                break;
-                            }
+            txtLobby.Invoke((MethodInvoker)delegate {
+                if (msg == null || msg.Length < 1) {
+                    txtLobby.Clear();
+                } else {
+                    string formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
+                    string playerColor = "255,0,0,0,0";
+                    foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                        if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
+                            playerColor = row.Cells[2].Value?.ToString();
+                            break;
                         }
-                        string[] colParts = playerColor.Split(',');
-                        Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
-
-                        txtLobby.AppendText(formattedMSG, msgColor);
-                        txtLobby.Focus();
-                        txtLobby.SelectionStart = txtLobby.Text.Length;
-                        txtMessage.Focus();
                     }
+                    string[] colParts = playerColor.Split(',');
+                    Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+
+                    txtLobby.AppendText(formattedMSG, msgColor);
+                    txtLobby.Focus();
+                    txtLobby.SelectionStart = txtLobby.Text.Length;
+                    txtMessage.Focus();
+                }
+            });
+        }
+        private void PrivateChat(string username, string msg = "")                                  // Console message / Clear if empty 
+        {
+            if (msg == null || msg.Length < 1) {
+                txtLobby.Clear();
+            } else {
+                string formattedMSG = string.Format("{0}[{1}] {2} to you: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
+                string playerColor = "255,0,0,0,0";
+                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                    if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
+                        playerColor = row.Cells[2].Value?.ToString();
+
+                    }
+                }
+                string[] colParts = playerColor.Split(',');
+                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+                txtLobby.Invoke((MethodInvoker)delegate {
+                    txtLobby.AppendText(formattedMSG, msgColor);
+                    txtLobby.Focus();
+                    txtLobby.SelectionStart = txtLobby.Text.Length;
+                    txtMessage.Focus();
                 });
             }
         }
@@ -141,8 +158,8 @@ namespace Server
             if (e.KeyCode == Keys.Enter) {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
-                if (txtMessage.Text.Length > 0) {
-                    string msg = txtMessage.Text;
+                string msg = txtMessage.Text;
+                if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
                     txtMessage.Clear();
                     PublicChat(txtName.Text.Trim(), msg);
                     if (listening) {
@@ -151,6 +168,38 @@ namespace Server
                     if (connected) {
                         Send(msg);
                     }
+                } else {
+                    if (listening) {
+                        if (msg.Contains("/msg")) {                                                 // PM - get MSG   /msg Player 1 Some text.
+                            foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                                if (msg.Contains(row.Cells[1].Value.ToString())) {                  // if name in grid
+                                    int index = msg.IndexOf(row.Cells[1].Value.ToString());         // get start of name
+                                    if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
+                                    string hostPM = msg.Substring(index);                           // take text after length of name
+                                    if (row.Index > 0) {
+                                        if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player
+                                            HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);                       // PM - format string to  - Private Send
+                                            Console(SystemMsg("PM Sent."));
+                                        }
+                                    } else {
+                                        txtLobby.AppendText(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (connected) {
+                        foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                            if (msg.Contains(row.Cells[1].Value.ToString())) {                      // Find name in PM
+                                int index = msg.IndexOf(row.Cells[1].Value.ToString());
+                                if (index != -1) { index += row.Cells[1].Value.ToString().Length; }
+                                string pMSG = msg.Substring(index);                                 // PM - format string to send to host
+                                msg = pMSG.Trim();
+                                Send(string.Format("/msg:{0}:{1}", row.Cells[1].Value.ToString(), msg));
+                            }
+                        }
+                    }
+
                 }
             }
         }
@@ -170,47 +219,42 @@ namespace Server
         // DataGrid management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
-            if (!exit) {
-                clientsDataGridView.Invoke((MethodInvoker)delegate {
-                    int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;         // convert COLOURS to string  - From Color to ARGB
-                    //Color myColor = Color.FromArgb(cA,cR,cG,cB);                                  // From ARGB to Color
-                    string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
-                    if (clientsDataGridView.RowCount > (int)id) {
-                        DataGridViewCell cellID = clientsDataGridView.Rows[(int)id].Cells[0];
-                        cellID.Value = id.ToString();
-                        DataGridViewCell cellName = clientsDataGridView.Rows[(int)id].Cells[1];
-                        cellName.Value = name.ToString();
-                        DataGridViewCell cellCol = clientsDataGridView.Rows[(int)id].Cells[2];
-                        cellCol.Value = colorString;
-                        DataGridViewCell cellLat = clientsDataGridView.Rows[(int)id].Cells[3];
-                        cellLat.Value = "0";
-                    } else {
-                        string[] row = new string[] { id.ToString(), name, colorString, "0" };
-                        clientsDataGridView.Rows.Add(row);
-                    }
-                    DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
-                    nrow.DefaultCellStyle.BackColor = color;
-                    lblConnections.Visible = true;
-                    lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
-                });
-
-                if (listening) { UpdateDataContents(); }
-            }
+            clientsDataGridView.Invoke((MethodInvoker)delegate {
+                int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;         // convert COLOURS to string  - From Color to ARGB
+                //Color myColor = Color.FromArgb(cA,cR,cG,cB);                                  // From ARGB to Color
+                string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
+                if (clientsDataGridView.RowCount > (int)id) {
+                    DataGridViewCell cellID = clientsDataGridView.Rows[(int)id].Cells[0];
+                    cellID.Value = id.ToString();
+                    DataGridViewCell cellName = clientsDataGridView.Rows[(int)id].Cells[1];
+                    cellName.Value = name.ToString();
+                    DataGridViewCell cellCol = clientsDataGridView.Rows[(int)id].Cells[2];
+                    cellCol.Value = colorString;
+                    DataGridViewCell cellLat = clientsDataGridView.Rows[(int)id].Cells[3];
+                    cellLat.Value = "0";
+                } else {
+                    string[] row = new string[] { id.ToString(), name, colorString, "0" };
+                    clientsDataGridView.Rows.Add(row);
+                }
+                DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
+                nrow.DefaultCellStyle.BackColor = color;
+                lblConnections.Visible = true;
+                lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
+            });
+            if (listening) { UpdateDataContents(); }
         }
         private void RemoveFromGrid(long id)                                                        // Remove Client 
         {
-            if (!exit) {
-                clientsDataGridView.Invoke((MethodInvoker)delegate {
-                    foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                        if (row.Cells["identifier"].Value.ToString() == id.ToString()) {
-                            clientsDataGridView.Rows.RemoveAt(row.Index);
-                            break;
-                        }
+            clientsDataGridView.Invoke((MethodInvoker)delegate {
+                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                    if (row.Cells["identifier"].Value.ToString() == id.ToString()) {
+                        clientsDataGridView.Rows.RemoveAt(row.Index);
+                        break;
                     }
-                    if (listening) { UpdateDataContents(); }
-                    lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
-                });
-            }
+                }
+                if (listening) { UpdateDataContents(); }
+                lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
+            });
         }
         private void ClearDataGrid()                                                                // Clear DataGrid 
         {
@@ -265,71 +309,67 @@ namespace Server
         }
 
 
-     
+
         /* Network */
         // Host, Join, and DC
-        private void Connected(bool status)                                                         // isClient toggle 
+        private void Connected(bool status)                                                         // Client active toggle 
         {
-            if (!exit) {
-                cmdJoin.Invoke((MethodInvoker)delegate {
-                    connected = status;
-                    if (status) {
-                        txtAddress.Enabled = false;
-                        txtPort.Enabled = false;
-                        txtName.Enabled = false;
-                        txtRoomKey.Enabled = false;
-                        cmdHost.Enabled = false;
-                        cmdDisconnect.Enabled = false;
-                        clientsDataGridView.Columns["dc"].Visible = false;
-                        cmdJoin.Text = "Disconnect";
-                        tPing.Enabled = true;
-                        Console(SystemMsg("You are now connected"));
-                    } else {
-                        txtAddress.Enabled = true;
-                        txtPort.Enabled = true;
-                        txtName.Enabled = true;
-                        txtRoomKey.Enabled = true;
-                        cmdHost.Enabled = true;
-                        cmdDisconnect.Enabled = true;
-                        cmdJoin.Text = "Connect";
-                        tPing.Enabled = false;
-                        ClearDataGrid();
-                        Console(SystemMsg("You are now disconnected"));
-                    }
-                });
-            }
+            cmdJoin.Invoke((MethodInvoker)delegate {
+                connected = status;
+                if (status) {
+                    txtAddress.Enabled = false;
+                    txtPort.Enabled = false;
+                    txtName.Enabled = false;
+                    txtRoomKey.Enabled = false;
+                    cmdHost.Enabled = false;
+                    cmdDisconnect.Enabled = false;
+                    clientsDataGridView.Columns["dc"].Visible = false;
+                    cmdJoin.Text = "Disconnect";
+                    tPing.Enabled = true;
+                    Console(SystemMsg("You are now connected"));
+                } else {
+                    txtAddress.Enabled = true;
+                    txtPort.Enabled = true;
+                    txtName.Enabled = true;
+                    txtRoomKey.Enabled = true;
+                    cmdHost.Enabled = true;
+                    cmdDisconnect.Enabled = true;
+                    cmdJoin.Text = "Connect";
+                    tPing.Enabled = false;
+                    ClearDataGrid();
+                    Console(SystemMsg("You are now disconnected"));
+                }
+            });
         }
-        private void Listening(bool status)                                                         // isHost toggle 
+        private void Listening(bool status)                                                         // Host active toggle 
         {
-            if (!exit) {
-                Size newSize = new();
-                cmdHost.Invoke((MethodInvoker)delegate {
-                    listening = status;
-                    if (status) {
-                        txtAddress.Enabled = false;
-                        txtPort.Enabled = false;
-                        txtName.Enabled = false;
-                        txtRoomKey.Enabled = false;
-                        cmdJoin.Enabled = false;
-                        clientsDataGridView.Columns["dc"].Visible = true;
-                        newSize = new(920, 560);
-                        cmdHost.Text = "Stop";
-                        tPing.Enabled = true;
-                        Console(SystemMsg("Server has started"));
-                    } else {
-                        txtAddress.Enabled = true;
-                        txtPort.Enabled = true;
-                        txtName.Enabled = true;
-                        txtRoomKey.Enabled = true;
-                        cmdJoin.Enabled = true;
-                        newSize = new(600, 560);
-                        cmdHost.Text = "Host";
-                        tPing.Enabled = false;
-                        ClearDataGrid();
-                        Console(SystemMsg("Server has stopped"));
-                    }
-                });
-            }
+            Size newSize = new();
+            cmdHost.Invoke((MethodInvoker)delegate {
+                listening = status;
+                if (status) {
+                    txtAddress.Enabled = false;
+                    txtPort.Enabled = false;
+                    txtName.Enabled = false;
+                    txtRoomKey.Enabled = false;
+                    cmdJoin.Enabled = false;
+                    clientsDataGridView.Columns["dc"].Visible = true;
+                    newSize = new(920, 560);
+                    cmdHost.Text = "Stop";
+                    tPing.Enabled = true;
+                    Console(SystemMsg("Server has started"));
+                } else {
+                    txtAddress.Enabled = true;
+                    txtPort.Enabled = true;
+                    txtName.Enabled = true;
+                    txtRoomKey.Enabled = true;
+                    cmdJoin.Enabled = true;
+                    newSize = new(600, 560);
+                    cmdHost.Text = "Host";
+                    tPing.Enabled = false;
+                    ClearDataGrid();
+                    Console(SystemMsg("Server has stopped"));
+                }
+            });
         }
 
         private void Connection(IPAddress ip, int port, string username, string roomkey)            // C - Single TCP to host 
@@ -461,7 +501,7 @@ namespace Server
         }
 
         // Ping
-        private void Ping_Tick(object sender, EventArgs e)
+        private void Ping_Tick(object sender, EventArgs e)                                          // Timer for Pings 
         {
             if (listening || connected) {
                 for (int i = 1; i <= players.Count; i++) {
@@ -470,7 +510,7 @@ namespace Server
                 }
             }
         }
-        static double Ping(string address)
+        static double Ping(string address)                                                          // Perform Ping Return average of 4 as Long 
         {
             long totalTime = 0;
             Ping ping = new();
@@ -483,17 +523,7 @@ namespace Server
             }
             return totalTime / 4;
         }
-        private void CmdPing_Click(object sender, EventArgs e)
-        {
-            if (listening || connected) {
-                for (int i = 0; i <= players.Count; i++) {
-                    players.TryGetValue(i, out MyPlayers obj);
-                    var pingTest = Ping(GetPlayerAddress(i));
-                    Console(string.Format("Ping for {1}:{0}", pingTest, obj.username));
-                }
-            }
-        }
-        static string GetPlayerAddress(int id)
+        static string GetPlayerAddress(int id)                                                      // Get IP Address for Ping 
         {
             if (id != 0) {
                 players.TryGetValue(id, out MyPlayers obj);
@@ -503,7 +533,7 @@ namespace Server
         }
 
         // Join Requests
-        private bool Authorize()                                                                    // Client request 
+        private bool Authorize()                                                                    // Client Send - Auth request 
         {
             bool success = false;
             Dictionary<string, string> data = new() {
@@ -530,7 +560,7 @@ namespace Server
             }
             return success;
         }
-        private bool Authorize(MyPlayers obj)                                                       // Host reply 
+        private bool Authorize(MyPlayers obj)                                                       // Host check for auth 
         {
             bool success = false;
             while (obj.client.Connected) {
@@ -609,7 +639,7 @@ namespace Server
                 }
             }
         }
-        private void HostBeginPublic(string msg, long id = -1)                                      // Host BeginWrite Public -- set ID to lesser than zero to send to everyone
+        private void HostBeginPublic(string msg, long id = -1)                                      // Host BeginWrite Public -- set ID to lesser than zero to send to everyone 
         {
             byte[] buffer = Encoding.UTF8.GetBytes(msg);
             foreach (KeyValuePair<long, MyPlayers> obj in players) {
@@ -729,10 +759,34 @@ namespace Server
                         if (obj.stream.DataAvailable) {
                             obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
                         } else {
-                            PublicChat(obj.username.ToString(), obj.data.ToString());
-                            HostSendPublic(obj.data.ToString(), obj.id);
-                            obj.data.Clear();
-                            obj.handle.Set();
+                            string clientData = obj.data.ToString();
+
+                            if (clientData.Contains("/msg")) {                                      // PM - Host Receive
+                                string[] pMSG = clientData.Split(':');
+                                // find which obj is destination
+
+                                for (int p = 1; p <= players.Count; p++) {          // PM - Det Dest
+                                    if (pMSG[1] == players[p].username.ToString()) {        // is a player        
+                                        HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);                       // PM - Private Send
+                                        Console(SystemMsg("PM Sent."));
+                                        obj.data.Clear();
+                                        obj.handle.Set();
+                                        break;
+                                    } else if (pMSG[1] == txtName.Text.Trim()) {                                                // is host
+                                        PrivateChat(obj.username.ToString(), pMSG[2]);
+                                        obj.data.Clear();
+                                        obj.handle.Set();
+                                        break;
+                                    } else { Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2]))); }
+                                }
+
+
+                            } else {
+                                PublicChat(obj.username.ToString(), obj.data.ToString());
+                                HostSendPublic(obj.data.ToString(), obj.id);
+                                obj.data.Clear();
+                                obj.handle.Set();
+                            }
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
@@ -761,12 +815,15 @@ namespace Server
                         } else {
                             string clientData = clientObject.data.ToString();
 
-                            if (clientData.Contains("/msg")) {
-                                string[] toNfrom = clientData.Split(' ');
-                                string to = toNfrom[0].Replace(":", "");
+                            if (clientData.Contains("/msg")) {                                      // PM - CLient Receives PM
+                                string[] msgFrom = clientData.Split(':');
+                                PrivateChat(msgFrom[1], msgFrom[2]);
+                                clientObject.data.Clear();
+                                clientObject.handle.Set();
+                                return;
                             }
 
-                            if (clientData.StartsWith("{\"Id\"")) {
+                            if (clientData.StartsWith("{\"Id\"")) {                                 // Grid - Client receive grid update
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     AddPlayer player = JsonConvert.DeserializeObject<AddPlayer>(message);
@@ -777,6 +834,17 @@ namespace Server
                                 clientObject.handle.Set();
                                 return;
                             }
+
+                            if (clientData.StartsWith("SYSTEM:")) {
+                                string[] sysParts = clientData.Split(':');
+                                Console(sysParts[2]);
+                                clientObject.data.Clear();
+                                clientObject.handle.Set();
+                                return;
+                            }
+
+
+
                             string[] dataParts = clientData.Split(':');
                             PublicChat(dataParts[0], dataParts[1]);
                             clientObject.data.Clear();
@@ -793,7 +861,7 @@ namespace Server
                 }
             }
         }
-        
+
         /* END NETWORK */
 
 
