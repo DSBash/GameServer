@@ -1,10 +1,8 @@
-﻿using Microsoft.VisualBasic;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO.Ports;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -15,15 +13,19 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
-namespace Server {
-    public partial class GameServer : Form {
-        public class PlayerPackage {
+namespace Server
+{
+    public partial class GameServer : Form
+    {
+        public class PlayerPackage
+        {
             public int Id { get; set; }
             public string Name { get; set; }
             public int[] Color { get; set; }
         }
 
-        public class DrawPackage {
+        public class DrawPackage
+        {
             public string PenColor { get; set; }
             public int PenSize { get; set; }
             public Point PT1 { get; set; }
@@ -36,7 +38,8 @@ namespace Server {
         private bool listening = false;
         private Thread listener = null;
         private Thread disconnect = null;
-        private class MyPlayers {
+        private class MyPlayers
+        {
             public long id;
             public Color color;
             public StringBuilder username;
@@ -52,7 +55,8 @@ namespace Server {
         // Client Specific
         private bool connected = false;
         private Thread client = null;
-        private class Client {
+        private class Client
+        {
             public string username;
             public string key;
             public Color color;
@@ -72,7 +76,8 @@ namespace Server {
         */
 
         // Form
-        public GameServer() {
+        public GameServer()
+        {
             InitializeComponent();
             //AllocConsole();
         }
@@ -354,6 +359,7 @@ namespace Server {
                 }
             }
         }
+
         private void LocalDraw()                                                                    // Self Draw Routine 
         {
             if (Drawing) {
@@ -364,7 +370,7 @@ namespace Server {
                 pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                 gfx.DrawLine(pen, mouseLocA, mouseLocB);                                            // Draw the line
 
-                int cA = btnColor.BackColor.A; int cB = btnColor.BackColor.B; int cR = btnColor.BackColor.R; int cG = btnColor.BackColor.G; 
+                int cA = btnColor.BackColor.A; int cB = btnColor.BackColor.B; int cR = btnColor.BackColor.R; int cG = btnColor.BackColor.G;
                 string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);              // convert COLOURS to string  - From Color to ARGB
 
                 DrawPackage drawPack = new() {                                                      // Prep Draw Package for send
@@ -376,21 +382,21 @@ namespace Server {
                 string json = JsonConvert.SerializeObject(drawPack);                                // Format the Package
                 if (listening) {
                     HostSendPublic(json + "\n");                                                    // Host Send Draw Package
-                } else if (connected) {                    
+                } else if (connected) {
                     Send(json + "\n");                                                              // Client Send Draw Package
                 }
             }
         }
         private void RemoteDraw(DrawPackage remoteDP)                                               // Receive Draw Routine 
         {
-            if (Drawing) { 
+            if (Drawing) {
                 string[] stringColor = remoteDP.PenColor.Split(',');    // Seperate colour parts to INT components
                 int colA = Convert.ToInt32(stringColor[0]);
                 int colR = Convert.ToInt32(stringColor[1]);
                 int colG = Convert.ToInt32(stringColor[2]);
                 int colB = Convert.ToInt32(stringColor[3]);
                 Color argbColor = Color.FromArgb(colA, colR, colG, colB);
-            
+
                 using var pen = new Pen(argbColor, remoteDP.PenSize);
                 using var gfx = pDrawing.CreateGraphics();
                 gfx.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -398,9 +404,9 @@ namespace Server {
                 pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
 
                 gfx.DrawLine(pen, remoteDP.PT1, remoteDP.PT2);
-            }           
+            }
         }
-        /*End Drawing*/
+        /* End Drawing */
 
 
 
@@ -630,10 +636,7 @@ namespace Server {
             } else return "127.0.0.1";
         }
 
-
-
-        /* TCP Send, Begin & End Writes */
-        // Client
+        // Client Send
         private void Send(string msg)                                                               // Client version 
         {
             if (!listening) {
@@ -665,7 +668,8 @@ namespace Server {
                 }
             }
         }
-        // Host
+
+        // Host Send
         private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host prepare to send Private message 
         {
             if (send == null || send.IsCompleted) {
@@ -718,7 +722,7 @@ namespace Server {
             }
         }
 
-        // Join Requests
+        // Handshake
         private bool Authorize()                                                                    // Client Handshake 
         {
             bool success = false;
@@ -839,10 +843,10 @@ namespace Server {
                 }
             }
         }
-        
-        
-        
-        private void Read(IAsyncResult result)                                                      // H+C - Reader 
+
+
+        // Host and Client Read
+        private void Read(IAsyncResult result)                                                      // / *** READ ***/ 
         {
             if (listening) {                                                                        // Host stream reader
                 MyPlayers obj = (MyPlayers)result.AsyncState;
@@ -861,9 +865,9 @@ namespace Server {
                             obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
                         } else {
                             string clientData = obj.data.ToString();
-                            
+
                             // Host Receive - PM
-                            if (clientData.Contains("/msg")) {                                      
+                            if (clientData.Contains("/msg")) {
                                 string[] pMSG = clientData.Split(':');
                                 for (int p = 1; p <= players.Count; p++) {                          // Determine the PM Dest
                                     if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
@@ -884,12 +888,12 @@ namespace Server {
                                 obj.handle.Set();
                                 return;
                             }
-                            
+
                             // Host receive Drawing
-                            if (clientData.StartsWith("{\"PenColor\"")) {                            
+                            if (clientData.StartsWith("{\"PenColor\"")) {
                                 DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(clientData);
                                 RemoteDraw(remoteDP);
-                                HostSendPublic(clientData,obj.id);                                  // Host relay client drawing to other clients
+                                HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
                                 obj.data.Clear();
                                 obj.handle.Set();
                                 return;
@@ -948,22 +952,24 @@ namespace Server {
                                 return;
                             }
 
-
                             if (hostData.StartsWith("{\"PenColor\"")) {                              // Client - Drawing
-                                DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(hostData);
-                                RemoteDraw(remoteDP);
+                                string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach (string message in messages) {
+                                    DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
+                                    RemoteDraw(remoteDP);
+                                }
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
                                 return;
                             }
 
-                            if (hostData.StartsWith("CMD:")) {
+                            if (hostData.StartsWith("CMD:")) {                                      // Client - Commands
                                 string[] cmdParts = hostData.Split(':');
                                 switch (cmdParts[1]) {
                                     case "ClearDrawing":
                                         Button sender = new();
                                         EventArgs e = new();
-                                        CmdClearAll_Click(sender,e);
+                                        CmdClearAll_Click(sender, e);
                                         break;
                                     default:
                                         break;
@@ -972,10 +978,6 @@ namespace Server {
                                 clientObject.handle.Set();
                                 return;
                             }
-
-
-
-
 
                             string[] dataParts = hostData.Split(':');
                             PublicChat(dataParts[0], dataParts[1]);                                 // Client - Public Message
@@ -993,7 +995,7 @@ namespace Server {
                 }
             }
         }
-
+                                                                                                    // / *** READ ***/ 
         /* END NETWORK */
 
 
@@ -1180,6 +1182,7 @@ namespace Server {
                 tabSections.ContextMenu = cm;
             }
         }
+        /* Controls */
 
 
     }
