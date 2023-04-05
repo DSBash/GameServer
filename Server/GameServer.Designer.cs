@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblConnections = new System.Windows.Forms.Label();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
@@ -48,23 +48,34 @@
             this.cmdHost = new System.Windows.Forms.Button();
             this.cmdJoin = new System.Windows.Forms.Button();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
-            this.txtMessage = new System.Windows.Forms.TextBox();
-            this.cmdDisconnect = new System.Windows.Forms.Button();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.gbSettings = new System.Windows.Forms.GroupBox();
-            this.lblColor = new System.Windows.Forms.Label();
-            this.cmdColor = new System.Windows.Forms.Button();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tPing = new System.Windows.Forms.Timer(this.components);
             this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.txtMessage = new System.Windows.Forms.TextBox();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
+            this.btnSetDraw = new System.Windows.Forms.Button();
+            this.gbSettings = new System.Windows.Forms.GroupBox();
+            this.lblColor = new System.Windows.Forms.Label();
+            this.cmdColor = new System.Windows.Forms.Button();
+            this.gbDrawings = new System.Windows.Forms.GroupBox();
+            this.gbBG = new System.Windows.Forms.GroupBox();
+            this.btnClearAll = new System.Windows.Forms.Button();
+            this.label4 = new System.Windows.Forms.Label();
+            this.btnClear = new System.Windows.Forms.Button();
+            this.btnBGColor = new System.Windows.Forms.Button();
+            this.gbBrush = new System.Windows.Forms.GroupBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.btnColor = new System.Windows.Forms.Button();
+            this.nudSize = new System.Windows.Forms.NumericUpDown();
+            this.pDrawing = new System.Windows.Forms.Panel();
+            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tPing = new System.Windows.Forms.Timer(this.components);
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -79,6 +90,10 @@
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.gbSettings.SuspendLayout();
+            this.gbDrawings.SuspendLayout();
+            this.gbBG.SuspendLayout();
+            this.gbBrush.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudSize)).BeginInit();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -88,12 +103,12 @@
             this.lblConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.lblConnections.BackColor = System.Drawing.Color.Transparent;
             this.lblConnections.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.lblConnections.Location = new System.Drawing.Point(1, 18);
+            this.lblConnections.Location = new System.Drawing.Point(1, 2);
             this.lblConnections.Margin = new System.Windows.Forms.Padding(0);
             this.lblConnections.Name = "lblConnections";
-            this.lblConnections.Size = new System.Drawing.Size(90, 13);
+            this.lblConnections.Size = new System.Drawing.Size(120, 13);
             this.lblConnections.TabIndex = 31;
-            this.lblConnections.Text = "Total players: 0";
+            this.lblConnections.Text = "Total Connections: 0";
             this.lblConnections.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // tabSections
@@ -309,7 +324,7 @@
             this.clientsDataGridView.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
             this.clientsDataGridView.EnableHeadersVisualStyles = false;
             this.clientsDataGridView.ImeMode = System.Windows.Forms.ImeMode.Off;
-            this.clientsDataGridView.Location = new System.Drawing.Point(0, 31);
+            this.clientsDataGridView.Location = new System.Drawing.Point(0, 15);
             this.clientsDataGridView.Margin = new System.Windows.Forms.Padding(0);
             this.clientsDataGridView.MinimumSize = new System.Drawing.Size(75, 0);
             this.clientsDataGridView.MultiSelect = false;
@@ -331,6 +346,52 @@
             this.clientsDataGridView.TabStop = false;
             this.clientsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.ClientsDataGridView_CellClick);
             // 
+            // identifier
+            // 
+            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.identifier.HeaderText = "#";
+            this.identifier.MinimumWidth = 28;
+            this.identifier.Name = "identifier";
+            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.identifier.Visible = false;
+            this.identifier.Width = 28;
+            // 
+            // name
+            // 
+            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.name.HeaderText = "Name";
+            this.name.MaxInputLength = 20;
+            this.name.MinimumWidth = 50;
+            this.name.Name = "name";
+            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            // 
+            // color
+            // 
+            this.color.HeaderText = "";
+            this.color.Name = "color";
+            this.color.Visible = false;
+            // 
+            // latency
+            // 
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.latency.DefaultCellStyle = dataGridViewCellStyle2;
+            this.latency.HeaderText = "Ping";
+            this.latency.MinimumWidth = 28;
+            this.latency.Name = "latency";
+            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.latency.Width = 28;
+            // 
+            // dc
+            // 
+            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dc.HeaderText = "DC";
+            this.dc.MinimumWidth = 28;
+            this.dc.Name = "dc";
+            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.dc.Text = "DC";
+            this.dc.Width = 28;
+            // 
             // txtMessage
             // 
             this.txtMessage.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -346,21 +407,6 @@
             this.txtMessage.Enter += new System.EventHandler(this.TxtMessage_Enter);
             this.txtMessage.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtMessage_KeyDown);
             this.txtMessage.Leave += new System.EventHandler(this.TxtMessage_Leave);
-            // 
-            // cmdDisconnect
-            // 
-            this.cmdDisconnect.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmdDisconnect.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.cmdDisconnect.Font = new System.Drawing.Font("Times New Roman", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cmdDisconnect.Location = new System.Drawing.Point(0, 0);
-            this.cmdDisconnect.Margin = new System.Windows.Forms.Padding(0);
-            this.cmdDisconnect.Name = "cmdDisconnect";
-            this.cmdDisconnect.Size = new System.Drawing.Size(80, 18);
-            this.cmdDisconnect.TabIndex = 26;
-            this.cmdDisconnect.TabStop = false;
-            this.cmdDisconnect.Text = "Disconnect All";
-            this.cmdDisconnect.UseVisualStyleBackColor = true;
-            this.cmdDisconnect.Click += new System.EventHandler(this.CmdDisconnect_Click);
             // 
             // splitContainer1
             // 
@@ -378,8 +424,8 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.tableLayoutPanel2);
-            this.splitContainer1.Size = new System.Drawing.Size(484, 499);
-            this.splitContainer1.SplitterDistance = 366;
+            this.splitContainer1.Size = new System.Drawing.Size(484, 569);
+            this.splitContainer1.SplitterDistance = 436;
             this.splitContainer1.TabIndex = 47;
             // 
             // tableLayoutPanel3
@@ -388,14 +434,14 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 150F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel3.Controls.Add(this.splitContainer2, 0, 0);
-            this.tableLayoutPanel3.Controls.Add(this.panel1, 1, 0);
+            this.tableLayoutPanel3.Controls.Add(this.pDrawing, 1, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(484, 366);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(484, 436);
             this.tableLayoutPanel3.TabIndex = 45;
             // 
             // splitContainer2
@@ -408,16 +454,27 @@
             // 
             // splitContainer2.Panel1
             // 
+            this.splitContainer2.Panel1.Controls.Add(this.btnSetDraw);
+            this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
             this.splitContainer2.Panel1.Controls.Add(this.gbSettings);
             // 
             // splitContainer2.Panel2
             // 
-            this.splitContainer2.Panel2.Controls.Add(this.cmdDisconnect);
             this.splitContainer2.Panel2.Controls.Add(this.lblConnections);
             this.splitContainer2.Panel2.Controls.Add(this.clientsDataGridView);
-            this.splitContainer2.Size = new System.Drawing.Size(144, 360);
-            this.splitContainer2.SplitterDistance = 203;
+            this.splitContainer2.Size = new System.Drawing.Size(144, 430);
+            this.splitContainer2.SplitterDistance = 289;
             this.splitContainer2.TabIndex = 32;
+            // 
+            // btnSetDraw
+            // 
+            this.btnSetDraw.Location = new System.Drawing.Point(0, 205);
+            this.btnSetDraw.Name = "btnSetDraw";
+            this.btnSetDraw.Size = new System.Drawing.Size(144, 23);
+            this.btnSetDraw.TabIndex = 0;
+            this.btnSetDraw.Text = "Drawings";
+            this.btnSetDraw.UseVisualStyleBackColor = true;
+            this.btnSetDraw.Click += new System.EventHandler(this.SetDraw_Click);
             // 
             // gbSettings
             // 
@@ -439,7 +496,7 @@
             this.gbSettings.Margin = new System.Windows.Forms.Padding(0);
             this.gbSettings.Name = "gbSettings";
             this.gbSettings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbSettings.Size = new System.Drawing.Size(144, 203);
+            this.gbSettings.Size = new System.Drawing.Size(144, 289);
             this.gbSettings.TabIndex = 0;
             this.gbSettings.TabStop = false;
             // 
@@ -465,16 +522,148 @@
             this.cmdColor.Size = new System.Drawing.Size(25, 20);
             this.cmdColor.TabIndex = 56;
             this.cmdColor.UseVisualStyleBackColor = false;
-            this.cmdColor.Click += new System.EventHandler(this.CmdColor_Click);
+            this.cmdColor.Click += new System.EventHandler(this.CmdPlayerColor_Click);
             // 
-            // panel1
+            // gbDrawings
             // 
-            this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(153, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(328, 360);
-            this.panel1.TabIndex = 33;
+            this.gbDrawings.Controls.Add(this.gbBG);
+            this.gbDrawings.Controls.Add(this.gbBrush);
+            this.gbDrawings.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gbDrawings.Location = new System.Drawing.Point(0, 0);
+            this.gbDrawings.Margin = new System.Windows.Forms.Padding(0);
+            this.gbDrawings.Name = "gbDrawings";
+            this.gbDrawings.Padding = new System.Windows.Forms.Padding(0);
+            this.gbDrawings.Size = new System.Drawing.Size(144, 289);
+            this.gbDrawings.TabIndex = 0;
+            this.gbDrawings.TabStop = false;
+            // 
+            // gbBG
+            // 
+            this.gbBG.Controls.Add(this.btnClearAll);
+            this.gbBG.Controls.Add(this.label4);
+            this.gbBG.Controls.Add(this.btnClear);
+            this.gbBG.Controls.Add(this.btnBGColor);
+            this.gbBG.Location = new System.Drawing.Point(1, 75);
+            this.gbBG.Margin = new System.Windows.Forms.Padding(0);
+            this.gbBG.Name = "gbBG";
+            this.gbBG.Size = new System.Drawing.Size(143, 76);
+            this.gbBG.TabIndex = 6;
+            this.gbBG.TabStop = false;
+            this.gbBG.Text = "Background";
+            // 
+            // btnClearAll
+            // 
+            this.btnClearAll.Location = new System.Drawing.Point(70, 40);
+            this.btnClearAll.Name = "btnClearAll";
+            this.btnClearAll.Size = new System.Drawing.Size(68, 25);
+            this.btnClearAll.TabIndex = 3;
+            this.btnClearAll.Text = "Clear All";
+            this.btnClearAll.UseVisualStyleBackColor = true;
+            this.btnClearAll.Visible = false;
+            this.btnClearAll.Click += new System.EventHandler(this.CmdClearAll_Click);
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(50, 20);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(37, 13);
+            this.label4.TabIndex = 2;
+            this.label4.Text = "Colour";
+            // 
+            // btnClear
+            // 
+            this.btnClear.Location = new System.Drawing.Point(4, 40);
+            this.btnClear.Name = "btnClear";
+            this.btnClear.Size = new System.Drawing.Size(67, 25);
+            this.btnClear.TabIndex = 2;
+            this.btnClear.Text = "Clear Own";
+            this.btnClear.UseVisualStyleBackColor = true;
+            this.btnClear.Click += new System.EventHandler(this.CmdClear_Click);
+            // 
+            // btnBGColor
+            // 
+            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
+            this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBGColor.Location = new System.Drawing.Point(5, 16);
+            this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnBGColor.Name = "btnBGColor";
+            this.btnBGColor.Size = new System.Drawing.Size(42, 20);
+            this.btnBGColor.TabIndex = 0;
+            this.btnBGColor.UseVisualStyleBackColor = false;
+            // 
+            // gbBrush
+            // 
+            this.gbBrush.Controls.Add(this.label2);
+            this.gbBrush.Controls.Add(this.label1);
+            this.gbBrush.Controls.Add(this.btnColor);
+            this.gbBrush.Controls.Add(this.nudSize);
+            this.gbBrush.Location = new System.Drawing.Point(1, 0);
+            this.gbBrush.Margin = new System.Windows.Forms.Padding(0);
+            this.gbBrush.Name = "gbBrush";
+            this.gbBrush.Size = new System.Drawing.Size(143, 76);
+            this.gbBrush.TabIndex = 5;
+            this.gbBrush.TabStop = false;
+            this.gbBrush.Text = "Brush";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(50, 45);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(27, 13);
+            this.label2.TabIndex = 3;
+            this.label2.Text = "Size";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(50, 20);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(37, 13);
+            this.label1.TabIndex = 2;
+            this.label1.Text = "Colour";
+            // 
+            // btnColor
+            // 
+            this.btnColor.BackColor = System.Drawing.Color.Green;
+            this.btnColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnColor.Location = new System.Drawing.Point(5, 16);
+            this.btnColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnColor.Name = "btnColor";
+            this.btnColor.Size = new System.Drawing.Size(42, 20);
+            this.btnColor.TabIndex = 0;
+            this.btnColor.UseVisualStyleBackColor = false;
+            this.btnColor.Click += new System.EventHandler(this.CmdDrawColor_Click);
+            // 
+            // nudSize
+            // 
+            this.nudSize.Location = new System.Drawing.Point(5, 43);
+            this.nudSize.Margin = new System.Windows.Forms.Padding(0);
+            this.nudSize.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudSize.Name = "nudSize";
+            this.nudSize.Size = new System.Drawing.Size(42, 20);
+            this.nudSize.TabIndex = 1;
+            this.nudSize.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
+            // pDrawing
+            // 
+            this.pDrawing.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.pDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pDrawing.Location = new System.Drawing.Point(153, 3);
+            this.pDrawing.Name = "pDrawing";
+            this.pDrawing.Size = new System.Drawing.Size(328, 430);
+            this.pDrawing.TabIndex = 33;
+            this.pDrawing.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseDown);
+            this.pDrawing.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseMove);
             // 
             // tableLayoutPanel2
             // 
@@ -511,56 +700,10 @@
             this.tPing.Interval = 1000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
             // 
-            // identifier
-            // 
-            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.identifier.HeaderText = "#";
-            this.identifier.MinimumWidth = 28;
-            this.identifier.Name = "identifier";
-            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.identifier.Visible = false;
-            this.identifier.Width = 28;
-            // 
-            // name
-            // 
-            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.name.HeaderText = "Name";
-            this.name.MaxInputLength = 20;
-            this.name.MinimumWidth = 50;
-            this.name.Name = "name";
-            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            // 
-            // color
-            // 
-            this.color.HeaderText = "";
-            this.color.Name = "color";
-            this.color.Visible = false;
-            // 
-            // latency
-            // 
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.latency.DefaultCellStyle = dataGridViewCellStyle1;
-            this.latency.HeaderText = "Ping";
-            this.latency.MinimumWidth = 28;
-            this.latency.Name = "latency";
-            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.latency.Width = 28;
-            // 
-            // dc
-            // 
-            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.dc.HeaderText = "DC";
-            this.dc.MinimumWidth = 28;
-            this.dc.Name = "dc";
-            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.dc.Text = "DC";
-            this.dc.Width = 28;
-            // 
             // GameServer
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(484, 499);
+            this.ClientSize = new System.Drawing.Size(484, 569);
             this.Controls.Add(this.splitContainer1);
             this.Margin = new System.Windows.Forms.Padding(0);
             this.MinimumSize = new System.Drawing.Size(500, 400);
@@ -585,6 +728,12 @@
             this.splitContainer2.ResumeLayout(false);
             this.gbSettings.ResumeLayout(false);
             this.gbSettings.PerformLayout();
+            this.gbDrawings.ResumeLayout(false);
+            this.gbBG.ResumeLayout(false);
+            this.gbBG.PerformLayout();
+            this.gbBrush.ResumeLayout(false);
+            this.gbBrush.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudSize)).EndInit();
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel2.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
@@ -611,14 +760,14 @@
         private System.Windows.Forms.Label lblAddress;
         private System.Windows.Forms.Button cmdHost;
         private System.Windows.Forms.Button cmdJoin;
-        private System.Windows.Forms.Button cmdDisconnect;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel pDrawing;
         private System.Windows.Forms.GroupBox gbSettings;
+        private System.Windows.Forms.GroupBox gbDrawings;
         private System.Windows.Forms.RichTextBox txtLobby;
         private System.Windows.Forms.Timer tPing;
         private System.Windows.Forms.Label lblColor;
@@ -628,6 +777,17 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn color;
         private System.Windows.Forms.DataGridViewTextBoxColumn latency;
         private System.Windows.Forms.DataGridViewButtonColumn dc;
+        private System.Windows.Forms.Button btnSetDraw;
+        private System.Windows.Forms.Button btnClear;
+        private System.Windows.Forms.NumericUpDown nudSize;
+        private System.Windows.Forms.Button btnColor;
+        private System.Windows.Forms.GroupBox gbBG;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Button btnBGColor;
+        private System.Windows.Forms.GroupBox gbBrush;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button btnClearAll;
     }
 }
 
