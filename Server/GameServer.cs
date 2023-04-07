@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -27,6 +28,9 @@ namespace Server
         public class DrawPackage
         {
             public string PenColor { get; set; }
+            public string BrushColor { get; set; }
+            public string DrawType { get; set; }
+            public bool Fill { get; set; }
             public int PenSize { get; set; }
             public Point PT1 { get; set; }
             public Point PT2 { get; set; }
@@ -75,20 +79,131 @@ namespace Server
                 static extern bool AllocConsole();
         */
 
+
+        Bitmap BM;
+        Graphics G;
+        Point PT2, PT1;
+        bool paint;
+        int x, y, PT1X, PT1Y, PT2X, PT2Y;
+        /*
+                private void picDrawing_MouseDown(object sender, MouseEventArgs e)
+                {
+                    paint = true;
+                    PT1 = e.Location;
+
+                    PT1X = e.X;
+                    PT1Y = e.Y;
+                }
+        */
+        /*
+                private void picDrawing_MouseMove(object sender, MouseEventArgs e)
+                {
+                    if (paint) {
+                        Pen pen = new(btnColor.BackColor,(int)nudSize.Value);
+
+                        switch (cbBType.Text) {
+                            case "Circle":
+                            case "Line":
+                            case "Rectangle":
+                                break;
+                            default:                        
+                                PT2 = e.Location;
+                                G.DrawLine(pen,PT2,PT1);
+                                PT1 = PT2;
+                                break;
+                        }
+
+                    }
+                    picDrawing.Refresh();
+
+                    x = e.X;
+                    y = e.Y;
+                    PT2X = e.X - PT1X;
+                    PT2Y = e.Y - PT1Y;
+
+                }
+        */
+        /*
+                private void picDrawing_MouseUp(object sender, MouseEventArgs e)
+                {
+                    paint = false;
+                    Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
+
+                    PT2X = x - PT1X;
+                    PT2Y = y - PT1Y;
+
+                    switch (cbBType.Text) {
+                        case "Circle":
+                            G.DrawEllipse(pen,PT1X,PT1Y,PT2X,PT2Y);
+                            break;
+                        case "Line":
+                            G.DrawLine(pen,PT1X,PT1Y,x,y);
+                            break;
+                        case "Rectangle":
+                            G.DrawRectangle(pen, PT1X, PT1Y, PT2X, PT2Y);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+        */
+        /*
+                private void picDrawing_Paint(object sender, PaintEventArgs e)
+                {
+                    Graphics G = e.Graphics;
+                    Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
+                    if (paint) {
+                        switch (cbBType.Text) {
+                            case "Circle":
+                                G.DrawEllipse(pen, PT1.X, PT1.Y, PT2.X, PT2.Y);
+                                break;
+                            case "Line":
+                                G.DrawLine(pen, PT1.X, PT1.Y, x, y);
+                                break;
+                            case "Rectangle":
+                                G.DrawRectangle(pen, PT1.X, PT1.Y, PT2.X, PT2.Y);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+        */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         // Form
         public GameServer()
         {
             InitializeComponent();
             //AllocConsole();
+            BM = new(picDrawing.Width, picDrawing.Height);
+            G = Graphics.FromImage(BM);
+            G.Clear(Color.White);
+            picDrawing.Image = BM;
         }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // Close connection on Exit 
         {
+            listening = false;
             if (connected) {
                 clientObject.client.Close();
-            } else {
-                listening = false;
-                Disconnect();
             }
+            Disconnect();
         }
 
         // Console & Chats
@@ -102,56 +217,34 @@ namespace Server
                 }
             });
         }
-        private void PublicChat(string username, string msg = "")                                   // Console message / Clear if empty 
+        private void PostChat(string username, string msg = "")                                     // Post the message / Clear if empty 
         {
             if (msg == null || msg.Length < 1) {
                 txtLobby.Clear();
             } else {
-                string formattedMSG = "";
-                if (username.Contains("to you")) {
+                string formattedMSG = "";                                                           // Format Messages
+                if (username.Contains("to you")) {                                                  // Private Messages
                     username = username.Replace("to you", "").Trim();
                     formattedMSG = string.Format("{0}[{1}] {2} to you: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-                } else { formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg); }
+                    if (username == txtName.Text.Trim()) { formattedMSG = string.Format("{0}[{1}] You say to yourself: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg); }
+                } else {                                                                            // Public Messages
+                    formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
+                }
 
-                string playerColor = "255,0,0,0,0";
+                string playerColor = "255,0,0,0,0";                                                 // Determine color for post using Grid
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {
                     if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
                         playerColor = row.Cells[2].Value?.ToString();
                         break;
                     }
                 }
-                string[] colParts = playerColor.Split(',');
+                string[] colParts = playerColor.Split(',');                                         // Format string to Color
                 Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
-                txtLobby.Invoke((MethodInvoker)delegate {
+                txtLobby.Invoke((MethodInvoker)delegate {                                           // Post actual msg
                     txtLobby.AppendText(formattedMSG, msgColor);
-                    txtLobby.Focus();
-                    txtLobby.SelectionStart = txtLobby.Text.Length;
-                    txtMessage.Focus();
-                });
-            }
-        }
-        private void PrivateChat(string username, string msg = "")                                  // Console message / Clear if empty 
-        {
-            if (msg == null || msg.Length < 1) {
-                txtLobby.Clear();
-            } else {
-
-                if (username.Contains("to you")) { username = username.Replace("to you", "").Trim(); }
-                string formattedMSG = string.Format("{0}[{1}] {2} to you: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-                string playerColor = "255,0,0,0,0";
-                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                    if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
-                        playerColor = row.Cells[2].Value?.ToString();
-
-                    }
-                }
-                string[] colParts = playerColor.Split(',');
-                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
-                txtLobby.Invoke((MethodInvoker)delegate {
-                    txtLobby.AppendText(formattedMSG, msgColor);
-                    txtLobby.Focus();
-                    txtLobby.SelectionStart = txtLobby.Text.Length;
-                    txtMessage.Focus();
+                    txtLobby.Focus();                                                               // Set Focus to lobby to
+                    txtLobby.SelectionStart = txtLobby.Text.Length;                                 // scroll lobby to end
+                    txtMessage.Focus();                                                             // Leave focus for next message
                 });
             }
         }
@@ -173,9 +266,9 @@ namespace Server
                 e.Handled = true;
                 e.SuppressKeyPress = true;
                 string msg = txtMessage.Text;
+                txtMessage.Clear();
                 if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
-                    txtMessage.Clear();
-                    PublicChat(txtName.Text.Trim(), msg);
+                    PostChat(txtName.Text.Trim(), msg);
                     if (listening) {
                         HostSendPublic(string.Format("{0}: {1}", txtName.Text.Trim(), msg));
                     }
@@ -196,7 +289,8 @@ namespace Server
                                             Console(SystemMsg("PM Sent."));
                                         }
                                     } else {
-                                        txtLobby.AppendText(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM));
+                                        PostChat(txtName.Text.Trim() + "to you", hostPM);
+                                        //txtLobby.AppendText(string.Format("{0}{1} to you: {2}", Environment.NewLine, txtName.Text.Trim(), hostPM));
                                     }
                                 }
                             }
@@ -233,8 +327,7 @@ namespace Server
         // DataGrid management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
-            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;         // convert COLOURS to string  - From Color to ARGB
-                                                                                            //Color myColor = Color.FromArgb(cA,cR,cG,cB);                                  // From ARGB to Color
+            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;                 // convert COLOURS to string  - From Color to ARGB
             string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
             clientsDataGridView.Invoke((MethodInvoker)delegate {
                 if (clientsDataGridView.RowCount > (int)id) {
@@ -295,7 +388,7 @@ namespace Server
                     int colG = Convert.ToInt32(argbColor[2]);
                     int colB = Convert.ToInt32(argbColor[3]);
 
-                    PlayerPackage player = new() {                                                      // Create a player object to send
+                    PlayerPackage player = new() {                                                  // Create a player object to send
                         Id = row,
                         Name = clientsDataGridView.Rows[row].Cells[1].Value.ToString(),
                         Color = new int[] { colA, colR, colG, colB }
@@ -307,28 +400,32 @@ namespace Server
         }
 
 
-
         /* Drawing */
         private bool Drawing = false;
-        Point mouseLocA;
-        Point mouseLocB;
+        private bool ShapeDrawing = false;
+        Point mousePT1;
+        Point mousePT2;
         private void SetDraw_Click(object sender, EventArgs e)                                      // Toggles Settings and Drawings Group Boxes 
         {
             if (!gbSettings.Visible) {
                 Drawing = gbDrawings.Visible = false;
                 gbSettings.Visible = true;
+                picDrawing.Visible = false;
                 btnSetDraw.Text = "Drawings";
             } else {
                 Drawing = gbDrawings.Visible = true;
                 gbSettings.Visible = false;
+                picDrawing.Visible = true;
                 btnSetDraw.Text = "Settings";
             }
         }
-        private void CmdDrawColor_Click(object sender, EventArgs e)                                 // Set Drawing Color 
+        private void DrawColor_Click(object sender, EventArgs e)                                    // Set Drawing Colour 
         {
-            using var diag = new ColorDialog();
-            if (diag.ShowDialog() == DialogResult.OK)
-                btnColor.BackColor = diag.Color;
+            SetColour(sender);
+        }
+        private void FillColor_Click(object sender, EventArgs e)                                    // Set Fill Colour 
+        {
+            SetColour(sender);
         }
         private void CmdClear_Click(object sender, EventArgs e)                                     // Clears the gfx 
         {
@@ -341,71 +438,293 @@ namespace Server
             HostSendPublic("CMD:ClearDrawing");
         }
 
-        private void DrawPanel_MouseDown(object sender, MouseEventArgs e)                           // Begin Drawing 
+        private void DrawPanel_MouseDown(object sender, MouseEventArgs e)                           // Start Drawing points 
         {
-            if (Drawing) {
-                mouseLocA = e.Location;
-                mouseLocB = e.Location;
-                LocalDraw();
+            DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package
+            if (Drawing && e.Button == MouseButtons.Left) {
+                switch (cbBType.Text) {
+                    case "Line":
+                    case "Rectangle":
+                    case "Triangle":
+                    case "Circle":
+                        ShapeDrawing = true;                                                        // Shape Toggle
+                        mousePT1 = e.Location;
+                        break;
+                    default:
+                        mousePT1 = e.Location;
+                        mousePT2 = e.Location;
+                        DrawShape(localDP);                                                         // Draw it
+                        SendShape(localDP);                                                         // Send it
+                        break;
+                }
             }
         }
+        private void picDrawing_MouseDown(object sender, MouseEventArgs e)
+        {
+            paint = true;
+            PT1 = e.Location;
+
+            PT1X = e.X;
+            PT1Y = e.Y;
+        }
+
         private void DrawPanel_MouseMove(object sender, MouseEventArgs e)                           // Continue Drawing 
         {
-            if (Drawing) {
-                if (e.Button == MouseButtons.Left) {
-                    mouseLocA = mouseLocB;
-                    mouseLocB = e.Location;
-                    LocalDraw();
+            DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package 
+            if (Drawing && e.Button == MouseButtons.Left) {
+                switch (cbBType.Text) {
+                    case "Line":
+                    case "Rectangle":
+                    case "Triangle":
+                    case "Circle":
+                        mousePT2 = e.Location;
+                        break;
+                    default:
+                        mousePT1 = mousePT2;
+                        mousePT2 = e.Location;
+                        DrawShape(localDP);                                                         // Draw it
+                        SendShape(localDP);                                                         // Send it
+                        break;
+                }
+            }
+        }
+        private void picDrawing_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (paint) {
+                Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
+
+                switch (cbBType.Text) {
+                    case "Circle":
+                    case "Line":
+                    case "Rectangle":
+                        PT2 = e.Location;
+                        break;
+                    default:
+                        PT2 = e.Location;
+                        G.DrawLine(pen, PT2, PT1);
+                        PT1 = PT2;
+                        break;
+                }
+
+            }
+            picDrawing.Refresh();
+
+            x = e.X;
+            y = e.Y;
+            PT2X = e.X - PT1X;
+            PT2Y = e.Y - PT1Y;
+
+        }
+
+        private void DrawPanel_MouseUp(object sender, MouseEventArgs e)                             // Draw shape on Mouse Up 
+        {
+            DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package
+            if (Drawing && ShapeDrawing && e.Button == MouseButtons.Left) {
+                switch (cbBType.Text) {
+                    case "Line":
+                    case "Circle":
+                    case "Rectangle":
+                    case "Triangle":
+                        ShapeDrawing = false;                                                       // Shape Toggle
+                        goto default;
+                    default:
+                        DrawShape(localDP);                                                         // Draw it
+                        SendShape(localDP);                                                         // Send it
+                        break;
+                }
+            }
+        }
+        private void picDrawing_MouseUp(object sender, MouseEventArgs e)
+        {
+            paint = false;
+            Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
+
+            PT2X = x - PT1X;
+            PT2Y = y - PT1Y;
+
+            switch (cbBType.Text) {
+                case "Circle":
+                    G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);
+                    break;
+                case "Line":
+                    G.DrawLine(pen, PT1X, PT1Y, x, y);
+                    break;
+                case "Rectangle":
+                    var rc = new Rectangle(
+                        Math.Min(PT1.X, PT2.X),
+                        Math.Min(PT1.Y, PT2.Y),
+                        Math.Abs(PT2.X - PT1.X),
+                        Math.Abs(PT2.Y - PT1.Y));
+                    //e.Graphics.FillRectangle(brush, rc);
+                    G.DrawRectangle(pen, rc);
+                    //G.DrawRectangle(pen, PT1X, PT1Y, PT2X, PT2Y);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void pDrawing_Paint(object sender, PaintEventArgs e)
+        {
+            /*            if (Drawing) {
+                            DrawPackage drawPackage = PrepareDrawPackage();
+
+                            using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);          // Set Pen
+                            pen.StartCap = LineCap.Round;
+                            pen.EndCap = LineCap.Round;
+
+                            SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                              // Set Brush
+
+                            Graphics g = e.Graphics;                              // Set Canvas
+                            g.SmoothingMode = SmoothingMode.AntiAlias;
+                            int radius = (drawPackage.PT2.X - drawPackage.PT1.X);
+
+
+
+                            switch (drawPackage.DrawType) {
+                                case "Line":
+                                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);
+                                    break;
+                                case "Circle":                        
+                                    g.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2.X, drawPackage.PT2.Y);
+                                    break;
+                                case "Rectangle":
+
+                                    break;
+                                case "Triangle":
+
+                                    break;
+                                default:
+                                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);                              // Remote Pen Draw
+                                    break;
+                            }
+                        } */
+        }
+        private void picDrawing_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics G = e.Graphics;
+            Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
+            if (paint) {
+                switch (cbBType.Text) {
+                    case "Circle":
+                        G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);
+                        break;
+                    case "Line":
+                        G.DrawLine(pen, PT1X, PT1Y, x, y);
+                        break;
+                    case "Rectangle":
+                        var rc = new Rectangle(
+                            Math.Min(PT1.X, PT2.X),
+                            Math.Min(PT1.Y, PT2.Y),
+                            Math.Abs(PT2.X - PT1.X),
+                            Math.Abs(PT2.Y - PT1.Y));
+                        //e.Graphics.FillRectangle(brush, rc);
+                        G.DrawRectangle(pen, rc);
+                        /*G.DrawRectangle(pen, PT1X, PT1Y, PT2X, PT2Y);*/
+                        break;
+                    default:
+                        break;
                 }
             }
         }
 
-        private void LocalDraw()                                                                    // Self Draw Routine 
+        private DrawPackage PrepareDrawPackage()                                                    // Create a Draw Pakage 
         {
-            if (Drawing) {
-                using var pen = new Pen(btnColor.BackColor, (int)nudSize.Value);                    // New Pen
-                using var gfx = pDrawing.CreateGraphics();                                            // New Graphic canvas
-                gfx.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;                              // Circle brush
-                pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-                gfx.DrawLine(pen, mouseLocA, mouseLocB);                                            // Draw the line
+            int cA = btnColor.BackColor.A; int cB = btnColor.BackColor.B; int cR = btnColor.BackColor.R; int cG = btnColor.BackColor.G;
+            string pcString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);                     // convert COLOURS to string  - From Color to ARGB
+            int bA = btnFillColor.BackColor.A; int bB = btnFillColor.BackColor.B; int bR = btnFillColor.BackColor.R; int bG = btnFillColor.BackColor.G;
+            string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert COLOURS to string  - From Color to ARGB
 
-                int cA = btnColor.BackColor.A; int cB = btnColor.BackColor.B; int cR = btnColor.BackColor.R; int cG = btnColor.BackColor.G;
-                string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);              // convert COLOURS to string  - From Color to ARGB
+            DrawPackage drawPack = new() {                                                          // Prep Draw Package for send
+                PenColor = pcString,
+                PenSize = (int)nudSize.Value,
+                PT1 = mousePT1,
+                PT2 = mousePT2,
+                BrushColor = bcString,
+                DrawType = cbBType.Text,
+                Fill = cbFillDraw.Checked
+            };
 
-                DrawPackage drawPack = new() {                                                      // Prep Draw Package for send
-                    PenColor = colorString,
-                    PenSize = (int)nudSize.Value,
-                    PT1 = mouseLocA,
-                    PT2 = mouseLocB
-                };
-                string json = JsonConvert.SerializeObject(drawPack);                                // Format the Package
-                if (listening) {
-                    HostSendPublic(json + "\n");                                                    // Host Send Draw Package
-                } else if (connected) {
-                    Send(json + "\n");                                                              // Client Send Draw Package
-                }
+            return drawPack;                                                                            // Return Package to caller
+        }
+        private Color ArgbColor(string wholeColor)                                                  // Converts String in "A,R,G,B" to Color 
+        {
+            string[] ColorParts = wholeColor.Split(',');                                            // Seperate colour parts for Pen
+            int ColA = Convert.ToInt32(ColorParts[0]);
+            int ColR = Convert.ToInt32(ColorParts[1]);
+            int ColG = Convert.ToInt32(ColorParts[2]);
+            int ColB = Convert.ToInt32(ColorParts[3]);
+            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);
+            return argbColor;
+        }
+        private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
+        {
+            using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);          // Set Pen
+            pen.StartCap = LineCap.Round;
+            pen.EndCap = LineCap.Round;
+
+            SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                              // Set Brush
+
+            using var g = pDrawing.CreateGraphics();                                                // Set Canvas
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            int radius = (drawPackage.PT2.X - drawPackage.PT1.X);
+            switch (drawPackage.DrawType) {
+                case "Line":
+                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);
+                    break;
+                case "Circle":
+                    ShapeDrawing = false;
+                    if (drawPackage.Fill) {
+                        g.FillEllipse(brush, drawPackage.PT2.X - radius, drawPackage.PT2.Y - radius, radius + radius, radius + radius);
+                    }
+                    g.DrawEllipse(pen, drawPackage.PT2.X - radius, drawPackage.PT2.Y - radius, radius + radius, radius + radius);
+                    break;
+                case "Rectangle":
+                    ShapeDrawing = false;
+                    Point urCorner = new(drawPackage.PT1.X, drawPackage.PT2.Y);                     // set missing path points
+                    Point llCorner = new(drawPackage.PT2.X, drawPackage.PT1.Y);
+                    var rPath = new GraphicsPath();
+                    rPath.AddLines(new PointF[] {
+                            drawPackage.PT1, urCorner, drawPackage.PT2, llCorner,
+                        });
+                    rPath.CloseFigure();
+                    if (drawPackage.Fill) {
+                        g.FillPath(brush, rPath);                                                   // Fill
+                    }
+                    g.DrawPath(pen, rPath);                                                         // Draw
+                    break;
+                case "Triangle":
+                    ShapeDrawing = false;
+                    double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
+                    double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
+                    Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
+                    Point mid = new((int)midX, drawPackage.PT1.Y);
+                    var tPath = new GraphicsPath();
+                    tPath.AddLines(new PointF[] {
+                            first, mid, drawPackage.PT2,
+                        });
+                    tPath.CloseFigure();
+                    if (drawPackage.Fill) {
+                        g.FillPath(brush, tPath);                                                   // Fill
+                    }
+                    g.DrawPath(pen, tPath);                                                         // Draw
+                    break;
+                default:
+                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);                              // Remote Pen Draw
+                    break;
             }
         }
-        private void RemoteDraw(DrawPackage remoteDP)                                               // Receive Draw Routine 
+        private void SendShape(DrawPackage drawPackage)                                             // Send shape draw package 
         {
-            if (Drawing) {
-                string[] stringColor = remoteDP.PenColor.Split(',');    // Seperate colour parts to INT components
-                int colA = Convert.ToInt32(stringColor[0]);
-                int colR = Convert.ToInt32(stringColor[1]);
-                int colG = Convert.ToInt32(stringColor[2]);
-                int colB = Convert.ToInt32(stringColor[3]);
-                Color argbColor = Color.FromArgb(colA, colR, colG, colB);
-
-                using var pen = new Pen(argbColor, remoteDP.PenSize);
-                using var gfx = pDrawing.CreateGraphics();
-                gfx.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
-                pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-
-                gfx.DrawLine(pen, remoteDP.PT1, remoteDP.PT2);
+            string json = JsonConvert.SerializeObject(drawPackage);                                 // Format the Package 
+            if (listening) {
+                HostSendPublic(json + "\n");                                                        // Host Send Draw Package
+            } else if (connected) {
+                Send(json + "\n");                                                                  // Client Send Draw Package
             }
         }
+
+
         /* End Drawing */
 
 
@@ -471,6 +790,26 @@ namespace Server
                     Console(SystemMsg("Server has stopped"));
                 }
             });
+        }
+        private void Disconnect(long id = -1)                                                       // Disconnect ID / All if empty 
+        {
+            if (disconnect == null || !disconnect.IsAlive) {
+                disconnect = new Thread(() => {
+                    if (id > 0) {
+                        players.TryGetValue(id, out MyPlayers obj);
+                        obj.client.Close();
+                        RemoveFromGrid(obj.id);
+                    } else {
+                        foreach (KeyValuePair<long, MyPlayers> obj in players) {
+                            obj.Value.client.Close();
+                            RemoveFromGrid(obj.Value.id);
+                        }
+                    }
+                }) {
+                    IsBackground = true
+                };
+                disconnect.Start();
+            }
         }
 
         private void Connection(IPAddress ip, int port, string username, string roomkey)            // C - Single TCP to host 
@@ -583,27 +922,6 @@ namespace Server
             return lowestFreeID;
         }
 
-        private void Disconnect(long id = -1)                                                       // Disconnect ID / All if empty 
-        {
-            if (disconnect == null || !disconnect.IsAlive) {
-                disconnect = new Thread(() => {
-                    if (id > 0) {
-                        players.TryGetValue(id, out MyPlayers obj);
-                        obj.client.Close();
-                        RemoveFromGrid(obj.id);
-                    } else {
-                        foreach (KeyValuePair<long, MyPlayers> obj in players) {
-                            obj.Value.client.Close();
-                            RemoveFromGrid(obj.Value.id);
-                        }
-                    }
-                }) {
-                    IsBackground = true
-                };
-                disconnect.Start();
-            }
-        }
-
         // Ping
         private void Ping_Tick(object sender, EventArgs e)                                          // Timer for Pings 
         {
@@ -620,20 +938,27 @@ namespace Server
             Ping ping = new();
 
             for (int i = 0; i < 4; i++) {
-                PingReply reply = ping.Send(address, 1000);
+                PingReply reply = ping.Send(address, 999);
                 if (reply.Status == IPStatus.Success) {
                     totalTime += reply.RoundtripTime;
                 }
             }
             return totalTime / 4;
         }
-        static string GetPlayerAddress(int id)                                                      // Get IP Address for Ping 
+        private string GetPlayerAddress(int id)                                                      // Get IP Address for Ping 
         {
             if (id != 0) {
-                players.TryGetValue(id, out MyPlayers obj);
-                string ipAddress = ((IPEndPoint)obj.client.Client.RemoteEndPoint).Address.ToString();
-                return ipAddress;
+                try {
+                    players.TryGetValue(id, out MyPlayers obj);
+                    string ipAddress = ((IPEndPoint)obj.client.Client.RemoteEndPoint).Address.ToString();
+                    return ipAddress;
+                } catch (Exception ex) {
+                    Console(ErrorMsg(ex.Message));
+                    return "127.0.0.1";
+                }
+
             } else return "127.0.0.1";
+
         }
 
         // Client Send
@@ -877,7 +1202,8 @@ namespace Server
                                         obj.handle.Set();
                                         return;
                                     } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
-                                        PrivateChat(obj.username.ToString(), pMSG[2]);              // Post Host PM 
+                                        PostChat(obj.username.ToString() + "to you", pMSG[2]);
+                                        /*PrivateChat(obj.username.ToString(), pMSG[2]);              // Post Host PM */
                                         obj.data.Clear();
                                         obj.handle.Set();
                                         return;
@@ -892,7 +1218,7 @@ namespace Server
                             // Host receive Drawing
                             if (clientData.StartsWith("{\"PenColor\"")) {
                                 DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(clientData);
-                                RemoteDraw(remoteDP);
+                                DrawShape(remoteDP);
                                 HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
                                 obj.data.Clear();
                                 obj.handle.Set();
@@ -900,8 +1226,9 @@ namespace Server
                             }
 
                             // Host Receive - Public Message
-                            PublicChat(obj.username.ToString(), obj.data.ToString());               // Host post
-                            HostSendPublic(obj.data.ToString(), obj.id);                            // Host relay public message to other clients
+                            PostChat(obj.username.ToString(), obj.data.ToString());               // Host post
+                            HostSendPublic(string.Format("{0}:{1}", obj.username, obj.data.ToString()), obj.id);                            // Host relay public message to other clients
+
                             obj.data.Clear();
                             obj.handle.Set();
                         }
@@ -915,7 +1242,7 @@ namespace Server
                     obj.handle.Set();
                 }
             } else {                                                                                // Client stream reader
-                if (clientObject.client == null) { return; }
+                if (clientObject == null) { return; }
                 int bytes = 0;
                 if (clientObject.client.Connected) {
                     try {
@@ -956,7 +1283,7 @@ namespace Server
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
-                                    RemoteDraw(remoteDP);
+                                    DrawShape(remoteDP);
                                 }
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
@@ -980,7 +1307,7 @@ namespace Server
                             }
 
                             string[] dataParts = hostData.Split(':');
-                            PublicChat(dataParts[0], dataParts[1]);                                 // Client - Public Message
+                            PostChat(dataParts[0], dataParts[1]);                                 // Client - Public Message
                             clientObject.data.Clear();
                             clientObject.handle.Set();
                         }
@@ -995,10 +1322,24 @@ namespace Server
                 }
             }
         }
-                                                                                                    // / *** READ ***/ 
+        // / *** READ ***/ 
         /* END NETWORK */
 
 
+
+        /* Classes and Routines */
+        private void SetColour(object sender)                                                       // Set's all Colour related Buttons 
+        {
+            Button clickedButton = (Button)sender;
+            ColorDialog diag = new() {
+                AllowFullOpen = true,
+                ShowHelp = true,
+                Color = clickedButton.BackColor                                                     // Sets initial color to current button backcolor             
+            };
+            //using var diag = new ColorDialog();
+            if (diag.ShowDialog() == DialogResult.OK)
+                clickedButton.BackColor = diag.Color;
+        }
 
 
         /* Controls */
@@ -1025,18 +1366,15 @@ namespace Server
         private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
         {
             if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
-            if (tabSections.SelectedTab.Name == "tLobby") { PublicChat(null, null); }
+            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(null, null); }
         }
-        private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser 
+
+
+
+        private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser / set starting brush to same
         {
-            ColorDialog MyDialog = new() {
-                AllowFullOpen = true,
-                ShowHelp = true,
-                Color = cmdColor.BackColor                                                          // Sets the initial color select to the current text color.             
-            };
-            if (MyDialog.ShowDialog() == DialogResult.OK) {                                         // Update the text box color if the user clicks OK
-                btnColor.BackColor = cmdColor.BackColor = MyDialog.Color;
-            }
+            SetColour(sender);
+            btnColor.BackColor = cmdColor.BackColor;
         }
         private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles RoomKey Mask 
         {
@@ -1183,6 +1521,7 @@ namespace Server
             }
         }
         /* Controls */
+
 
 
     }

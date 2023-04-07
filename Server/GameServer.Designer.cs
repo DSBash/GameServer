@@ -68,11 +68,16 @@
             this.btnClear = new System.Windows.Forms.Button();
             this.btnBGColor = new System.Windows.Forms.Button();
             this.gbBrush = new System.Windows.Forms.GroupBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.btnFillColor = new System.Windows.Forms.Button();
+            this.cbFillDraw = new System.Windows.Forms.CheckBox();
+            this.cbBType = new System.Windows.Forms.ComboBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.btnColor = new System.Windows.Forms.Button();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
             this.pDrawing = new System.Windows.Forms.Panel();
+            this.picDrawing = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
@@ -94,6 +99,8 @@
             this.gbBG.SuspendLayout();
             this.gbBrush.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSize)).BeginInit();
+            this.pDrawing.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.picDrawing)).BeginInit();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -122,7 +129,7 @@
             this.tabSections.Name = "tabSections";
             this.tabSections.Padding = new System.Drawing.Point(0, 0);
             this.tabSections.SelectedIndex = 0;
-            this.tabSections.Size = new System.Drawing.Size(484, 103);
+            this.tabSections.Size = new System.Drawing.Size(726, 103);
             this.tabSections.TabIndex = 45;
             this.tabSections.MouseClick += new System.Windows.Forms.MouseEventHandler(this.TabSections_MouseClick);
             // 
@@ -131,7 +138,7 @@
             this.tConsole.Controls.Add(this.txtConsole);
             this.tConsole.Location = new System.Drawing.Point(4, 22);
             this.tConsole.Name = "tConsole";
-            this.tConsole.Size = new System.Drawing.Size(476, 77);
+            this.tConsole.Size = new System.Drawing.Size(718, 77);
             this.tConsole.TabIndex = 0;
             this.tConsole.Text = "Console";
             this.tConsole.UseVisualStyleBackColor = true;
@@ -146,7 +153,7 @@
             this.txtConsole.Name = "txtConsole";
             this.txtConsole.ReadOnly = true;
             this.txtConsole.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtConsole.Size = new System.Drawing.Size(476, 77);
+            this.txtConsole.Size = new System.Drawing.Size(718, 77);
             this.txtConsole.TabIndex = 25;
             this.txtConsole.TabStop = false;
             this.txtConsole.Text = "SYSTEM: An example of system text.";
@@ -156,7 +163,7 @@
             this.tLobby.Controls.Add(this.txtLobby);
             this.tLobby.Location = new System.Drawing.Point(4, 22);
             this.tLobby.Name = "tLobby";
-            this.tLobby.Size = new System.Drawing.Size(476, 77);
+            this.tLobby.Size = new System.Drawing.Size(718, 77);
             this.tLobby.TabIndex = 1;
             this.tLobby.Text = "Lobby";
             this.tLobby.UseVisualStyleBackColor = true;
@@ -167,7 +174,7 @@
             this.txtLobby.Location = new System.Drawing.Point(0, 0);
             this.txtLobby.Name = "txtLobby";
             this.txtLobby.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.txtLobby.Size = new System.Drawing.Size(476, 77);
+            this.txtLobby.Size = new System.Drawing.Size(718, 77);
             this.txtLobby.TabIndex = 0;
             this.txtLobby.Text = "";
             // 
@@ -400,7 +407,7 @@
             this.txtMessage.Margin = new System.Windows.Forms.Padding(0);
             this.txtMessage.Name = "txtMessage";
             this.txtMessage.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtMessage.Size = new System.Drawing.Size(484, 26);
+            this.txtMessage.Size = new System.Drawing.Size(726, 26);
             this.txtMessage.TabIndex = 27;
             this.txtMessage.TabStop = false;
             this.txtMessage.Text = "Type and press enter to send.";
@@ -424,7 +431,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.tableLayoutPanel2);
-            this.splitContainer1.Size = new System.Drawing.Size(484, 569);
+            this.splitContainer1.Size = new System.Drawing.Size(726, 569);
             this.splitContainer1.SplitterDistance = 436;
             this.splitContainer1.TabIndex = 47;
             // 
@@ -441,7 +448,7 @@
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(484, 436);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(726, 436);
             this.tableLayoutPanel3.TabIndex = 45;
             // 
             // splitContainer2
@@ -455,8 +462,8 @@
             // splitContainer2.Panel1
             // 
             this.splitContainer2.Panel1.Controls.Add(this.btnSetDraw);
-            this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
             this.splitContainer2.Panel1.Controls.Add(this.gbSettings);
+            this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
             // 
             // splitContainer2.Panel2
             // 
@@ -543,7 +550,7 @@
             this.gbBG.Controls.Add(this.label4);
             this.gbBG.Controls.Add(this.btnClear);
             this.gbBG.Controls.Add(this.btnBGColor);
-            this.gbBG.Location = new System.Drawing.Point(1, 75);
+            this.gbBG.Location = new System.Drawing.Point(1, 105);
             this.gbBG.Margin = new System.Windows.Forms.Padding(0);
             this.gbBG.Name = "gbBG";
             this.gbBG.Size = new System.Drawing.Size(143, 76);
@@ -594,6 +601,10 @@
             // 
             // gbBrush
             // 
+            this.gbBrush.Controls.Add(this.label3);
+            this.gbBrush.Controls.Add(this.btnFillColor);
+            this.gbBrush.Controls.Add(this.cbFillDraw);
+            this.gbBrush.Controls.Add(this.cbBType);
             this.gbBrush.Controls.Add(this.label2);
             this.gbBrush.Controls.Add(this.label1);
             this.gbBrush.Controls.Add(this.btnColor);
@@ -601,15 +612,62 @@
             this.gbBrush.Location = new System.Drawing.Point(1, 0);
             this.gbBrush.Margin = new System.Windows.Forms.Padding(0);
             this.gbBrush.Name = "gbBrush";
-            this.gbBrush.Size = new System.Drawing.Size(143, 76);
+            this.gbBrush.Size = new System.Drawing.Size(143, 100);
             this.gbBrush.TabIndex = 5;
             this.gbBrush.TabStop = false;
             this.gbBrush.Text = "Brush";
             // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(88, 76);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(52, 13);
+            this.label3.TabIndex = 7;
+            this.label3.Text = "Fill Colour";
+            // 
+            // btnFillColor
+            // 
+            this.btnFillColor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
+            this.btnFillColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnFillColor.Location = new System.Drawing.Point(58, 72);
+            this.btnFillColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnFillColor.Name = "btnFillColor";
+            this.btnFillColor.Size = new System.Drawing.Size(28, 20);
+            this.btnFillColor.TabIndex = 6;
+            this.btnFillColor.UseVisualStyleBackColor = false;
+            this.btnFillColor.Click += new System.EventHandler(this.FillColor_Click);
+            // 
+            // cbFillDraw
+            // 
+            this.cbFillDraw.AutoSize = true;
+            this.cbFillDraw.Location = new System.Drawing.Point(7, 75);
+            this.cbFillDraw.Name = "cbFillDraw";
+            this.cbFillDraw.Size = new System.Drawing.Size(38, 17);
+            this.cbFillDraw.TabIndex = 5;
+            this.cbFillDraw.Text = "Fill";
+            this.cbFillDraw.UseVisualStyleBackColor = true;
+            // 
+            // cbBType
+            // 
+            this.cbBType.FormattingEnabled = true;
+            this.cbBType.Items.AddRange(new object[] {
+            "Draw Pen",
+            "Line",
+            "Circle",
+            "Rectangle",
+            "Triangle"});
+            this.cbBType.Location = new System.Drawing.Point(7, 45);
+            this.cbBType.Margin = new System.Windows.Forms.Padding(0);
+            this.cbBType.Name = "cbBType";
+            this.cbBType.Size = new System.Drawing.Size(129, 21);
+            this.cbBType.TabIndex = 4;
+            this.cbBType.Text = "Shape / Style";
+            // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(50, 45);
+            this.label2.Location = new System.Drawing.Point(116, 20);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(27, 13);
             this.label2.TabIndex = 3;
@@ -618,7 +676,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(50, 20);
+            this.label1.Location = new System.Drawing.Point(33, 20);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(37, 13);
             this.label1.TabIndex = 2;
@@ -628,17 +686,17 @@
             // 
             this.btnColor.BackColor = System.Drawing.Color.Green;
             this.btnColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnColor.Location = new System.Drawing.Point(5, 16);
+            this.btnColor.Location = new System.Drawing.Point(5, 15);
             this.btnColor.Margin = new System.Windows.Forms.Padding(0);
             this.btnColor.Name = "btnColor";
-            this.btnColor.Size = new System.Drawing.Size(42, 20);
+            this.btnColor.Size = new System.Drawing.Size(28, 20);
             this.btnColor.TabIndex = 0;
             this.btnColor.UseVisualStyleBackColor = false;
-            this.btnColor.Click += new System.EventHandler(this.CmdDrawColor_Click);
+            this.btnColor.Click += new System.EventHandler(this.DrawColor_Click);
             // 
             // nudSize
             // 
-            this.nudSize.Location = new System.Drawing.Point(5, 43);
+            this.nudSize.Location = new System.Drawing.Point(75, 15);
             this.nudSize.Margin = new System.Windows.Forms.Padding(0);
             this.nudSize.Minimum = new decimal(new int[] {
             1,
@@ -646,7 +704,7 @@
             0,
             0});
             this.nudSize.Name = "nudSize";
-            this.nudSize.Size = new System.Drawing.Size(42, 20);
+            this.nudSize.Size = new System.Drawing.Size(40, 20);
             this.nudSize.TabIndex = 1;
             this.nudSize.Value = new decimal(new int[] {
             5,
@@ -657,13 +715,29 @@
             // pDrawing
             // 
             this.pDrawing.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.pDrawing.Controls.Add(this.picDrawing);
             this.pDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pDrawing.Location = new System.Drawing.Point(153, 3);
             this.pDrawing.Name = "pDrawing";
-            this.pDrawing.Size = new System.Drawing.Size(328, 430);
+            this.pDrawing.Size = new System.Drawing.Size(570, 430);
             this.pDrawing.TabIndex = 33;
-            this.pDrawing.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseDown);
+/*            this.pDrawing.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseDown);
             this.pDrawing.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseMove);
+            this.pDrawing.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseUp);*/
+            // 
+            // picDrawing
+            // 
+            this.picDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.picDrawing.Location = new System.Drawing.Point(0, 0);
+            this.picDrawing.Name = "picDrawing";
+            this.picDrawing.Size = new System.Drawing.Size(566, 426);
+            this.picDrawing.TabIndex = 0;
+            this.picDrawing.TabStop = false;
+            this.picDrawing.Visible = false;
+            this.picDrawing.Paint += new System.Windows.Forms.PaintEventHandler(this.picDrawing_Paint);
+            this.picDrawing.MouseDown += new System.Windows.Forms.MouseEventHandler(this.picDrawing_MouseDown);
+            this.picDrawing.MouseMove += new System.Windows.Forms.MouseEventHandler(this.picDrawing_MouseMove);
+            this.picDrawing.MouseUp += new System.Windows.Forms.MouseEventHandler(this.picDrawing_MouseUp);
             // 
             // tableLayoutPanel2
             // 
@@ -677,7 +751,7 @@
             this.tableLayoutPanel2.RowCount = 2;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(484, 129);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(726, 129);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // tableLayoutPanel1
@@ -692,18 +766,18 @@
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(484, 103);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(726, 103);
             this.tableLayoutPanel1.TabIndex = 28;
             // 
             // tPing
             // 
-            this.tPing.Interval = 1000;
+            this.tPing.Interval = 5000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
             // 
             // GameServer
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(484, 569);
+            this.ClientSize = new System.Drawing.Size(726, 569);
             this.Controls.Add(this.splitContainer1);
             this.Margin = new System.Windows.Forms.Padding(0);
             this.MinimumSize = new System.Drawing.Size(500, 400);
@@ -734,6 +808,8 @@
             this.gbBrush.ResumeLayout(false);
             this.gbBrush.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSize)).EndInit();
+            this.pDrawing.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.picDrawing)).EndInit();
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel2.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
@@ -788,6 +864,11 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnClearAll;
+        private System.Windows.Forms.ComboBox cbBType;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button btnFillColor;
+        private System.Windows.Forms.CheckBox cbFillDraw;
+        private System.Windows.Forms.PictureBox picDrawing;
     }
 }
 
