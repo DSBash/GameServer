@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblConnections = new System.Windows.Forms.Label();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
@@ -380,8 +380,8 @@
             // 
             // latency
             // 
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.latency.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.latency.DefaultCellStyle = dataGridViewCellStyle3;
             this.latency.HeaderText = "Ping";
             this.latency.MinimumWidth = 28;
             this.latency.Name = "latency";
@@ -462,8 +462,8 @@
             // splitContainer2.Panel1
             // 
             this.splitContainer2.Panel1.Controls.Add(this.btnSetDraw);
-            this.splitContainer2.Panel1.Controls.Add(this.gbSettings);
             this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
+            this.splitContainer2.Panel1.Controls.Add(this.gbSettings);
             // 
             // splitContainer2.Panel2
             // 
@@ -721,9 +721,6 @@
             this.pDrawing.Name = "pDrawing";
             this.pDrawing.Size = new System.Drawing.Size(570, 430);
             this.pDrawing.TabIndex = 33;
-/*            this.pDrawing.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseDown);
-            this.pDrawing.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseMove);
-            this.pDrawing.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DrawPanel_MouseUp);*/
             // 
             // picDrawing
             // 

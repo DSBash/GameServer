@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using static Server.GameServer;
 
 namespace Server
 {
@@ -83,7 +84,7 @@ namespace Server
         Bitmap BM;
         Graphics G;
         Point PT2, PT1;
-        bool paint;
+/*        bool paint;*/
         int x, y, PT1X, PT1Y, PT2X, PT2Y;
         /*
                 private void picDrawing_MouseDown(object sender, MouseEventArgs e)
@@ -194,7 +195,8 @@ namespace Server
             //AllocConsole();
             BM = new(picDrawing.Width, picDrawing.Height);
             G = Graphics.FromImage(BM);
-            G.Clear(Color.White);
+            G.SmoothingMode = SmoothingMode.AntiAlias;
+            G.Clear(Color.Transparent);
             picDrawing.Image = BM;
         }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // Close connection on Exit 
@@ -402,9 +404,6 @@ namespace Server
 
         /* Drawing */
         private bool Drawing = false;
-        private bool ShapeDrawing = false;
-        Point mousePT1;
-        Point mousePT2;
         private void SetDraw_Click(object sender, EventArgs e)                                      // Toggles Settings and Drawings Group Boxes 
         {
             if (!gbSettings.Visible) {
@@ -429,8 +428,9 @@ namespace Server
         }
         private void CmdClear_Click(object sender, EventArgs e)                                     // Clears the gfx 
         {
-            using var gfx = pDrawing.CreateGraphics();
-            gfx.Clear(btnBGColor.BackColor);
+            //using var G = picDrawing.CreateGraphics();
+            G.Clear(btnBGColor.BackColor);
+            picDrawing.Refresh();
         }
         private void CmdClearAll_Click(object sender, EventArgs e)                                  // Clears gfx and Sends Clear to Clients 
         {
@@ -438,7 +438,7 @@ namespace Server
             HostSendPublic("CMD:ClearDrawing");
         }
 
-        private void DrawPanel_MouseDown(object sender, MouseEventArgs e)                           // Start Drawing points 
+/*private void DrawPanel_MouseDown(object sender, MouseEventArgs e) 
         {
             DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package
             if (Drawing && e.Button == MouseButtons.Left) {
@@ -458,20 +458,20 @@ namespace Server
                         break;
                 }
             }
-        }
-        private void picDrawing_MouseDown(object sender, MouseEventArgs e)
+        }*/
+        private void picDrawing_MouseDown(object sender, MouseEventArgs e)                          // Start Drawing points
         {
-            paint = true;
-            PT1 = e.Location;
-
-            PT1X = e.X;
-            PT1Y = e.Y;
-        }
-
-        private void DrawPanel_MouseMove(object sender, MouseEventArgs e)                           // Continue Drawing 
-        {
-            DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package 
             if (Drawing && e.Button == MouseButtons.Left) {
+                PT1 = e.Location;  
+                PT1X = e.X;
+                PT1Y = e.Y;
+            }
+        }
+
+/*        private void DrawPanel_MouseMove(object sender, MouseEventArgs e) 
+        {
+            if (Drawing && e.Button == MouseButtons.Left) {
+                DrawPackage localDP = PrepareDrawPackage();
                 switch (cbBType.Text) {
                     case "Line":
                     case "Rectangle":
@@ -487,39 +487,36 @@ namespace Server
                         break;
                 }
             }
-        }
-        private void picDrawing_MouseMove(object sender, MouseEventArgs e)
+        }*/
+        private void picDrawing_MouseMove(object sender, MouseEventArgs e)                          // Continue Drawing 
         {
-            if (paint) {
-                Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
-
+            if (Drawing && e.Button == MouseButtons.Left) {                
                 switch (cbBType.Text) {
                     case "Circle":
                     case "Line":
                     case "Rectangle":
+                    case "Triangle":
                         PT2 = e.Location;
                         break;
                     default:
                         PT2 = e.Location;
-                        G.DrawLine(pen, PT2, PT1);
+                        DrawPackage localDP = PrepareDrawPackage();                                 // Create the Package 
+                        DrawShape(localDP);                                                         // Draw it                           
                         PT1 = PT2;
                         break;
                 }
-
+                picDrawing.Refresh();
+                x = e.X;
+                y = e.Y;
+                PT2X = e.X - PT1X;
+                PT2Y = e.Y - PT1Y;
             }
-            picDrawing.Refresh();
-
-            x = e.X;
-            y = e.Y;
-            PT2X = e.X - PT1X;
-            PT2Y = e.Y - PT1Y;
-
         }
 
-        private void DrawPanel_MouseUp(object sender, MouseEventArgs e)                             // Draw shape on Mouse Up 
+/*        private void DrawPanel_MouseUp(object sender, MouseEventArgs e) 
         {
-            DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package
             if (Drawing && ShapeDrawing && e.Button == MouseButtons.Left) {
+                DrawPackage localDP = PrepareDrawPackage();                                             // Create the Package            
                 switch (cbBType.Text) {
                     case "Line":
                     case "Circle":
@@ -533,81 +530,29 @@ namespace Server
                         break;
                 }
             }
-        }
-        private void picDrawing_MouseUp(object sender, MouseEventArgs e)
+        }*/
+        private void picDrawing_MouseUp(object sender, MouseEventArgs e)                            // Draw shape on Mouse Up 
         {
-            paint = false;
-            Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
-
-            PT2X = x - PT1X;
-            PT2Y = y - PT1Y;
-
-            switch (cbBType.Text) {
-                case "Circle":
-                    G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);
-                    break;
-                case "Line":
-                    G.DrawLine(pen, PT1X, PT1Y, x, y);
-                    break;
-                case "Rectangle":
-                    var rc = new Rectangle(
-                        Math.Min(PT1.X, PT2.X),
-                        Math.Min(PT1.Y, PT2.Y),
-                        Math.Abs(PT2.X - PT1.X),
-                        Math.Abs(PT2.Y - PT1.Y));
-                    //e.Graphics.FillRectangle(brush, rc);
-                    G.DrawRectangle(pen, rc);
-                    //G.DrawRectangle(pen, PT1X, PT1Y, PT2X, PT2Y);
-                    break;
-                default:
-                    break;
+            if (Drawing && e.Button == MouseButtons.Left) {                               
+                PT2X = x - PT1X;                                                                    // Eclipse Width
+                PT2Y = y - PT1Y;                                                                    // Eclipse Height
+                DrawPackage localDP = PrepareDrawPackage();                                         // Create the Package 
+                DrawShape(localDP);                                                                 // Draw it
             }
         }
 
-        private void pDrawing_Paint(object sender, PaintEventArgs e)
-        {
-            /*            if (Drawing) {
-                            DrawPackage drawPackage = PrepareDrawPackage();
-
-                            using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);          // Set Pen
-                            pen.StartCap = LineCap.Round;
-                            pen.EndCap = LineCap.Round;
-
-                            SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                              // Set Brush
-
-                            Graphics g = e.Graphics;                              // Set Canvas
-                            g.SmoothingMode = SmoothingMode.AntiAlias;
-                            int radius = (drawPackage.PT2.X - drawPackage.PT1.X);
-
-
-
-                            switch (drawPackage.DrawType) {
-                                case "Line":
-                                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);
-                                    break;
-                                case "Circle":                        
-                                    g.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2.X, drawPackage.PT2.Y);
-                                    break;
-                                case "Rectangle":
-
-                                    break;
-                                case "Triangle":
-
-                                    break;
-                                default:
-                                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);                              // Remote Pen Draw
-                                    break;
-                            }
-                        } */
-        }
-        private void picDrawing_Paint(object sender, PaintEventArgs e)
-        {
-            Graphics G = e.Graphics;
-            Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
-            if (paint) {
+        private void picDrawing_Paint(object sender, PaintEventArgs e)                              // Draw shape Preview
+        { 
+            if (Drawing) {
+                Graphics G = e.Graphics;
+                Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
+                SolidBrush brush = new(btnFillColor.BackColor);
                 switch (cbBType.Text) {
                     case "Circle":
-                        G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);
+                        G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);                                 // Draw
+                        if (cbFillDraw.Checked) {
+                            G.FillEllipse(brush, PT1X, PT1Y, PT2X, PT2Y);                           // Fill
+                        }
                         break;
                     case "Line":
                         G.DrawLine(pen, PT1X, PT1Y, x, y);
@@ -617,10 +562,26 @@ namespace Server
                             Math.Min(PT1.X, PT2.X),
                             Math.Min(PT1.Y, PT2.Y),
                             Math.Abs(PT2.X - PT1.X),
-                            Math.Abs(PT2.Y - PT1.Y));
-                        //e.Graphics.FillRectangle(brush, rc);
-                        G.DrawRectangle(pen, rc);
-                        /*G.DrawRectangle(pen, PT1X, PT1Y, PT2X, PT2Y);*/
+                            Math.Abs(PT2.Y - PT1.Y));                        
+                        G.DrawRectangle(pen, rc);                                                   // Draw
+                        if (cbFillDraw.Checked) {
+                            e.Graphics.FillRectangle(brush, rc);                                    // Fill
+                        }
+                        break;
+                    case "Triangle":
+                        double midX = (PT1.X + PT2.X) / 2;
+                        Point first = new(PT1.X, PT2.Y);
+                        Point mid = new((int)midX, PT1.Y);
+                        var tPath = new GraphicsPath();
+                        tPath.AddLines(new PointF[] {
+                            first, mid, PT2,
+                        });
+                        tPath.CloseFigure();
+
+                        G.DrawPath(pen, tPath);                                                     // Draw
+                        if (cbFillDraw.Checked) {
+                            G.FillPath(brush, tPath);                                               // Fill
+                        }
                         break;
                     default:
                         break;
@@ -638,8 +599,8 @@ namespace Server
             DrawPackage drawPack = new() {                                                          // Prep Draw Package for send
                 PenColor = pcString,
                 PenSize = (int)nudSize.Value,
-                PT1 = mousePT1,
-                PT2 = mousePT2,
+                PT1 = PT1,
+                PT2 = PT2,
                 BrushColor = bcString,
                 DrawType = cbBType.Text,
                 Fill = cbFillDraw.Checked
@@ -664,37 +625,29 @@ namespace Server
             pen.EndCap = LineCap.Round;
 
             SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                              // Set Brush
-
-            using var g = pDrawing.CreateGraphics();                                                // Set Canvas
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            int radius = (drawPackage.PT2.X - drawPackage.PT1.X);
+            
             switch (drawPackage.DrawType) {
                 case "Line":
-                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);
+                    G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, x, y);
                     break;
                 case "Circle":
-                    ShapeDrawing = false;
                     if (drawPackage.Fill) {
-                        g.FillEllipse(brush, drawPackage.PT2.X - radius, drawPackage.PT2.Y - radius, radius + radius, radius + radius);
+                        G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, PT2X, PT2Y);
                     }
-                    g.DrawEllipse(pen, drawPackage.PT2.X - radius, drawPackage.PT2.Y - radius, radius + radius, radius + radius);
+                    G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, PT2X, PT2Y);
                     break;
-                case "Rectangle":
-                    ShapeDrawing = false;
-                    Point urCorner = new(drawPackage.PT1.X, drawPackage.PT2.Y);                     // set missing path points
-                    Point llCorner = new(drawPackage.PT2.X, drawPackage.PT1.Y);
-                    var rPath = new GraphicsPath();
-                    rPath.AddLines(new PointF[] {
-                            drawPackage.PT1, urCorner, drawPackage.PT2, llCorner,
-                        });
-                    rPath.CloseFigure();
+                case "Rectangle":                   
+                    var rc = new Rectangle(
+                        Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
+                        Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
+                        Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
+                        Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
                     if (drawPackage.Fill) {
-                        g.FillPath(brush, rPath);                                                   // Fill
+                        G.FillRectangle(brush, rc);                                                   // Fill
                     }
-                    g.DrawPath(pen, rPath);                                                         // Draw
+                    G.DrawRectangle(pen, rc);                                                         // Draw
                     break;
                 case "Triangle":
-                    ShapeDrawing = false;
                     double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
                     double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
                     Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
@@ -705,26 +658,26 @@ namespace Server
                         });
                     tPath.CloseFigure();
                     if (drawPackage.Fill) {
-                        g.FillPath(brush, tPath);                                                   // Fill
+                        G.FillPath(brush, tPath);                                                   // Fill
                     }
-                    g.DrawPath(pen, tPath);                                                         // Draw
+                    G.DrawPath(pen, tPath);                                                         // Draw
                     break;
                 default:
-                    g.DrawLine(pen, drawPackage.PT1, drawPackage.PT2);                              // Remote Pen Draw
+                    picDrawing.Invoke((MethodInvoker)delegate {
+                    G.DrawLine(pen, drawPackage.PT2, drawPackage.PT1);                              // Remote Pen Draw
+                    });
                     break;
             }
-        }
-        private void SendShape(DrawPackage drawPackage)                                             // Send shape draw package 
-        {
             string json = JsonConvert.SerializeObject(drawPackage);                                 // Format the Package 
             if (listening) {
                 HostSendPublic(json + "\n");                                                        // Host Send Draw Package
             } else if (connected) {
                 Send(json + "\n");                                                                  // Client Send Draw Package
             }
+            picDrawing.Invoke((MethodInvoker)delegate {
+                picDrawing.Refresh();
+            });
         }
-
-
         /* End Drawing */
 
 
@@ -1296,7 +1249,7 @@ namespace Server
                                     case "ClearDrawing":
                                         Button sender = new();
                                         EventArgs e = new();
-                                        CmdClearAll_Click(sender, e);
+                                        CmdClear_Click(sender, e);
                                         break;
                                     default:
                                         break;
@@ -1322,6 +1275,7 @@ namespace Server
                 }
             }
         }
+        
         // / *** READ ***/ 
         /* END NETWORK */
 
