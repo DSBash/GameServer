@@ -2,21 +2,20 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Security.Cryptography;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
-using static Server.GameServer;
 
 namespace Server
 {
@@ -77,7 +76,7 @@ namespace Server
             //AllocConsole();
 
             /* Drawing */
-            UpdateCanvas();    
+            UpdateCanvas();
 
         }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit 
@@ -134,9 +133,23 @@ namespace Server
         }
 
         // Message formatters
+        private string StackTrace()
+        {
+            StackTrace stackTrace = new();            
+            string stackList = null;
+            for (int i = 2; i < stackTrace.FrameCount; i++) {                                       // start at 2 for ErrorMSG --> StackTrace(Self)
+                StackFrame callingFrame = stackTrace.GetFrame(i);                                   // get the stack frame for the calling method
+                MethodBase callingMethod = callingFrame.GetMethod();                                // get information about the calling method
+                string callingMethodName =  callingMethod.Name + "-->";                             // get the name of the calling method
+                stackList = string.Concat(callingMethodName, stackList);
+                if (i == 3) { break; }                                                              // Sets the Thread Depth
+            }
+            return stackList;
+        }
+
         private string ErrorMsg(string msg)                                                         // Format Errors 
         {
-            return string.Format("ERROR: {0}", msg);
+            return string.Format("ERROR: {0} : {1}", StackTrace(), msg);
         }
         private string SystemMsg(string msg)                                                        // Format System 
         {
@@ -150,7 +163,6 @@ namespace Server
                 e.Handled = true;
                 e.SuppressKeyPress = true;
                 string msg = txtMessage.Text;
-                txtMessage.Clear();
                 if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
                     PostChat(txtName.Text.Trim(), msg);
                     if (listening) {
@@ -201,6 +213,7 @@ namespace Server
                         }
                     }
                 }
+                txtMessage.Clear();
             }
         }
         private void TxtMessage_Enter(object sender, EventArgs e)                                   // MSG Note 
@@ -272,6 +285,8 @@ namespace Server
         private void UpdateDataContents()                                                           // Host Collect, format and send DataGrid contents 
         {
             if (clientsDataGridView.RowCount > 1) {
+                string GridContents = null;
+                string json = null;
 
                 for (int row = 0; row < clientsDataGridView.Rows.Count; row++) {
                     string[] argbColor = clientsDataGridView.Rows[row].Cells[2].Value.ToString().Split(',');    // Seperate colour parts to INT components
@@ -285,9 +300,10 @@ namespace Server
                         Name = clientsDataGridView.Rows[row].Cells[1].Value.ToString(),
                         Color = new int[] { colA, colR, colG, colB }
                     };
-                    string json = JsonConvert.SerializeObject(player);                              // Fromat the object
-                    HostSendPublic(json + "\n");                                                    // Host Send Grid row
+                    json = JsonConvert.SerializeObject(player);                                     // Format the object
+                    GridContents += json + "\n";
                 }
+                HostSendPublic(GridContents);                                                       // Host Send Grid row 
             }
         }
 
@@ -298,7 +314,7 @@ namespace Server
             public string PenColor { get; set; }
             public string BrushColor { get; set; }
             public string DrawType { get; set; }
-            public PointF[] PPath { get; set; }
+            public Point[] PPath { get; set; }
             public bool Fill { get; set; }
             public int PenSize { get; set; }
             public Point PT1 { get; set; }
@@ -309,7 +325,13 @@ namespace Server
             public int PT1Y { get; set; }
             public int PT2X { get; set; }
             public int PT2Y { get; set; }
-            
+
+        }
+        public class FillPackage
+        {
+            public string FillColor { get; set; }
+            public int X { get; set; }
+            public int Y { get; set; }
         }
 
         Bitmap BM;
@@ -342,14 +364,14 @@ namespace Server
                 PT2Y = PT2Y
             };
             if (mPath != null) {
-                drawPack.PPath ??= new PointF[mPath.PointCount];
+                drawPack.PPath ??= new Point[mPath.PointCount];
                 for (int i = 0; i < mPath.PointCount; i++) {
-                        drawPack.PPath[i] = new(mPath.PathPoints[i].X, mPath.PathPoints[i].Y);
+                    drawPack.PPath[i] = new((int)mPath.PathPoints[i].X, (int)mPath.PathPoints[i].Y);
                 }
             }
 
             return drawPack;                                                                        // Return Package to caller
-        }        
+        }
         private Color ArgbColor(string wholeColor)                                                  // Converts String in "A,R,G,B" to Color 
         {
             string[] ColorParts = wholeColor.Split(',');                                            // Seperate colour parts for Pen
@@ -386,17 +408,20 @@ namespace Server
         {
             //using var G = picDrawing.CreateGraphics();
             G.Clear(btnBGColor.BackColor);
-            picDrawing.Refresh();
+            picDrawing.Invoke((MethodInvoker)delegate {
+                picDrawing.Refresh();
+            });
         }
         private void CmdClearAll_Click(object sender, EventArgs e)                                  // Clears gfx and Sends Clear to Clients 
         {
             CmdClear_Click(sender, e);
             HostSendPublic("CMD:ClearDrawing");
         }
+
         private void Drawing_MouseDown(object sender, MouseEventArgs e)                             // Start Drawing points 
         {
             if (Drawing && e.Button == MouseButtons.Left) {
-                PT1 = e.Location;  
+                PT1 = e.Location;
                 PT1X = e.X;
                 PT1Y = e.Y;
             }
@@ -430,7 +455,7 @@ namespace Server
         }
         private void Drawing_MouseUp(object sender, MouseEventArgs e)                               // Draw shape on Mouse Up 
         {
-            if (Drawing && e.Button == MouseButtons.Left) {                               
+            if (Drawing && e.Button == MouseButtons.Left) {
                 PT2X = x - PT1X;                                                                    // Eclipse Width
                 PT2Y = y - PT1Y;                                                                    // Eclipse Height
                 DrawPackage localDP = PrepareDrawPackage();                                         // Create the Package 
@@ -439,7 +464,7 @@ namespace Server
             }
         }
         private void Drawing_Paint(object sender, PaintEventArgs e)                                 // Draw shape Preview 
-        { 
+        {
             if (Drawing) {
                 Graphics G = e.Graphics;
                 Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
@@ -461,7 +486,7 @@ namespace Server
                             Math.Min(PT1.X, PT2.X),
                             Math.Min(PT1.Y, PT2.Y),
                             Math.Abs(PT2.X - PT1.X),
-                            Math.Abs(PT2.Y - PT1.Y));                        
+                            Math.Abs(PT2.Y - PT1.Y));
                         G.DrawRectangle(pen, rc);                                                   // Draw
                         if (cbFillDraw.Checked) {
                             e.Graphics.FillRectangle(brush, rc);                                    // Fill
@@ -501,14 +526,30 @@ namespace Server
             if (Drawing && cbBType.Text == "Fill Tool" && e.Button == MouseButtons.Left) {
                 Point canvas = Set_Point(picDrawing, e.Location);                                   // Get location of canvas
                 FillTool(BM, canvas.X, canvas.Y, btnFillColor.BackColor);
+
+                int bA = btnFillColor.BackColor.A; int bB = btnFillColor.BackColor.B; int bR = btnFillColor.BackColor.R; int bG = btnFillColor.BackColor.G;
+                string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert COLOURS to string  - From Color to ARGB
+                FillPackage fillPack = new() {
+                    FillColor = bcString,
+                    X = canvas.X,
+                    Y = canvas.Y
+                };
+
+                if (listening) {
+                    string json = JsonConvert.SerializeObject(fillPack);                             // Format the Package 
+                    HostSendPublic(json /*+ "\n"*/);                                                        // Host Send Draw Package
+                } else if (connected) {
+                    string json = JsonConvert.SerializeObject(fillPack);                             // Format the Package 
+                    Send(json /*+ "\n"*/);                                                                  // Client Send Draw Package
+                }
             }
         }
         private void FillTool(Bitmap bm, int x, int y, Color c2)                                    // Fill Process 
         {
-            Color c1 = bm.GetPixel(x,y);                                                     // Get color of clicked area
+            Color c1 = bm.GetPixel(x, y);                                                     // Get color of clicked area
             Stack<Point> pixel = new();
-            pixel.Push(new Point(x,y));
-            bm.SetPixel(x,y,c2);
+            pixel.Push(new Point(x, y));
+            bm.SetPixel(x, y, c2);
             if (c1 == c2) return;
             while (pixel.Count > 0) {
                 Point pt = (Point)pixel.Pop();
@@ -520,25 +561,25 @@ namespace Server
                 }
             }
         }
-        private void Validate(Bitmap bm, Stack<Point>sp, int x, int y, Color c1, Color c2)          // Fill 
+        private void Validate(Bitmap bm, Stack<Point> sp, int x, int y, Color c1, Color c2)          // Fill 
         {
             if (x < bm.Width && y < bm.Height) {
-                Color cx = bm.GetPixel(x,y);
+                Color cx = bm.GetPixel(x, y);
                 if (cx == c1) {
-                    sp.Push(new Point(x,y));
-                    bm.SetPixel(x,y,c2);
+                    sp.Push(new Point(x, y));
+                    bm.SetPixel(x, y, c2);
                 }
             }
         }
-        static Point Set_Point(PictureBox pb,Point pt)                                              // Fill Point 
+        static Point Set_Point(PictureBox pb, Point pt)                                              // Fill Point 
         {
             float pX = 1f * pb.Image.Width / pb.Width;
-            float pY = 1f * pb.Image.Height /  pb.Height;
+            float pY = 1f * pb.Image.Height / pb.Height;
             return new Point((int)(pt.X * pX), (int)(pt.Y * pY));
         }
 
         private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
-        {            
+        {
             BM = new(picDrawing.Width, picDrawing.Height);
             picDrawing.Image = BM;
             G = Graphics.FromImage(BM);
@@ -546,7 +587,7 @@ namespace Server
             G.Clear(btnBGColor.BackColor);
         }
         private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
-        { 
+        {
             picDrawing.Invoke((MethodInvoker)delegate {
                 using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);      // Set Pen
                 pen.StartCap = LineCap.Round;
@@ -564,61 +605,61 @@ namespace Server
                 }
 
                 switch (drawPackage.DrawType) {
-                case "Fill Tool":
-                    break;
-                case "Line":
-                    G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
-                    break;
-                case "Circle":
-                    if (drawPackage.Fill) {
-                        G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                    }
-                    G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                    break;
-                case "Rectangle":                   
-                    var rc = new Rectangle(
-                        Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
-                        Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
-                        Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
-                        Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
-                    if (drawPackage.Fill) {
-                        G.FillRectangle(brush, rc);                                                 // Fill
-                    }
-                    G.DrawRectangle(pen, rc);                                                       // Draw
-                    break;
-                case "Triangle":
-                    double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
-                    double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
-                    Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
-                    Point mid = new((int)midX, drawPackage.PT1.Y);
-                    var tPath = new GraphicsPath();
-                    tPath.AddLines(new PointF[] {
+                    case "Fill Tool":
+                        break;
+                    case "Line":
+                        G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
+                        break;
+                    case "Circle":
+                        if (drawPackage.Fill) {
+                            G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                        }
+                        G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                        break;
+                    case "Rectangle":
+                        var rc = new Rectangle(
+                            Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
+                            Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
+                            Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
+                            Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
+                        if (drawPackage.Fill) {
+                            G.FillRectangle(brush, rc);                                                 // Fill
+                        }
+                        G.DrawRectangle(pen, rc);                                                       // Draw
+                        break;
+                    case "Triangle":
+                        double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
+                        double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
+                        Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
+                        Point mid = new((int)midX, drawPackage.PT1.Y);
+                        var tPath = new GraphicsPath();
+                        tPath.AddLines(new PointF[] {
                             first, mid, drawPackage.PT2,
                         });
-                    tPath.CloseFigure();
-                    if (drawPackage.Fill) {
-                        G.FillPath(brush, tPath);                                                   // Fill
-                    }
-                    G.DrawPath(pen, tPath);                                                         // Draw
-                    break;
-                case "Pen w/ Close":
-                    G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
-                    if (drawPackage.Fill) {
-                        G.FillPath(brush, pPath);
-                    }
-                    goto default;
-                default:
-                    G.DrawPath(pen, pPath); 
-                    break;
+                        tPath.CloseFigure();
+                        if (drawPackage.Fill) {
+                            G.FillPath(brush, tPath);                                                   // Fill
+                        }
+                        G.DrawPath(pen, tPath);                                                         // Draw
+                        break;
+                    case "Pen w/ Close":
+                        G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
+                        if (drawPackage.Fill) {
+                            G.FillPath(brush, pPath);
+                        }
+                        goto default;
+                    default:
+                        G.DrawPath(pen, pPath);
+                        break;
                 }
 
-            if (listening) {
-                string json = JsonConvert.SerializeObject(drawPackage);                             // Format the Package 
-                HostSendPublic(json + "\n");                                                        // Host Send Draw Package
-            } else if (connected) {
-                string json = JsonConvert.SerializeObject(drawPackage);                             // Format the Package 
-                Send(json + "\n");                                                                  // Client Send Draw Package
-            }
+                if (listening) {
+                    string json = JsonConvert.SerializeObject(drawPackage);                             // Format the Package 
+                    HostSendPublic(json /*+ "\n"*/);                                                        // Host Send Draw Package
+                } else if (connected) {
+                    string json = JsonConvert.SerializeObject(drawPackage);                             // Format the Package 
+                    Send(json /*+ "\n"*/);                                                                  // Client Send Draw Package
+                }
                 picDrawing.Refresh();                                                               // Update the Canvas
                 mPath = null;
                 pen.Dispose();
@@ -730,14 +771,14 @@ namespace Server
                             clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(Read), null);
                             clientObject.handle.WaitOne();
                         } catch (Exception ex) {
-                            Console(ErrorMsg(ex.Message));
+                            Console(ErrorMsg("CC1: " + ex.Message));
                         }
                     }
                     clientObject.client.Close();
                     Connected(false);
                 }
             } catch (Exception ex) {
-                Console(ErrorMsg(ex.Message));
+                Console(ErrorMsg("CC2: " + ex.Message));
             }
         }
         private void Connection(MyPlayers obj)                                                      // H - Multi TCP to clients 
@@ -753,7 +794,7 @@ namespace Server
                         obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
                         obj.handle.WaitOne();
                     } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("HC: " + ex.Message));
                     }
                 }
                 obj.client.Close();
@@ -789,7 +830,7 @@ namespace Server
                             };
                             th.Start();
                         } catch (Exception ex) {
-                            Console(ErrorMsg(ex.Message));
+                            Console(ErrorMsg("HL1: " + ex.Message));
                         }
                     } else {
                         Thread.Sleep(500);
@@ -797,7 +838,7 @@ namespace Server
                 }
                 Listening(false);
             } catch (Exception ex) {
-                Console(ErrorMsg(ex.Message));
+                Console(ErrorMsg("HL2: " + ex.Message));
             } finally {
                 listener?.Server.Close();
             }
@@ -844,10 +885,11 @@ namespace Server
             if (id != 0) {
                 try {
                     players.TryGetValue(id, out MyPlayers obj);
+                    if (obj == null) { return "127.0.0.1"; }
                     string ipAddress = ((IPEndPoint)obj.client.Client.RemoteEndPoint).Address.ToString();
                     return ipAddress;
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("GPA: " + ex.Message));
                     return "127.0.0.1";
                 }
             } else return "127.0.0.1";
@@ -872,7 +914,7 @@ namespace Server
                 try {
                     clientObject.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(Write), null);
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("CBW: " + ex.Message));
                 }
             }
         }
@@ -882,7 +924,7 @@ namespace Server
                 try {
                     clientObject.stream.EndWrite(result);
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("CW: " + ex.Message));
                 }
             }
         }
@@ -911,7 +953,7 @@ namespace Server
                 try {
                     obj.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(HostEndWrite), obj);
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("HBPr: " + ex.Message));
                 }
             }
         }
@@ -923,7 +965,7 @@ namespace Server
                     try {
                         obj.Value.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(HostEndWrite), obj.Value);
                     } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("HBPu: " + ex.Message));
                     }
                 }
             }
@@ -935,7 +977,7 @@ namespace Server
                 try {
                     obj.stream.EndWrite(result);
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("HEW: " + ex.Message));
                 }
             }
         }
@@ -960,7 +1002,7 @@ namespace Server
                         break;
                     }
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("CHS: " + ex.Message));
                 }
             }
             if (!connected) {                                                                       // Connection refused
@@ -980,7 +1022,7 @@ namespace Server
                         break;
                     }
                 } catch (Exception ex) {
-                    Console(ErrorMsg(ex.Message));
+                    Console(ErrorMsg("HHS: " + ex.Message));
                 }
             }
             return success;
@@ -994,7 +1036,7 @@ namespace Server
                     try {
                         bytes = obj.stream.EndRead(result);
                     } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("HRA1: " + ex.Message));
                     }
                 }
                 if (bytes > 0) {
@@ -1020,7 +1062,7 @@ namespace Server
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("HRA2: " + ex.Message));
                         obj.handle.Set();
                     }
                 } else {
@@ -1033,7 +1075,7 @@ namespace Server
                     try {
                         bytes = clientObject.stream.EndRead(result);
                     } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("CRA1: " + ex.Message));
                     }
                 }
                 if (bytes > 0) {
@@ -1052,7 +1094,7 @@ namespace Server
                         }
                     } catch (Exception ex) {
                         clientObject.data.Clear();
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("CRA2: " + ex.Message));
                         clientObject.handle.Set();
                     }
                 } else {
@@ -1073,7 +1115,7 @@ namespace Server
                     try {
                         bytes = obj.stream.EndRead(result);
                     } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("HR1: " + ex.Message));
                     }
                 }
                 if (bytes > 0) {
@@ -1118,16 +1160,25 @@ namespace Server
                                 return;
                             }
 
+                            // Host receive - FillTool
+                            if (clientData.StartsWith("{\"FillColor\"")) {
+                                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(clientData);
+                                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
+                                HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
+                                obj.data.Clear();
+                                obj.handle.Set();
+                                return;
+                            }
+
                             // Host Receive - Public Message
                             PostChat(obj.username.ToString(), obj.data.ToString());               // Host post
                             HostSendPublic(string.Format("{0}:{1}", obj.username, obj.data.ToString()), obj.id);    // Host relay public message to other clients
-
                             obj.data.Clear();
                             obj.handle.Set();
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("HR2: " + ex.Message));
                         obj.handle.Set();
                     }
                 } else {
@@ -1141,7 +1192,7 @@ namespace Server
                     try {
                         bytes = clientObject.stream.EndRead(result);
                     } catch (Exception ex) {
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("CSR1: " + ex.Message));
                     }
                 }
                 if (bytes > 0) {
@@ -1152,7 +1203,8 @@ namespace Server
                         } else {
                             string hostData = clientObject.data.ToString();
 
-                            if (hostData.StartsWith("{\"Id\"")) {                                   // Client - grid update
+                            if (hostData.StartsWith("{\"Id\"")) {                                   // Client Receive - grid update
+                                ClearDataGrid();                                                    // Clear DataGrid 
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     PlayerPackage player = JsonConvert.DeserializeObject<PlayerPackage>(message);
@@ -1164,7 +1216,7 @@ namespace Server
                                 return;
                             }
 
-                            if (hostData.StartsWith("SYSTEM:")) {                                   // Client - System Message
+                            if (hostData.StartsWith("SYSTEM:")) {                                   // Client Receive - System Message
                                 string[] sysParts = hostData.Split(':');
                                 Console(sysParts[2]);
                                 clientObject.data.Clear();
@@ -1172,7 +1224,7 @@ namespace Server
                                 return;
                             }
 
-                            if (hostData.StartsWith("{\"PenColor\"")) {                              // Client - Drawing
+                            if (hostData.StartsWith("{\"PenColor\"")) {                              // Client Receive - Drawing
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
@@ -1183,7 +1235,16 @@ namespace Server
                                 return;
                             }
 
-                            if (hostData.StartsWith("CMD:")) {                                      // Client - Commands
+
+                            if (hostData.StartsWith("{\"FillColor\"")) {
+                                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(hostData);
+                                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));// Client Receive - FillTool
+                                clientObject.data.Clear();
+                                clientObject.handle.Set();
+                                return;
+                            }
+
+                            if (hostData.StartsWith("CMD:")) {                                      // Client Receive - Commands
                                 string[] cmdParts = hostData.Split(':');
                                 switch (cmdParts[1]) {
                                     case "ClearDrawing":
@@ -1200,13 +1261,13 @@ namespace Server
                             }
 
                             string[] dataParts = hostData.Split(':');
-                            PostChat(dataParts[0], dataParts[1]);                                 // Client - Public Message
+                            PostChat(dataParts[0], dataParts[1]);                                 // Client Receive - Public Message
                             clientObject.data.Clear();
                             clientObject.handle.Set();
                         }
                     } catch (Exception ex) {
                         clientObject.data.Clear();
-                        Console(ErrorMsg(ex.Message));
+                        Console(ErrorMsg("CSR2: " + ex.Message));
                         clientObject.handle.Set();
                     }
                 } else {
@@ -1215,7 +1276,7 @@ namespace Server
                 }
             }
         }
-        
+
         // / *** READ ***/ 
         /* END NETWORK */
 

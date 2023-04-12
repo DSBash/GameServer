@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblConnections = new System.Windows.Forms.Label();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
@@ -81,6 +81,7 @@
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
+            this.cbTrans = new System.Windows.Forms.CheckBox();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -145,7 +146,7 @@
             // 
             // txtConsole
             // 
-            this.txtConsole.BackColor = System.Drawing.SystemColors.Window;
+            this.txtConsole.BackColor = System.Drawing.SystemColors.ScrollBar;
             this.txtConsole.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtConsole.Location = new System.Drawing.Point(0, 0);
             this.txtConsole.Margin = new System.Windows.Forms.Padding(0);
@@ -170,6 +171,7 @@
             // 
             // txtLobby
             // 
+            this.txtLobby.BackColor = System.Drawing.SystemColors.ScrollBar;
             this.txtLobby.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtLobby.Location = new System.Drawing.Point(0, 0);
             this.txtLobby.Name = "txtLobby";
@@ -315,7 +317,7 @@
             this.clientsDataGridView.AllowUserToDeleteRows = false;
             this.clientsDataGridView.AllowUserToResizeColumns = false;
             this.clientsDataGridView.AllowUserToResizeRows = false;
-            this.clientsDataGridView.BackgroundColor = System.Drawing.SystemColors.Window;
+            this.clientsDataGridView.BackgroundColor = System.Drawing.SystemColors.ScrollBar;
             this.clientsDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.clientsDataGridView.ClipboardCopyMode = System.Windows.Forms.DataGridViewClipboardCopyMode.Disable;
             this.clientsDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
@@ -380,8 +382,8 @@
             // 
             // latency
             // 
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.latency.DefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.latency.DefaultCellStyle = dataGridViewCellStyle1;
             this.latency.HeaderText = "Ping";
             this.latency.MinimumWidth = 28;
             this.latency.Name = "latency";
@@ -462,8 +464,8 @@
             // splitContainer2.Panel1
             // 
             this.splitContainer2.Panel1.Controls.Add(this.btnSetDraw);
-            this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
             this.splitContainer2.Panel1.Controls.Add(this.gbSettings);
+            this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
             // 
             // splitContainer2.Panel2
             // 
@@ -498,6 +500,7 @@
             // 
             // gbBG
             // 
+            this.gbBG.Controls.Add(this.cbTrans);
             this.gbBG.Controls.Add(this.btnClearAll);
             this.gbBG.Controls.Add(this.label4);
             this.gbBG.Controls.Add(this.btnClear);
@@ -727,6 +730,7 @@
             // 
             // picDrawing
             // 
+            this.picDrawing.BackColor = System.Drawing.SystemColors.ScrollBar;
             this.picDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.picDrawing.Location = new System.Drawing.Point(0, 0);
             this.picDrawing.Name = "picDrawing";
@@ -776,6 +780,18 @@
             // 
             this.tPing.Interval = 5000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
+            // 
+            // cbTrans
+            // 
+            this.cbTrans.AutoSize = true;
+            this.cbTrans.BackColor = System.Drawing.Color.Transparent;
+            this.cbTrans.Location = new System.Drawing.Point(90, 19);
+            this.cbTrans.Margin = new System.Windows.Forms.Padding(0);
+            this.cbTrans.Name = "cbTrans";
+            this.cbTrans.Size = new System.Drawing.Size(53, 17);
+            this.cbTrans.TabIndex = 4;
+            this.cbTrans.Text = "Trans";
+            this.cbTrans.UseVisualStyleBackColor = false;
             // 
             // GameServer
             // 
@@ -873,6 +889,7 @@
         private System.Windows.Forms.Button btnFillColor;
         private System.Windows.Forms.CheckBox cbFillDraw;
         private System.Windows.Forms.PictureBox picDrawing;
+        private System.Windows.Forms.CheckBox cbTrans;
     }
 }
 
