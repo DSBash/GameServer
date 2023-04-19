@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -21,7 +22,7 @@ namespace Server
 {
     public partial class GameServer : Form
     {
-        // Host Specific
+#region Host Specific Declarations
         private bool listening = false;
         private Thread listener = null;
         private Thread disconnect = null;
@@ -43,8 +44,9 @@ namespace Server
             public EventWaitHandle handle;
         };
         private static readonly ConcurrentDictionary<long, MyPlayers> players = new();
+#endregion
 
-        // Client Specific
+#region Client Specific Declarations
         private bool connected = false;
         private Thread client = null;
         private class Client
@@ -59,24 +61,51 @@ namespace Server
             public EventWaitHandle handle;
         };
         private Client clientObject;
-
+#endregion Declarations
+        
+#region General Declarations
         private Task send = null;
 
         /* Used to enable Console Output */
-        /*        [DllImport("kernel32.dll", SetLastError = true)]
+        /*
+                [DllImport("kernel32.dll", SetLastError = true)]
                 [return: MarshalAs(UnmanagedType.Bool)]
                 static extern bool AllocConsole();
         */
+#endregion
 
-
-        // Form
-        public GameServer()                                                                         // On Open 
+#region Form
+        public GameServer(string PlayerName)                                                        // On Open 
         {
             InitializeComponent();
             //AllocConsole();
+            txtName.Text = PlayerName;
+            /*
+                        
+                        if (PlayerName == "Host") {
+                            GameServer Frm1 = new("Player 1");
+                            Frm1.StartPosition = FormStartPosition.Manual;
+                            Frm1.Location = new Point(Screen.PrimaryScreen.WorkingArea.Width - Frm1.Width, 0);
+                            Frm1.Show();
+
+                           GameServer Frm2 = new("Player 2");
+                            Frm2.StartPosition = FormStartPosition.Manual;
+                            Frm2.Location = new Point(0, Screen.PrimaryScreen.WorkingArea.Height - Frm2.Height);
+                            Frm2.Show();
+
+                            GameServer Frm3 = new("Player 3");
+                            Frm3.StartPosition = FormStartPosition.Manual;
+                            Frm3.Location = new Point(Screen.PrimaryScreen.WorkingArea.Width - Frm3.Width, Screen.PrimaryScreen.WorkingArea.Height - Frm3.Height);
+                            Frm3.Show();
+                        }
+            */
 
             /* Drawing */
-            UpdateCanvas();
+            BM = new(picDrawing.Width, picDrawing.Height);
+            picDrawing.Image = BM;
+            G = Graphics.FromImage(BM);
+            G.SmoothingMode = SmoothingMode.AntiAlias;
+            G.Clear(btnBGColor.BackColor);
 
         }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit 
@@ -87,9 +116,9 @@ namespace Server
             }
             Disconnect();
         }
+#endregion
 
-
-        // Console & Chats
+#region Console & Chats
         private void Console(string msg = "")                                                       // Console message / Clear if empty 
         {
             txtConsole.Invoke((MethodInvoker)delegate {
@@ -131,22 +160,36 @@ namespace Server
                 });
             }
         }
-
-        // Message formatters
-        private string StackTrace()
+        private void ExportText(object sender, EventArgs e)                                         // Export Texts to txts 
         {
-            StackTrace stackTrace = new();            
+            if (tabSections.SelectedTab.Name == "tConsole") {
+                string path = AppDomain.CurrentDomain.BaseDirectory + "Console.txt"; // get the file path
+                string contents = Environment.NewLine + DateTime.Now.ToString("F") + Environment.NewLine + txtConsole.Text + Environment.NewLine; // get the textbox contents                    
+                File.AppendAllText(path, contents);
+            }
+            if (tabSections.SelectedTab.Name == "tLobby") {
+                string path = AppDomain.CurrentDomain.BaseDirectory + "Lobby.txt"; // get the file path
+                string contents = Environment.NewLine + DateTime.Now.ToString("F") + Environment.NewLine + txtLobby.Text + Environment.NewLine; // get the textbox contents                    
+                File.AppendAllText(path, contents);
+            }
+
+        }
+#endregion
+
+#region Message formatters
+        private string StackTrace()                                                                 // Better Debug Info 
+        {
+            StackTrace stackTrace = new();
             string stackList = null;
             for (int i = 2; i < stackTrace.FrameCount; i++) {                                       // start at 2 for ErrorMSG --> StackTrace(Self)
                 StackFrame callingFrame = stackTrace.GetFrame(i);                                   // get the stack frame for the calling method
                 MethodBase callingMethod = callingFrame.GetMethod();                                // get information about the calling method
-                string callingMethodName =  callingMethod.Name + "-->";                             // get the name of the calling method
+                string callingMethodName = callingMethod.Name + "-->";                             // get the name of the calling method
                 stackList = string.Concat(callingMethodName, stackList);
-                if (i == 3) { break; }                                                              // Sets the Thread Depth
+                if (i == 4) { break; }                                                              // Sets the Thread Depth
             }
             return stackList;
         }
-
         private string ErrorMsg(string msg)                                                         // Format Errors 
         {
             return string.Format("ERROR: {0} : {1}", StackTrace(), msg);
@@ -155,8 +198,9 @@ namespace Server
         {
             return string.Format("SYSTEM: {0}", msg);
         }
+#endregion
 
-        // Message box & Send
+#region Message box & Send
         private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Send on <Enter> 
         {
             if (e.KeyCode == Keys.Enter) {
@@ -202,15 +246,14 @@ namespace Server
                             }
                         }
                     }
-                    if (msg.StartsWith("/sd")) {
-                        var sfd = new SaveFileDialog {
-                            Filter = "Image(*.jpg)|*.jpg|(*.*|*.*"
-                        };
-                        if (sfd.ShowDialog() == DialogResult.OK) {
-                            Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
-                            btm.Save(sfd.FileName, ImageFormat.Jpeg);
-                            Console("Image Saved: " + sfd.FileName);
-                        }
+                    if (msg.StartsWith("/save")) {
+                        SaveBitmap();
+                    }
+                    if (msg.StartsWith("/send")) {
+                        SendBitmap();
+                    }
+                    if (msg.StartsWith("/export")) {
+                        ExportText(sender, e);
                     }
                 }
                 txtMessage.Clear();
@@ -228,8 +271,9 @@ namespace Server
                 txtMessage.Text = "Type and press enter to send.";
             }
         }
+#endregion
 
-        // DataGrid management
+#region DataGrid management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
             int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;                 // convert COLOURS to string  - From Color to ARGB
@@ -286,7 +330,6 @@ namespace Server
         {
             if (clientsDataGridView.RowCount > 1) {
                 string GridContents = null;
-                string json = null;
 
                 for (int row = 0; row < clientsDataGridView.Rows.Count; row++) {
                     string[] argbColor = clientsDataGridView.Rows[row].Cells[2].Value.ToString().Split(',');    // Seperate colour parts to INT components
@@ -300,15 +343,15 @@ namespace Server
                         Name = clientsDataGridView.Rows[row].Cells[1].Value.ToString(),
                         Color = new int[] { colA, colR, colG, colB }
                     };
-                    json = JsonConvert.SerializeObject(player);                                     // Format the object
+                    string json = JsonConvert.SerializeObject(player);                                     // Format the object
                     GridContents += json + "\n";
                 }
                 HostSendPublic(GridContents);                                                       // Host Send Grid row 
             }
         }
+#endregion
 
-
-        /* Drawing */
+#region Drawing
         public class DrawPackage
         {
             public string PenColor { get; set; }
@@ -325,7 +368,6 @@ namespace Server
             public int PT1Y { get; set; }
             public int PT2X { get; set; }
             public int PT2Y { get; set; }
-
         }
         public class FillPackage
         {
@@ -334,7 +376,7 @@ namespace Server
             public int Y { get; set; }
         }
 
-        Bitmap BM;
+        readonly Bitmap BM;
         Graphics G;
         GraphicsPath mPath;
         Point PT2, PT1;
@@ -369,6 +411,9 @@ namespace Server
                     drawPack.PPath[i] = new((int)mPath.PathPoints[i].X, (int)mPath.PathPoints[i].Y);
                 }
             }
+
+            mPath.Reset();
+
 
             return drawPack;                                                                        // Return Package to caller
         }
@@ -440,7 +485,7 @@ namespace Server
                     default:
                         mPath ??= new();                                                            // New Path if needed
                         Point mP = new(e.Location.X, e.Location.Y);
-                        mPath.AddLines(new PointF[] {                                               // Add points to Path
+                        mPath.AddLines(new Point[] {                                               // Add points to Path
                             mP
                         });
                         PT1 = PT2;
@@ -561,7 +606,7 @@ namespace Server
                 }
             }
         }
-        private void Validate(Bitmap bm, Stack<Point> sp, int x, int y, Color c1, Color c2)          // Fill 
+        private void Validate(Bitmap bm, Stack<Point> sp, int x, int y, Color c1, Color c2)         // Fill 
         {
             if (x < bm.Width && y < bm.Height) {
                 Color cx = bm.GetPixel(x, y);
@@ -571,20 +616,66 @@ namespace Server
                 }
             }
         }
-        static Point Set_Point(PictureBox pb, Point pt)                                              // Fill Point 
+        static Point Set_Point(PictureBox pb, Point pt)                                             // Fill Point 
         {
             float pX = 1f * pb.Image.Width / pb.Width;
             float pY = 1f * pb.Image.Height / pb.Height;
             return new Point((int)(pt.X * pX), (int)(pt.Y * pY));
         }
 
+
+        private void SaveBitmap()                                                                   // Bitmap Save Routine
+        {
+            var sfd = new SaveFileDialog {
+                Filter = "Image(*.jpg)|*.jpg|(*.*|*.*"
+            };
+            if (sfd.ShowDialog() == DialogResult.OK) {
+                Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
+                btm.Save(sfd.FileName, ImageFormat.Jpeg);
+                Console("Image Saved: " + sfd.FileName);
+            }
+        }
+        private void SendBitmap()                                                                   // Bitmap Send Routine
+        {
+            //Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
+            MemoryStream memoryStream = new();
+            BM.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Bmp);
+            byte[] imageArray = memoryStream.ToArray();
+            string b64Image = Convert.ToBase64String(imageArray);                      // Convert To
+
+            Dictionary<string, string> bitmapUpdate = new() {                                          // Collect info to send as object Handshake
+                { "bitmap", b64Image },
+            };
+            JavaScriptSerializer json = new();                                                      // Format the Handshake object
+
+            if (listening) {
+                HostSendPublic(json.Serialize(bitmapUpdate));                                                     // Host Send Draw Package
+            } else if (connected) {
+                Send(json.Serialize(bitmapUpdate));                                                               // Client Send Draw Package
+            }
+        }
+        private void ReceiveBitmap(string rbitmap)
+        {
+
+            var img = Image.FromStream(new MemoryStream(Convert.FromBase64String(rbitmap)));     // Convert Back
+            Bitmap BM = new(img);
+            picDrawing.Invoke((MethodInvoker)delegate {
+                picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
+            });
+            G = Graphics.FromImage(BM);                                                             // Set the canvas
+            G.SmoothingMode = SmoothingMode.AntiAlias;
+
+        }
         private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
         {
-            BM = new(picDrawing.Width, picDrawing.Height);
-            picDrawing.Image = BM;
-            G = Graphics.FromImage(BM);
+            Bitmap savedImage = (Bitmap)picDrawing.Image;                                           // Save the current image to a Bitmap object
+            Bitmap BM = new(picDrawing.Width, picDrawing.Height);                                   // Create a new Bitmap object with the resized dimensions
+            using (Graphics G = Graphics.FromImage(BM)) {                                           // Draw the saved image onto the resized Bitmap
+                G.DrawImage(savedImage, new Rectangle(0, 0, picDrawing.Width, picDrawing.Height));
+            }
+            picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
+            G = Graphics.FromImage(BM);                                                             // Set the canvas
             G.SmoothingMode = SmoothingMode.AntiAlias;
-            G.Clear(btnBGColor.BackColor);
         }
         private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
         {
@@ -623,9 +714,9 @@ namespace Server
                             Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
                             Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
                         if (drawPackage.Fill) {
-                            G.FillRectangle(brush, rc);                                                 // Fill
+                            G.FillRectangle(brush, rc);                                             // Fill
                         }
-                        G.DrawRectangle(pen, rc);                                                       // Draw
+                        G.DrawRectangle(pen, rc);                                                   // Draw
                         break;
                     case "Triangle":
                         double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
@@ -638,15 +729,15 @@ namespace Server
                         });
                         tPath.CloseFigure();
                         if (drawPackage.Fill) {
-                            G.FillPath(brush, tPath);                                                   // Fill
+                            G.FillPath(brush, tPath);                                               // Fill
                         }
-                        G.DrawPath(pen, tPath);                                                         // Draw
+                        G.DrawPath(pen, tPath);                                                     // Draw
                         break;
                     case "Pen w/ Close":
-                        G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
                         if (drawPackage.Fill) {
                             G.FillPath(brush, pPath);
                         }
+                        G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
                         goto default;
                     default:
                         G.DrawPath(pen, pPath);
@@ -654,24 +745,22 @@ namespace Server
                 }
 
                 if (listening) {
-                    string json = JsonConvert.SerializeObject(drawPackage);                             // Format the Package 
-                    HostSendPublic(json /*+ "\n"*/);                                                        // Host Send Draw Package
+                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                         // Format the Package 
+                    HostSendPublic(json);                                                 // Host Send Draw Package
                 } else if (connected) {
-                    string json = JsonConvert.SerializeObject(drawPackage);                             // Format the Package 
-                    Send(json /*+ "\n"*/);                                                                  // Client Send Draw Package
+                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                         // Format the Package 
+                    Send(json);                                                           // Client Send Draw Package
                 }
                 picDrawing.Refresh();                                                               // Update the Canvas
-                mPath = null;
+
+                pPath.Reset();                                                                      // Clean up
                 pen.Dispose();
                 brush.Dispose();
             });
-
         }
-        /* End Drawing */
+# endregion
 
-
-
-        /* Network */
+#region Network
         // Host, Join, and DC
         private void Connected(bool status)                                                         // Client active toggle 
         {
@@ -1203,6 +1292,9 @@ namespace Server
                         } else {
                             string hostData = clientObject.data.ToString();
 
+
+
+
                             if (hostData.StartsWith("{\"Id\"")) {                                   // Client Receive - grid update
                                 ClearDataGrid();                                                    // Clear DataGrid 
                                 string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -1260,6 +1352,16 @@ namespace Server
                                 return;
                             }
 
+                            JavaScriptSerializer json = new();
+                            Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(clientObject.data.ToString());
+                            if (data.ContainsKey("bitmap")) {
+                                ReceiveBitmap(data["bitmap"]);
+                                clientObject.data.Clear();
+                                clientObject.handle.Set();
+                                return;
+                            }
+                            // {{"bitmap":"Qk2mtw4AAAAAADYAAAAoAAAANgIAAKoBAAABACAAAAAAAAAAAADEDgAAxA4AAAAAAAAAAAAA5vD6/ ....  m8Pr/"}}
+
                             string[] dataParts = hostData.Split(':');
                             PostChat(dataParts[0], dataParts[1]);                                 // Client Receive - Public Message
                             clientObject.data.Clear();
@@ -1278,44 +1380,76 @@ namespace Server
         }
 
         // / *** READ ***/ 
-        /* END NETWORK */
+        #endregion
 
-
-        /* Classes and Routines */
+# region Routines
         private void SetColour(object sender)                                                       // Set's all Colour related Buttons 
         {
             Button clickedButton = (Button)sender;
             ColorDialog diag = new() {
                 AllowFullOpen = true,
                 ShowHelp = true,
+                CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
                 Color = clickedButton.BackColor                                                     // Sets initial color to current button backcolor             
             };
             //using var diag = new ColorDialog();
             if (diag.ShowDialog() == DialogResult.OK)
                 clickedButton.BackColor = diag.Color;
         }
+#endregion
 
-
-        /* Controls */
+#region Controls
         private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
         {
-            ColorDialog MyDialog = new() {
-                AllowFullOpen = true,
-                ShowHelp = true,
-                //Color = cmdColor.BackColor            // Sets the initial color select to the current text color.             
-            };
-
-            if (tabSections.SelectedTab.Name == "tConsole") {
-                if (MyDialog.ShowDialog() == DialogResult.OK) {                                     // Update the text box color if the user clicks OK
-                    txtConsole.BackColor = MyDialog.Color;
+            if (sender is System.Windows.Forms.MenuItem) {
+                ColorDialog MyDialog = new() {
+                    AllowFullOpen = true,
+                    ShowHelp = true,
+                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
                 };
+                if (MyDialog.ShowDialog() == DialogResult.OK) {
+                    if (tabSections.SelectedTab.Name == "tConsole") {
+                        txtConsole.BackColor = MyDialog.Color;                                      // Update the text box color if the user clicks OK
+                    }
+                    if (tabSections.SelectedTab.Name == "tLobby") {
+                        txtLobby.BackColor = MyDialog.Color;                                        // Update the text box color if the user clicks OK
+                    }
+                }
             }
-            if (tabSections.SelectedTab.Name == "tLobby") {
-                if (MyDialog.ShowDialog() == DialogResult.OK) {                                     // Update the text box color if the user clicks OK
-                    txtLobby.BackColor = MyDialog.Color;
+            if (sender is System.Windows.Forms.Button) {
+                Button clickedButton = (Button)sender;
+                ColorDialog MyDialog = new() {
+                    AllowFullOpen = true,
+                    ShowHelp = true,
+                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
+                    Color = clickedButton.BackColor                                                 // Sets the initial color select to the current text color.             
                 };
+                if (MyDialog.ShowDialog() == DialogResult.OK) {
+                    clickedButton.BackColor = MyDialog.Color;
+                }
             }
 
+        }
+        private void BGColor_Click(object sender, EventArgs e)                                      // Get Background color of Canvas 
+        {
+            BGC_Click(sender, e);
+        }
+        private Color _previousBackColor = Color.Linen;
+        private Color _newBackColor;
+        private void BGColor_BackColorChanged(object sender, EventArgs e)                           // Set BG (use Fill) 
+        {
+            _newBackColor = ((Control)sender).BackColor;
+            for (int x = 0; x < BM.Width; x++) {                                                    // Iterate over the pixels in the bitmap
+                for (int y = 0; y < BM.Height; y++) {
+                    if (BM.GetPixel(x, y).R == _previousBackColor.R && BM.GetPixel(x, y).G == _previousBackColor.G && BM.GetPixel(x, y).B == _previousBackColor.B) {    // Check if the current pixel has the original color                        
+                        BM.SetPixel(x, y, _newBackColor);                                           // Replace the color of the current pixel with the replacement color
+                    }
+                }
+            }
+            _previousBackColor = _newBackColor;
+            picDrawing.Image = BM;
+            G = Graphics.FromImage(BM);                                                             // Set the canvas
+            G.SmoothingMode = SmoothingMode.AntiAlias;
         }
         private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
         {
@@ -1328,7 +1462,11 @@ namespace Server
                 cbBType.SelectedItem = "Pen w/ Close";
             }
         }
-        private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser / set starting brush to same
+        private void Trans_CheckedChanged(object sender, EventArgs e)                               // Transparent Canvas 
+        {
+            if (cbTrans.Checked) { btnBGColor.BackColor = Color.Transparent; }
+        }
+        private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser / set starting brush to same 
         {
             SetColour(sender);
             btnColor.BackColor = cmdColor.BackColor;
@@ -1472,13 +1610,14 @@ namespace Server
                 ContextMenu cm = new();
                 cm.MenuItems.Add("BG Color");
                 cm.MenuItems.Add("Clear");
+                cm.MenuItems.Add("Export");
                 cm.MenuItems[0].Click += new EventHandler(BGC_Click);
                 cm.MenuItems[1].Click += new EventHandler(Clear_Click);
+                cm.MenuItems[2].Click += new EventHandler(ExportText);
                 tabSections.ContextMenu = cm;
             }
         }
-        /* Controls */
-
+#endregion
 
     }
 }

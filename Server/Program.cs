@@ -13,7 +13,8 @@ namespace Server
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new GameServer());
+            Application.Run(new GameServer("Host"));
+
         }
     }
 }

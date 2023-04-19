@@ -1,4 +1,6 @@
-﻿namespace Server
+﻿using System.Drawing;
+
+namespace Server
 {
     partial class GameServer
     {
@@ -58,8 +60,12 @@
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.btnSetDraw = new System.Windows.Forms.Button();
+            this.gbSettings = new System.Windows.Forms.GroupBox();
+            this.lblColor = new System.Windows.Forms.Label();
+            this.cmdColor = new System.Windows.Forms.Button();
             this.gbDrawings = new System.Windows.Forms.GroupBox();
             this.gbBG = new System.Windows.Forms.GroupBox();
+            this.cbTrans = new System.Windows.Forms.CheckBox();
             this.btnClearAll = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.btnClear = new System.Windows.Forms.Button();
@@ -73,15 +79,11 @@
             this.label1 = new System.Windows.Forms.Label();
             this.btnColor = new System.Windows.Forms.Button();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
-            this.gbSettings = new System.Windows.Forms.GroupBox();
-            this.lblColor = new System.Windows.Forms.Label();
-            this.cmdColor = new System.Windows.Forms.Button();
             this.pDrawing = new System.Windows.Forms.Panel();
             this.picDrawing = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
-            this.cbTrans = new System.Windows.Forms.CheckBox();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -95,11 +97,11 @@
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
+            this.gbSettings.SuspendLayout();
             this.gbDrawings.SuspendLayout();
             this.gbBG.SuspendLayout();
             this.gbBrush.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSize)).BeginInit();
-            this.gbSettings.SuspendLayout();
             this.pDrawing.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picDrawing)).BeginInit();
             this.tableLayoutPanel2.SuspendLayout();
@@ -444,6 +446,7 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel3.Controls.Add(this.splitContainer2, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.pDrawing, 1, 0);
+            this.tableLayoutPanel3.Controls.Add(this.picDrawing,1,0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0);
@@ -485,6 +488,54 @@
             this.btnSetDraw.UseVisualStyleBackColor = true;
             this.btnSetDraw.Click += new System.EventHandler(this.SetDraw_Click);
             // 
+            // gbSettings
+            // 
+            this.gbSettings.Controls.Add(this.lblColor);
+            this.gbSettings.Controls.Add(this.cmdColor);
+            this.gbSettings.Controls.Add(this.txtPort);
+            this.gbSettings.Controls.Add(this.lblName);
+            this.gbSettings.Controls.Add(this.txtRoomKey);
+            this.gbSettings.Controls.Add(this.lblRoomKey);
+            this.gbSettings.Controls.Add(this.txtAddress);
+            this.gbSettings.Controls.Add(this.cmdJoin);
+            this.gbSettings.Controls.Add(this.txtName);
+            this.gbSettings.Controls.Add(this.lblPort);
+            this.gbSettings.Controls.Add(this.cmdHost);
+            this.gbSettings.Controls.Add(this.cbMask);
+            this.gbSettings.Controls.Add(this.lblAddress);
+            this.gbSettings.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gbSettings.Location = new System.Drawing.Point(0, 0);
+            this.gbSettings.Margin = new System.Windows.Forms.Padding(0);
+            this.gbSettings.Name = "gbSettings";
+            this.gbSettings.Padding = new System.Windows.Forms.Padding(0);
+            this.gbSettings.Size = new System.Drawing.Size(144, 289);
+            this.gbSettings.TabIndex = 0;
+            this.gbSettings.TabStop = false;
+            // 
+            // lblColor
+            // 
+            this.lblColor.AutoSize = true;
+            this.lblColor.BackColor = System.Drawing.Color.Transparent;
+            this.lblColor.Location = new System.Drawing.Point(107, 10);
+            this.lblColor.Margin = new System.Windows.Forms.Padding(0);
+            this.lblColor.Name = "lblColor";
+            this.lblColor.Size = new System.Drawing.Size(34, 13);
+            this.lblColor.TabIndex = 57;
+            this.lblColor.Text = "Color:";
+            this.lblColor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // cmdColor
+            // 
+            this.cmdColor.BackColor = System.Drawing.Color.Yellow;
+            this.cmdColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cmdColor.Location = new System.Drawing.Point(110, 25);
+            this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
+            this.cmdColor.Name = "cmdColor";
+            this.cmdColor.Size = new System.Drawing.Size(25, 20);
+            this.cmdColor.TabIndex = 56;
+            this.cmdColor.UseVisualStyleBackColor = false;
+            this.cmdColor.Click += new System.EventHandler(this.CmdPlayerColor_Click);
+            // 
             // gbDrawings
             // 
             this.gbDrawings.Controls.Add(this.gbBG);
@@ -512,6 +563,19 @@
             this.gbBG.TabIndex = 6;
             this.gbBG.TabStop = false;
             this.gbBG.Text = "Background";
+            // 
+            // cbTrans
+            // 
+            this.cbTrans.AutoSize = true;
+            this.cbTrans.BackColor = System.Drawing.Color.Transparent;
+            this.cbTrans.Location = new System.Drawing.Point(90, 19);
+            this.cbTrans.Margin = new System.Windows.Forms.Padding(0);
+            this.cbTrans.Name = "cbTrans";
+            this.cbTrans.Size = new System.Drawing.Size(53, 17);
+            this.cbTrans.TabIndex = 4;
+            this.cbTrans.Text = "Trans";
+            this.cbTrans.UseVisualStyleBackColor = false;
+            this.cbTrans.CheckedChanged += new System.EventHandler(this.Trans_CheckedChanged);
             // 
             // btnClearAll
             // 
@@ -553,6 +617,8 @@
             this.btnBGColor.Size = new System.Drawing.Size(42, 20);
             this.btnBGColor.TabIndex = 0;
             this.btnBGColor.UseVisualStyleBackColor = false;
+            this.btnBGColor.BackColorChanged += new System.EventHandler(this.BGColor_BackColorChanged);
+            this.btnBGColor.Click += new System.EventHandler(this.BGColor_Click);
             // 
             // gbBrush
             // 
@@ -670,58 +736,10 @@
             0,
             0});
             // 
-            // gbSettings
-            // 
-            this.gbSettings.Controls.Add(this.lblColor);
-            this.gbSettings.Controls.Add(this.cmdColor);
-            this.gbSettings.Controls.Add(this.txtPort);
-            this.gbSettings.Controls.Add(this.lblName);
-            this.gbSettings.Controls.Add(this.txtRoomKey);
-            this.gbSettings.Controls.Add(this.lblRoomKey);
-            this.gbSettings.Controls.Add(this.txtAddress);
-            this.gbSettings.Controls.Add(this.cmdJoin);
-            this.gbSettings.Controls.Add(this.txtName);
-            this.gbSettings.Controls.Add(this.lblPort);
-            this.gbSettings.Controls.Add(this.cmdHost);
-            this.gbSettings.Controls.Add(this.cbMask);
-            this.gbSettings.Controls.Add(this.lblAddress);
-            this.gbSettings.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbSettings.Location = new System.Drawing.Point(0, 0);
-            this.gbSettings.Margin = new System.Windows.Forms.Padding(0);
-            this.gbSettings.Name = "gbSettings";
-            this.gbSettings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbSettings.Size = new System.Drawing.Size(144, 289);
-            this.gbSettings.TabIndex = 0;
-            this.gbSettings.TabStop = false;
-            // 
-            // lblColor
-            // 
-            this.lblColor.AutoSize = true;
-            this.lblColor.BackColor = System.Drawing.Color.Transparent;
-            this.lblColor.Location = new System.Drawing.Point(107, 10);
-            this.lblColor.Margin = new System.Windows.Forms.Padding(0);
-            this.lblColor.Name = "lblColor";
-            this.lblColor.Size = new System.Drawing.Size(34, 13);
-            this.lblColor.TabIndex = 57;
-            this.lblColor.Text = "Color:";
-            this.lblColor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // cmdColor
-            // 
-            this.cmdColor.BackColor = System.Drawing.Color.Red;
-            this.cmdColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cmdColor.Location = new System.Drawing.Point(110, 25);
-            this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
-            this.cmdColor.Name = "cmdColor";
-            this.cmdColor.Size = new System.Drawing.Size(25, 20);
-            this.cmdColor.TabIndex = 56;
-            this.cmdColor.UseVisualStyleBackColor = false;
-            this.cmdColor.Click += new System.EventHandler(this.CmdPlayerColor_Click);
-            // 
             // pDrawing
             // 
             this.pDrawing.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.pDrawing.Controls.Add(this.picDrawing);
+            //this.pDrawing.Controls.Add(this.picDrawing);
             this.pDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pDrawing.Location = new System.Drawing.Point(153, 3);
             this.pDrawing.Name = "pDrawing";
@@ -733,6 +751,7 @@
             this.picDrawing.BackColor = System.Drawing.SystemColors.ScrollBar;
             this.picDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.picDrawing.Location = new System.Drawing.Point(0, 0);
+            this.picDrawing.Margin = new System.Windows.Forms.Padding(0);
             this.picDrawing.Name = "picDrawing";
             this.picDrawing.Size = new System.Drawing.Size(566, 426);
             this.picDrawing.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
@@ -781,18 +800,6 @@
             this.tPing.Interval = 5000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
             // 
-            // cbTrans
-            // 
-            this.cbTrans.AutoSize = true;
-            this.cbTrans.BackColor = System.Drawing.Color.Transparent;
-            this.cbTrans.Location = new System.Drawing.Point(90, 19);
-            this.cbTrans.Margin = new System.Windows.Forms.Padding(0);
-            this.cbTrans.Name = "cbTrans";
-            this.cbTrans.Size = new System.Drawing.Size(53, 17);
-            this.cbTrans.TabIndex = 4;
-            this.cbTrans.Text = "Trans";
-            this.cbTrans.UseVisualStyleBackColor = false;
-            // 
             // GameServer
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
@@ -802,7 +809,7 @@
             this.MinimumSize = new System.Drawing.Size(500, 400);
             this.Name = "GameServer";
             this.ShowIcon = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Server";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.GameServer_FormClosing);
             this.tabSections.ResumeLayout(false);
@@ -819,14 +826,14 @@
             this.splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
             this.splitContainer2.ResumeLayout(false);
+            this.gbSettings.ResumeLayout(false);
+            this.gbSettings.PerformLayout();
             this.gbDrawings.ResumeLayout(false);
             this.gbBG.ResumeLayout(false);
             this.gbBG.PerformLayout();
             this.gbBrush.ResumeLayout(false);
             this.gbBrush.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSize)).EndInit();
-            this.gbSettings.ResumeLayout(false);
-            this.gbSettings.PerformLayout();
             this.pDrawing.ResumeLayout(false);
             this.pDrawing.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picDrawing)).EndInit();
