@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using static Server.Encryption;
 
 namespace Server
 {
@@ -62,9 +63,12 @@ namespace Server
         };
         private Client clientObject;
 #endregion Declarations
-        
+
 #region General Declarations
         private Task send = null;
+        private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";
+        //var encryptedString = AesOperation.EncryptString(AeS, strToEnc);
+        //var decryptedString = AesOperation.DecryptString(AeS, strToDec);
 
         /* Used to enable Console Output */
         /*
@@ -72,7 +76,7 @@ namespace Server
                 [return: MarshalAs(UnmanagedType.Bool)]
                 static extern bool AllocConsole();
         */
-#endregion
+        #endregion
 
 #region Form
         public GameServer(string PlayerName)                                                        // On Open 
@@ -200,7 +204,7 @@ namespace Server
         }
 #endregion
 
-#region Message box & Send
+#region Messagebox & Send
         private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Send on <Enter> 
         {
             if (e.KeyCode == Keys.Enter) {
@@ -273,7 +277,7 @@ namespace Server
         }
 #endregion
 
-#region DataGrid management
+#region DataGrid Management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
             int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;                 // convert COLOURS to string  - From Color to ARGB
@@ -349,9 +353,11 @@ namespace Server
                 HostSendPublic(GridContents);                                                       // Host Send Grid row 
             }
         }
-#endregion
+        #endregion
 
 #region Drawing
+        int drawCount;
+        int readCount;
         public class DrawPackage
         {
             public string PenColor { get; set; }
@@ -382,6 +388,7 @@ namespace Server
         Point PT2, PT1;
         int x, y, PT1X, PT1Y, PT2X, PT2Y;
         private bool Drawing = false;
+        private bool remoteDraw = false;
 
         private DrawPackage PrepareDrawPackage()                                                    // Create a Draw Pakage 
         {
@@ -679,6 +686,10 @@ namespace Server
         }
         private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
         {
+            this.Invoke((MethodInvoker)delegate {
+                drawCount += 1;
+                this.Text = "Draws: " + drawCount.ToString() + " -  Reads: " + readCount.ToString();
+            });
             picDrawing.Invoke((MethodInvoker)delegate {
                 using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);      // Set Pen
                 pen.StartCap = LineCap.Round;
@@ -691,7 +702,7 @@ namespace Server
                     for (int i = 0; i < drawPackage.PPath.Length; i++) {
                         pPath.AddLines(new PointF[] {                                               // Add points to Path
                                 drawPackage.PPath[i]
-                            });
+                        });
                     }
                 }
 
@@ -744,18 +755,18 @@ namespace Server
                         break;
                 }
 
-                if (listening) {
-                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                         // Format the Package 
-                    HostSendPublic(json);                                                 // Host Send Draw Package
-                } else if (connected) {
-                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                         // Format the Package 
-                    Send(json);                                                           // Client Send Draw Package
+                if (listening && !remoteDraw) {
+                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                  // Format the Package 
+                    HostSendPublic(json);                                                           // Host Send Draw Package
+                } else if (connected && !remoteDraw) {
+                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                  // Format the Package 
+                    Send(json);                                                                     // Client Send Draw Package
                 }
                 picDrawing.Refresh();                                                               // Update the Canvas
-
                 pPath.Reset();                                                                      // Clean up
                 pen.Dispose();
                 brush.Dispose();
+                remoteDraw = false;
             });
         }
 # endregion
@@ -989,10 +1000,11 @@ namespace Server
         private void Send(string msg)                                                               // Client version 
         {
             if (!listening) {
+                var encryptedString = AesOperation.EncryptString(AeS, msg);
                 if (send == null || send.IsCompleted) {
-                    send = Task.Factory.StartNew(() => BeginWrite(msg));
+                    send = Task.Factory.StartNew(() => BeginWrite(encryptedString));
                 } else {
-                    send.ContinueWith(antecendent => BeginWrite(msg));
+                    send.ContinueWith(antecendent => BeginWrite(encryptedString));
                 }
             }
         }
@@ -1021,18 +1033,20 @@ namespace Server
         // Host Send
         private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host prepare to send Private message 
         {
+            var encryptedString = AesOperation.EncryptString(AeS, msg);
             if (send == null || send.IsCompleted) {
-                send = Task.Factory.StartNew(() => HostBeginPrivate(msg, obj));
+                send = Task.Factory.StartNew(() => HostBeginPrivate(encryptedString, obj));
             } else {
-                send.ContinueWith(antecendent => HostBeginPrivate(msg, obj));
+                send.ContinueWith(antecendent => HostBeginPrivate(encryptedString, obj));
             }
         }
         private void HostSendPublic(string msg, long id = -1)                                       // Host prepare to send Public message 
         {
+            var encryptedString = AesOperation.EncryptString(AeS, msg);
             if (send == null || send.IsCompleted) {
-                send = Task.Factory.StartNew(() => HostBeginPublic(msg, id));
+                send = Task.Factory.StartNew(() => HostBeginPublic(encryptedString, id));
             } else {
-                send.ContinueWith(antecendent => HostBeginPublic(msg, id));
+                send.ContinueWith(antecendent => HostBeginPublic(encryptedString, id));
             }
         }
         private void HostBeginPrivate(string msg, MyPlayers obj)                                    // Host BeginWrite Private message to stream 
@@ -1134,8 +1148,10 @@ namespace Server
                         if (obj.stream.DataAvailable) {
                             obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(ReadAuth), obj);
                         } else {
+                            var decryptedString = AesOperation.DecryptString(AeS, obj.data.ToString()); // Decrypt
                             JavaScriptSerializer json = new();
-                            Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(obj.data.ToString());
+                            Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(decryptedString); // Unpack
+
                             if (!data.ContainsKey("username") || data["username"].Length < 1 || !data.ContainsKey("roomkey") || !data["roomkey"].Equals(txtRoomKey.Text)) {
                                 obj.client.Close();
                             } else {
@@ -1173,8 +1189,10 @@ namespace Server
                         if (clientObject.stream.DataAvailable) {
                             clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(ReadAuth), null);
                         } else {
+                            var decryptedString = AesOperation.DecryptString(AeS, clientObject.data.ToString()); // Decrypt
                             JavaScriptSerializer json = new();
-                            Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(clientObject.data.ToString());
+                            Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(decryptedString);
+
                             if (data.ContainsKey("status") && data["status"].Equals("authorized")) {
                                 Connected(true);
                             }
@@ -1214,7 +1232,7 @@ namespace Server
                             obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
                         } else {
                             // Host Receive
-                            string clientData = obj.data.ToString();
+                            string clientData = AesOperation.DecryptString(AeS, obj.data.ToString()); // Decrypt
 
                             // Host Receive - PM
                             if (clientData.Contains("/msg")) {
@@ -1241,6 +1259,9 @@ namespace Server
 
                             // Host receive - Drawing
                             if (clientData.StartsWith("{\"PenColor\"")) {
+                                remoteDraw = true;
+                                readCount++;
+
                                 DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(clientData);
                                 DrawShape(remoteDP);
                                 HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
@@ -1260,8 +1281,8 @@ namespace Server
                             }
 
                             // Host Receive - Public Message
-                            PostChat(obj.username.ToString(), obj.data.ToString());               // Host post
-                            HostSendPublic(string.Format("{0}:{1}", obj.username, obj.data.ToString()), obj.id);    // Host relay public message to other clients
+                            PostChat(obj.username.ToString(), clientData);                          // Host post
+                            HostSendPublic(string.Format("{0}:{1}", obj.username, clientData), obj.id);    // Host relay public message to other clients
                             obj.data.Clear();
                             obj.handle.Set();
                         }
@@ -1274,7 +1295,9 @@ namespace Server
                     obj.client.Close();
                     obj.handle.Set();
                 }
-            } else {                                                                                // Client stream reader
+            }                                                                                // Client stream reader
+            else
+            {
                 if (clientObject == null) { return; }
                 int bytes = 0;
                 if (clientObject.client.Connected) {
@@ -1290,14 +1313,11 @@ namespace Server
                         if (clientObject.stream.DataAvailable) {
                             clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(Read), null);
                         } else {
-                            string hostData = clientObject.data.ToString();
-
-
-
+                            string hostData = AesOperation.DecryptString(AeS, clientObject.data.ToString()); // Decrypt
 
                             if (hostData.StartsWith("{\"Id\"")) {                                   // Client Receive - grid update
                                 ClearDataGrid();                                                    // Clear DataGrid 
-                                string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     PlayerPackage player = JsonConvert.DeserializeObject<PlayerPackage>(message);
                                     Color argbColor = Color.FromArgb(player.Color[0], player.Color[1], player.Color[2], player.Color[3]);
@@ -1317,9 +1337,10 @@ namespace Server
                             }
 
                             if (hostData.StartsWith("{\"PenColor\"")) {                              // Client Receive - Drawing
-                                string[] messages = clientObject.data.ToString().Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                                 foreach (string message in messages) {
                                     DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
+                                    remoteDraw = true;
                                     DrawShape(remoteDP);
                                 }
                                 clientObject.data.Clear();
@@ -1327,10 +1348,9 @@ namespace Server
                                 return;
                             }
 
-
-                            if (hostData.StartsWith("{\"FillColor\"")) {
+                            if (hostData.StartsWith("{\"FillColor\"")) {                            // Client Receive - FillTool
                                 FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(hostData);
-                                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));// Client Receive - FillTool
+                                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
                                 return;
@@ -1352,15 +1372,17 @@ namespace Server
                                 return;
                             }
 
-                            JavaScriptSerializer json = new();
-                            Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(clientObject.data.ToString());
-                            if (data.ContainsKey("bitmap")) {
-                                ReceiveBitmap(data["bitmap"]);
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
+                            if (hostData.StartsWith("IMG:")) {                                      // Client Receive - Image
+                                JavaScriptSerializer json = new();
+                                Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(clientObject.data.ToString());
+                                if (data.ContainsKey("bitmap")) {
+                                    ReceiveBitmap(data["bitmap"]);
+                                    clientObject.data.Clear();
+                                    clientObject.handle.Set();
+                                    return;
+                                }
+                                // {{"bitmap":"Qk2mtw4AAAAAADYAAAAoAAAANgIAAKoBAAABACAAAAAAAAAAAADEDgAAxA4AAAAAAAAAAAAA5vD6/ ....  m8Pr/"}}
                             }
-                            // {{"bitmap":"Qk2mtw4AAAAAADYAAAAoAAAANgIAAKoBAAABACAAAAAAAAAAAADEDgAAxA4AAAAAAAAAAAAA5vD6/ ....  m8Pr/"}}
 
                             string[] dataParts = hostData.Split(':');
                             PostChat(dataParts[0], dataParts[1]);                                 // Client Receive - Public Message
@@ -1380,7 +1402,7 @@ namespace Server
         }
 
         // / *** READ ***/ 
-        #endregion
+#endregion
 
 # region Routines
         private void SetColour(object sender)                                                       // Set's all Colour related Buttons 

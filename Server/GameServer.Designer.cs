@@ -102,7 +102,6 @@ namespace Server
             this.gbBG.SuspendLayout();
             this.gbBrush.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSize)).BeginInit();
-            this.pDrawing.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picDrawing)).BeginInit();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -446,13 +445,14 @@ namespace Server
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel3.Controls.Add(this.splitContainer2, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.pDrawing, 1, 0);
-            this.tableLayoutPanel3.Controls.Add(this.picDrawing,1,0);
+            this.tableLayoutPanel3.Controls.Add(this.picDrawing, 1, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel3.Size = new System.Drawing.Size(726, 436);
             this.tableLayoutPanel3.TabIndex = 45;
             // 
@@ -474,8 +474,8 @@ namespace Server
             // 
             this.splitContainer2.Panel2.Controls.Add(this.lblConnections);
             this.splitContainer2.Panel2.Controls.Add(this.clientsDataGridView);
-            this.splitContainer2.Size = new System.Drawing.Size(144, 430);
-            this.splitContainer2.SplitterDistance = 289;
+            this.splitContainer2.Size = new System.Drawing.Size(144, 410);
+            this.splitContainer2.SplitterDistance = 269;
             this.splitContainer2.TabIndex = 32;
             // 
             // btnSetDraw
@@ -508,7 +508,7 @@ namespace Server
             this.gbSettings.Margin = new System.Windows.Forms.Padding(0);
             this.gbSettings.Name = "gbSettings";
             this.gbSettings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbSettings.Size = new System.Drawing.Size(144, 289);
+            this.gbSettings.Size = new System.Drawing.Size(144, 269);
             this.gbSettings.TabIndex = 0;
             this.gbSettings.TabStop = false;
             // 
@@ -545,7 +545,7 @@ namespace Server
             this.gbDrawings.Margin = new System.Windows.Forms.Padding(0);
             this.gbDrawings.Name = "gbDrawings";
             this.gbDrawings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbDrawings.Size = new System.Drawing.Size(144, 289);
+            this.gbDrawings.Size = new System.Drawing.Size(144, 269);
             this.gbDrawings.TabIndex = 0;
             this.gbDrawings.TabStop = false;
             // 
@@ -739,21 +739,20 @@ namespace Server
             // pDrawing
             // 
             this.pDrawing.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            //this.pDrawing.Controls.Add(this.picDrawing);
             this.pDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pDrawing.Location = new System.Drawing.Point(153, 3);
+            this.pDrawing.Location = new System.Drawing.Point(3, 419);
             this.pDrawing.Name = "pDrawing";
-            this.pDrawing.Size = new System.Drawing.Size(570, 430);
+            this.pDrawing.Size = new System.Drawing.Size(144, 14);
             this.pDrawing.TabIndex = 33;
             // 
             // picDrawing
             // 
             this.picDrawing.BackColor = System.Drawing.SystemColors.ScrollBar;
             this.picDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.picDrawing.Location = new System.Drawing.Point(0, 0);
+            this.picDrawing.Location = new System.Drawing.Point(150, 0);
             this.picDrawing.Margin = new System.Windows.Forms.Padding(0);
             this.picDrawing.Name = "picDrawing";
-            this.picDrawing.Size = new System.Drawing.Size(566, 426);
+            this.picDrawing.Size = new System.Drawing.Size(576, 416);
             this.picDrawing.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             this.picDrawing.TabIndex = 0;
             this.picDrawing.TabStop = false;
@@ -822,6 +821,7 @@ namespace Server
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
+            this.tableLayoutPanel3.PerformLayout();
             this.splitContainer2.Panel1.ResumeLayout(false);
             this.splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
@@ -834,8 +834,6 @@ namespace Server
             this.gbBrush.ResumeLayout(false);
             this.gbBrush.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSize)).EndInit();
-            this.pDrawing.ResumeLayout(false);
-            this.pDrawing.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.picDrawing)).EndInit();
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel2.PerformLayout();
