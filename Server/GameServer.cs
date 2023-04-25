@@ -139,9 +139,7 @@ namespace Server
                 } else {
                     txtConsole.Clear();
                 }
-                if (tabSections.SelectedIndex != 0) {
-                    tabSections.TabPages[0].Text = "*Console*";
-                }
+                if (tabSections.SelectedIndex != 0) { tabSections.TabPages[0].Text = "*Console*"; } // If not in focus change the Tab text
             });
         }
         private void PostChat(string username, string msg = "")                                     // Post the message / Clear if empty 
@@ -169,7 +167,7 @@ namespace Server
                 Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3])); 
                 
                 txtLobby.Invoke((MethodInvoker)delegate {
-                    if (tabSections.SelectedIndex != 1) { tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count); }
+                    if (tabSections.SelectedIndex != 1) { tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count); }  // If not in focus change the Tab text
                     txtLobby.AppendText(formattedMSG, msgColor);                                    // Post actual msg
                     txtMessage.Focus();                                                             // Leave focus for next message
                 });
