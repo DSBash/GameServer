@@ -31,7 +31,7 @@ namespace Server
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.lblConnections = new System.Windows.Forms.Label();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
@@ -79,7 +79,6 @@ namespace Server
             this.label1 = new System.Windows.Forms.Label();
             this.btnColor = new System.Windows.Forms.Button();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
-            this.pDrawing = new System.Windows.Forms.Panel();
             this.picDrawing = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
@@ -229,7 +228,7 @@ namespace Server
             this.txtAddress.Size = new System.Drawing.Size(132, 20);
             this.txtAddress.TabIndex = 53;
             this.txtAddress.TabStop = false;
-            this.txtAddress.Text = "127.0.0.1";
+            this.txtAddress.Text = "192.168.0.81";
             this.txtAddress.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // lblRoomKey
@@ -383,8 +382,8 @@ namespace Server
             // 
             // latency
             // 
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.latency.DefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.latency.DefaultCellStyle = dataGridViewCellStyle2;
             this.latency.HeaderText = "Ping";
             this.latency.MinimumWidth = 28;
             this.latency.Name = "latency";
@@ -444,7 +443,6 @@ namespace Server
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 150F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel3.Controls.Add(this.splitContainer2, 0, 0);
-            this.tableLayoutPanel3.Controls.Add(this.pDrawing, 1, 0);
             this.tableLayoutPanel3.Controls.Add(this.picDrawing, 1, 0);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
@@ -474,8 +472,8 @@ namespace Server
             // 
             this.splitContainer2.Panel2.Controls.Add(this.lblConnections);
             this.splitContainer2.Panel2.Controls.Add(this.clientsDataGridView);
-            this.splitContainer2.Size = new System.Drawing.Size(144, 410);
-            this.splitContainer2.SplitterDistance = 269;
+            this.splitContainer2.Size = new System.Drawing.Size(144, 430);
+            this.splitContainer2.SplitterDistance = 289;
             this.splitContainer2.TabIndex = 32;
             // 
             // btnSetDraw
@@ -508,7 +506,7 @@ namespace Server
             this.gbSettings.Margin = new System.Windows.Forms.Padding(0);
             this.gbSettings.Name = "gbSettings";
             this.gbSettings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbSettings.Size = new System.Drawing.Size(144, 269);
+            this.gbSettings.Size = new System.Drawing.Size(144, 289);
             this.gbSettings.TabIndex = 0;
             this.gbSettings.TabStop = false;
             // 
@@ -545,7 +543,7 @@ namespace Server
             this.gbDrawings.Margin = new System.Windows.Forms.Padding(0);
             this.gbDrawings.Name = "gbDrawings";
             this.gbDrawings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbDrawings.Size = new System.Drawing.Size(144, 269);
+            this.gbDrawings.Size = new System.Drawing.Size(144, 289);
             this.gbDrawings.TabIndex = 0;
             this.gbDrawings.TabStop = false;
             // 
@@ -736,15 +734,6 @@ namespace Server
             0,
             0});
             // 
-            // pDrawing
-            // 
-            this.pDrawing.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.pDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pDrawing.Location = new System.Drawing.Point(3, 419);
-            this.pDrawing.Name = "pDrawing";
-            this.pDrawing.Size = new System.Drawing.Size(144, 14);
-            this.pDrawing.TabIndex = 33;
-            // 
             // picDrawing
             // 
             this.picDrawing.BackColor = System.Drawing.SystemColors.ScrollBar;
@@ -752,7 +741,7 @@ namespace Server
             this.picDrawing.Location = new System.Drawing.Point(150, 0);
             this.picDrawing.Margin = new System.Windows.Forms.Padding(0);
             this.picDrawing.Name = "picDrawing";
-            this.picDrawing.Size = new System.Drawing.Size(576, 416);
+            this.picDrawing.Size = new System.Drawing.Size(576, 436);
             this.picDrawing.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             this.picDrawing.TabIndex = 0;
             this.picDrawing.TabStop = false;
@@ -866,7 +855,6 @@ namespace Server
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.Panel pDrawing;
         private System.Windows.Forms.GroupBox gbSettings;
         private System.Windows.Forms.GroupBox gbDrawings;
         private System.Windows.Forms.RichTextBox txtLobby;

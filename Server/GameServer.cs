@@ -84,6 +84,7 @@ namespace Server
             InitializeComponent();
             //AllocConsole();
             txtName.Text = PlayerName;
+            txtName.Text = Environment.UserName;
             /*
                         
                         if (PlayerName == "Host") {
@@ -356,8 +357,6 @@ namespace Server
         #endregion
 
 #region Drawing
-        int drawCount;
-        int readCount;
         public class DrawPackage
         {
             public string PenColor { get; set; }
@@ -648,17 +647,17 @@ namespace Server
             MemoryStream memoryStream = new();
             BM.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Bmp);
             byte[] imageArray = memoryStream.ToArray();
-            string b64Image = Convert.ToBase64String(imageArray);                      // Convert To
+            string b64Image = Convert.ToBase64String(imageArray);                                   // Convert To
 
-            Dictionary<string, string> bitmapUpdate = new() {                                          // Collect info to send as object Handshake
+            Dictionary<string, string> bitmapUpdate = new() {                                       // Collect info to send as object Handshake
                 { "bitmap", b64Image },
             };
             JavaScriptSerializer json = new();                                                      // Format the Handshake object
 
             if (listening) {
-                HostSendPublic(json.Serialize(bitmapUpdate));                                                     // Host Send Draw Package
+                HostSendPublic(json.Serialize(bitmapUpdate));                                       // Host Send Draw Package
             } else if (connected) {
-                Send(json.Serialize(bitmapUpdate));                                                               // Client Send Draw Package
+                Send(json.Serialize(bitmapUpdate));                                                 // Client Send Draw Package
             }
         }
         private void ReceiveBitmap(string rbitmap)
@@ -686,10 +685,6 @@ namespace Server
         }
         private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
         {
-            this.Invoke((MethodInvoker)delegate {
-                drawCount += 1;
-                this.Text = "Draws: " + drawCount.ToString() + " -  Reads: " + readCount.ToString();
-            });
             picDrawing.Invoke((MethodInvoker)delegate {
                 using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);      // Set Pen
                 pen.StartCap = LineCap.Round;
@@ -886,7 +881,7 @@ namespace Server
             if (Authorize(obj)) {
                 players.TryAdd(obj.id, obj);
                 AddToGrid(obj.id, obj.username.ToString(), obj.color);                  // get client COLOURS add to grind
-                string msg = string.Format("{0}:{1} has connected.", obj.id, obj.username);
+                string msg = string.Format("{0} has connected.", obj.username);
                 Console(SystemMsg(msg));
                 HostSendPublic(SystemMsg(msg), obj.id);
                 while (obj.client.Connected) {
@@ -900,7 +895,7 @@ namespace Server
                 obj.client.Close();
                 players.TryRemove(obj.id, out MyPlayers tmp);
                 RemoveFromGrid(tmp.id);
-                msg = string.Format("{0}:{1} has disconnected.", tmp.id, tmp.username);
+                msg = string.Format("{0} has disconnected.", tmp.username);
                 Console(SystemMsg(msg));
                 HostSendPublic(SystemMsg(msg), tmp.id);
             }
@@ -1260,8 +1255,6 @@ namespace Server
                             // Host receive - Drawing
                             if (clientData.StartsWith("{\"PenColor\"")) {
                                 remoteDraw = true;
-                                readCount++;
-
                                 DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(clientData);
                                 DrawShape(remoteDP);
                                 HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
@@ -1372,7 +1365,7 @@ namespace Server
                                 return;
                             }
 
-                            if (hostData.StartsWith("IMG:")) {                                      // Client Receive - Image
+                            if (hostData.Contains("bitmap")) {                                      // Client Receive - Image
                                 JavaScriptSerializer json = new();
                                 Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(clientObject.data.ToString());
                                 if (data.ContainsKey("bitmap")) {
