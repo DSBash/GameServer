@@ -65,6 +65,8 @@ namespace Server
 #endregion Declarations
 
 #region General Declarations
+        private bool unReadConsole;
+        private ContextMenu tabCM;
         private Task send = null;
         private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";
         //var encryptedString = AesOperation.EncryptString(AeS, strToEnc);
@@ -83,10 +85,15 @@ namespace Server
         {
             InitializeComponent();
             //AllocConsole();
-            txtName.Text = PlayerName;
             txtName.Text = Environment.UserName;
-            /*
-                        
+
+            /* // Fills the Grid            
+            for (int i = 0; i <= 3;i++){
+                string[] row = new string[] { i.ToString(), "", "", "0", "" };
+                clientsDataGridView.Rows.Add(row);
+            }*/
+            /* // Opens multiple forms
+                        txtName.Text = PlayerName;
                         if (PlayerName == "Host") {
                             GameServer Frm1 = new("Player 1");
                             Frm1.StartPosition = FormStartPosition.Manual;
@@ -132,6 +139,9 @@ namespace Server
                 } else {
                     txtConsole.Clear();
                 }
+                if (tabSections.SelectedIndex != 0) {
+                    tabSections.TabPages[0].Text = "*Console*";
+                }
             });
         }
         private void PostChat(string username, string msg = "")                                     // Post the message / Clear if empty 
@@ -156,11 +166,11 @@ namespace Server
                     }
                 }
                 string[] colParts = playerColor.Split(',');                                         // Format string to Color
-                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
-                txtLobby.Invoke((MethodInvoker)delegate {                                           // Post actual msg
-                    txtLobby.AppendText(formattedMSG, msgColor);
-                    txtLobby.Focus();                                                               // Set Focus to lobby to
-                    txtLobby.SelectionStart = txtLobby.Text.Length;                                 // scroll lobby to end
+                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3])); 
+                
+                txtLobby.Invoke((MethodInvoker)delegate {
+                    if (tabSections.SelectedIndex != 1) { tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count); }
+                    txtLobby.AppendText(formattedMSG, msgColor);                                    // Post actual msg
                     txtMessage.Focus();                                                             // Leave focus for next message
                 });
             }
@@ -302,9 +312,8 @@ namespace Server
             });
             DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
             nrow.DefaultCellStyle.BackColor = color;
-            lblConnections.Invoke((MethodInvoker)delegate {
-                lblConnections.Visible = true;
-                lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
+            tabSections.Invoke((MethodInvoker)delegate {
+                tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count);
             });
             if (listening) { UpdateDataContents(); }
         }
@@ -320,8 +329,8 @@ namespace Server
                     }
                 }
             });
-            lblConnections.Invoke((MethodInvoker)delegate {
-                lblConnections.Text = string.Format("Total players: {0}", clientsDataGridView.Rows.Count);
+            tabSections.Invoke((MethodInvoker)delegate {
+                tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count);
             });
             if (listening) { UpdateDataContents(); }
         }
@@ -779,6 +788,7 @@ namespace Server
                     txtRoomKey.Enabled = false;
                     cmdHost.Enabled = false;
                     clientsDataGridView.Columns["dc"].Visible = false;
+                    clientsDataGridView.Columns["latency"].Visible = false;
                     btnColor.BackColor = cmdColor.BackColor;
                     cmdJoin.Text = "Disconnect";
                     tPing.Enabled = true;
@@ -807,6 +817,7 @@ namespace Server
                     txtRoomKey.Enabled = false;
                     cmdJoin.Enabled = false;
                     clientsDataGridView.Columns["dc"].Visible = true;
+                    clientsDataGridView.Columns["latency"].Visible = true;
                     btnClearAll.Visible = true;
                     btnColor.BackColor = cmdColor.BackColor;
                     cmdHost.Text = "Stop";
@@ -1481,6 +1492,9 @@ namespace Server
         {
             if (cbTrans.Checked) { btnBGColor.BackColor = Color.Transparent; }
         }
+
+
+
         private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser / set starting brush to same 
         {
             SetColour(sender);
@@ -1622,17 +1636,22 @@ namespace Server
         private void TabSections_MouseClick(object sender, MouseEventArgs e)                        // Tab Context Menu 
         {
             if (e.Button == MouseButtons.Right) {
-                ContextMenu cm = new();
-                cm.MenuItems.Add("BG Color");
-                cm.MenuItems.Add("Clear");
-                cm.MenuItems.Add("Export");
-                cm.MenuItems[0].Click += new EventHandler(BGC_Click);
-                cm.MenuItems[1].Click += new EventHandler(Clear_Click);
-                cm.MenuItems[2].Click += new EventHandler(ExportText);
-                tabSections.ContextMenu = cm;
+                ContextMenu tabCM = new();
+                tabCM.MenuItems.Add("BG Color");
+                tabCM.MenuItems.Add("Clear");
+                tabCM.MenuItems.Add("Export");
+                tabCM.MenuItems[0].Click += new EventHandler(BGC_Click);
+                tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
+                tabCM.MenuItems[2].Click += new EventHandler(ExportText);
+                tabSections.ContextMenu = tabCM;
             }
         }
-#endregion
+        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabSections.SelectedIndex == 0) { tabSections.TabPages[0].Text = "Console"; }
+            if (tabSections.SelectedIndex == 1) { tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count); }
+        }
+        #endregion
 
     }
 }

@@ -31,8 +31,7 @@ namespace Server
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.lblConnections = new System.Windows.Forms.Label();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
             this.txtConsole = new System.Windows.Forms.TextBox();
@@ -50,16 +49,10 @@ namespace Server
             this.cmdHost = new System.Windows.Forms.Button();
             this.cmdJoin = new System.Windows.Forms.Button();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
-            this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
             this.txtMessage = new System.Windows.Forms.TextBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.btnSetDraw = new System.Windows.Forms.Button();
             this.gbSettings = new System.Windows.Forms.GroupBox();
             this.lblColor = new System.Windows.Forms.Label();
             this.cmdColor = new System.Windows.Forms.Button();
@@ -79,10 +72,16 @@ namespace Server
             this.label1 = new System.Windows.Forms.Label();
             this.btnColor = new System.Windows.Forms.Button();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
+            this.btnSetDraw = new System.Windows.Forms.Button();
             this.picDrawing = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
+            this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -106,32 +105,20 @@ namespace Server
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // lblConnections
-            // 
-            this.lblConnections.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblConnections.BackColor = System.Drawing.Color.Transparent;
-            this.lblConnections.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.lblConnections.Location = new System.Drawing.Point(1, 2);
-            this.lblConnections.Margin = new System.Windows.Forms.Padding(0);
-            this.lblConnections.Name = "lblConnections";
-            this.lblConnections.Size = new System.Drawing.Size(120, 13);
-            this.lblConnections.TabIndex = 31;
-            this.lblConnections.Text = "Total Connections: 0";
-            this.lblConnections.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
             // tabSections
             // 
             this.tabSections.Controls.Add(this.tConsole);
             this.tabSections.Controls.Add(this.tLobby);
             this.tabSections.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabSections.HotTrack = true;
-            this.tabSections.Location = new System.Drawing.Point(0, 0);
+            this.tabSections.Location = new System.Drawing.Point(150, 0);
             this.tabSections.Margin = new System.Windows.Forms.Padding(0);
             this.tabSections.Name = "tabSections";
             this.tabSections.Padding = new System.Drawing.Point(0, 0);
             this.tabSections.SelectedIndex = 0;
-            this.tabSections.Size = new System.Drawing.Size(726, 103);
+            this.tabSections.Size = new System.Drawing.Size(576, 121);
             this.tabSections.TabIndex = 45;
+            this.tabSections.SelectedIndexChanged += new System.EventHandler(this.TabSections_SelectedIndexChanged);
             this.tabSections.MouseClick += new System.Windows.Forms.MouseEventHandler(this.TabSections_MouseClick);
             // 
             // tConsole
@@ -139,7 +126,7 @@ namespace Server
             this.tConsole.Controls.Add(this.txtConsole);
             this.tConsole.Location = new System.Drawing.Point(4, 22);
             this.tConsole.Name = "tConsole";
-            this.tConsole.Size = new System.Drawing.Size(718, 77);
+            this.tConsole.Size = new System.Drawing.Size(568, 95);
             this.tConsole.TabIndex = 0;
             this.tConsole.Text = "Console";
             this.tConsole.UseVisualStyleBackColor = true;
@@ -147,6 +134,7 @@ namespace Server
             // txtConsole
             // 
             this.txtConsole.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.txtConsole.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtConsole.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtConsole.Location = new System.Drawing.Point(0, 0);
             this.txtConsole.Margin = new System.Windows.Forms.Padding(0);
@@ -154,7 +142,7 @@ namespace Server
             this.txtConsole.Name = "txtConsole";
             this.txtConsole.ReadOnly = true;
             this.txtConsole.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtConsole.Size = new System.Drawing.Size(718, 77);
+            this.txtConsole.Size = new System.Drawing.Size(568, 95);
             this.txtConsole.TabIndex = 25;
             this.txtConsole.TabStop = false;
             this.txtConsole.Text = "SYSTEM: An example of system text.";
@@ -164,7 +152,7 @@ namespace Server
             this.tLobby.Controls.Add(this.txtLobby);
             this.tLobby.Location = new System.Drawing.Point(4, 22);
             this.tLobby.Name = "tLobby";
-            this.tLobby.Size = new System.Drawing.Size(718, 77);
+            this.tLobby.Size = new System.Drawing.Size(568, 95);
             this.tLobby.TabIndex = 1;
             this.tLobby.Text = "Lobby";
             this.tLobby.UseVisualStyleBackColor = true;
@@ -172,11 +160,12 @@ namespace Server
             // txtLobby
             // 
             this.txtLobby.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.txtLobby.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtLobby.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtLobby.Location = new System.Drawing.Point(0, 0);
             this.txtLobby.Name = "txtLobby";
             this.txtLobby.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.txtLobby.Size = new System.Drawing.Size(718, 77);
+            this.txtLobby.Size = new System.Drawing.Size(568, 95);
             this.txtLobby.TabIndex = 0;
             this.txtLobby.Text = "";
             // 
@@ -318,7 +307,7 @@ namespace Server
             this.clientsDataGridView.AllowUserToResizeColumns = false;
             this.clientsDataGridView.AllowUserToResizeRows = false;
             this.clientsDataGridView.BackgroundColor = System.Drawing.SystemColors.ScrollBar;
-            this.clientsDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.clientsDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.clientsDataGridView.ClipboardCopyMode = System.Windows.Forms.DataGridViewClipboardCopyMode.Disable;
             this.clientsDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
             this.clientsDataGridView.ColumnHeadersHeight = 24;
@@ -329,11 +318,11 @@ namespace Server
             this.color,
             this.latency,
             this.dc});
-            this.clientsDataGridView.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.clientsDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.clientsDataGridView.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
             this.clientsDataGridView.EnableHeadersVisualStyles = false;
             this.clientsDataGridView.ImeMode = System.Windows.Forms.ImeMode.Off;
-            this.clientsDataGridView.Location = new System.Drawing.Point(0, 15);
+            this.clientsDataGridView.Location = new System.Drawing.Point(0, 0);
             this.clientsDataGridView.Margin = new System.Windows.Forms.Padding(0);
             this.clientsDataGridView.MinimumSize = new System.Drawing.Size(75, 0);
             this.clientsDataGridView.MultiSelect = false;
@@ -350,62 +339,16 @@ namespace Server
             this.clientsDataGridView.ShowCellToolTips = false;
             this.clientsDataGridView.ShowEditingIcon = false;
             this.clientsDataGridView.ShowRowErrors = false;
-            this.clientsDataGridView.Size = new System.Drawing.Size(144, 122);
+            this.clientsDataGridView.Size = new System.Drawing.Size(150, 121);
             this.clientsDataGridView.TabIndex = 33;
             this.clientsDataGridView.TabStop = false;
             this.clientsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.ClientsDataGridView_CellClick);
-            // 
-            // identifier
-            // 
-            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.identifier.HeaderText = "#";
-            this.identifier.MinimumWidth = 28;
-            this.identifier.Name = "identifier";
-            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.identifier.Visible = false;
-            this.identifier.Width = 28;
-            // 
-            // name
-            // 
-            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.name.HeaderText = "Name";
-            this.name.MaxInputLength = 20;
-            this.name.MinimumWidth = 50;
-            this.name.Name = "name";
-            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            // 
-            // color
-            // 
-            this.color.HeaderText = "";
-            this.color.Name = "color";
-            this.color.Visible = false;
-            // 
-            // latency
-            // 
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            this.latency.DefaultCellStyle = dataGridViewCellStyle2;
-            this.latency.HeaderText = "Ping";
-            this.latency.MinimumWidth = 28;
-            this.latency.Name = "latency";
-            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.latency.Width = 28;
-            // 
-            // dc
-            // 
-            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.dc.HeaderText = "DC";
-            this.dc.MinimumWidth = 28;
-            this.dc.Name = "dc";
-            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.dc.Text = "DC";
-            this.dc.Width = 28;
             // 
             // txtMessage
             // 
             this.txtMessage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtMessage.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtMessage.Location = new System.Drawing.Point(0, 103);
+            this.txtMessage.Location = new System.Drawing.Point(0, 121);
             this.txtMessage.Margin = new System.Windows.Forms.Padding(0);
             this.txtMessage.Name = "txtMessage";
             this.txtMessage.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -434,7 +377,7 @@ namespace Server
             // 
             this.splitContainer1.Panel2.Controls.Add(this.tableLayoutPanel2);
             this.splitContainer1.Size = new System.Drawing.Size(726, 569);
-            this.splitContainer1.SplitterDistance = 436;
+            this.splitContainer1.SplitterDistance = 418;
             this.splitContainer1.TabIndex = 47;
             // 
             // tableLayoutPanel3
@@ -451,7 +394,7 @@ namespace Server
             this.tableLayoutPanel3.RowCount = 1;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(726, 436);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(726, 418);
             this.tableLayoutPanel3.TabIndex = 45;
             // 
             // splitContainer2
@@ -464,27 +407,15 @@ namespace Server
             // 
             // splitContainer2.Panel1
             // 
-            this.splitContainer2.Panel1.Controls.Add(this.btnSetDraw);
             this.splitContainer2.Panel1.Controls.Add(this.gbSettings);
             this.splitContainer2.Panel1.Controls.Add(this.gbDrawings);
             // 
             // splitContainer2.Panel2
             // 
-            this.splitContainer2.Panel2.Controls.Add(this.lblConnections);
-            this.splitContainer2.Panel2.Controls.Add(this.clientsDataGridView);
-            this.splitContainer2.Size = new System.Drawing.Size(144, 430);
-            this.splitContainer2.SplitterDistance = 289;
+            this.splitContainer2.Panel2.Controls.Add(this.btnSetDraw);
+            this.splitContainer2.Size = new System.Drawing.Size(144, 412);
+            this.splitContainer2.SplitterDistance = 378;
             this.splitContainer2.TabIndex = 32;
-            // 
-            // btnSetDraw
-            // 
-            this.btnSetDraw.Location = new System.Drawing.Point(0, 205);
-            this.btnSetDraw.Name = "btnSetDraw";
-            this.btnSetDraw.Size = new System.Drawing.Size(144, 23);
-            this.btnSetDraw.TabIndex = 0;
-            this.btnSetDraw.Text = "Drawings";
-            this.btnSetDraw.UseVisualStyleBackColor = true;
-            this.btnSetDraw.Click += new System.EventHandler(this.SetDraw_Click);
             // 
             // gbSettings
             // 
@@ -506,7 +437,7 @@ namespace Server
             this.gbSettings.Margin = new System.Windows.Forms.Padding(0);
             this.gbSettings.Name = "gbSettings";
             this.gbSettings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbSettings.Size = new System.Drawing.Size(144, 289);
+            this.gbSettings.Size = new System.Drawing.Size(144, 378);
             this.gbSettings.TabIndex = 0;
             this.gbSettings.TabStop = false;
             // 
@@ -543,7 +474,7 @@ namespace Server
             this.gbDrawings.Margin = new System.Windows.Forms.Padding(0);
             this.gbDrawings.Name = "gbDrawings";
             this.gbDrawings.Padding = new System.Windows.Forms.Padding(0);
-            this.gbDrawings.Size = new System.Drawing.Size(144, 289);
+            this.gbDrawings.Size = new System.Drawing.Size(144, 378);
             this.gbDrawings.TabIndex = 0;
             this.gbDrawings.TabStop = false;
             // 
@@ -688,8 +619,7 @@ namespace Server
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(116, 20);
+            this.label2.Location = new System.Drawing.Point(115, 20);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(27, 13);
             this.label2.TabIndex = 3;
@@ -734,6 +664,16 @@ namespace Server
             0,
             0});
             // 
+            // btnSetDraw
+            // 
+            this.btnSetDraw.Location = new System.Drawing.Point(3, 3);
+            this.btnSetDraw.Name = "btnSetDraw";
+            this.btnSetDraw.Size = new System.Drawing.Size(138, 23);
+            this.btnSetDraw.TabIndex = 0;
+            this.btnSetDraw.Text = "Drawings";
+            this.btnSetDraw.UseVisualStyleBackColor = true;
+            this.btnSetDraw.Click += new System.EventHandler(this.SetDraw_Click);
+            // 
             // picDrawing
             // 
             this.picDrawing.BackColor = System.Drawing.SystemColors.ScrollBar;
@@ -741,7 +681,7 @@ namespace Server
             this.picDrawing.Location = new System.Drawing.Point(150, 0);
             this.picDrawing.Margin = new System.Windows.Forms.Padding(0);
             this.picDrawing.Name = "picDrawing";
-            this.picDrawing.Size = new System.Drawing.Size(576, 436);
+            this.picDrawing.Size = new System.Drawing.Size(576, 418);
             this.picDrawing.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             this.picDrawing.TabIndex = 0;
             this.picDrawing.TabStop = false;
@@ -765,28 +705,77 @@ namespace Server
             this.tableLayoutPanel2.RowCount = 2;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 26F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(726, 129);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(726, 147);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // tableLayoutPanel1
             // 
-            this.tableLayoutPanel1.ColumnCount = 1;
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 150F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Controls.Add(this.tabSections, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.tabSections, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.clientsDataGridView, 0, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(726, 103);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(726, 121);
             this.tableLayoutPanel1.TabIndex = 28;
             // 
             // tPing
             // 
             this.tPing.Interval = 5000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
+            // 
+            // identifier
+            // 
+            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.identifier.HeaderText = "#";
+            this.identifier.MinimumWidth = 28;
+            this.identifier.Name = "identifier";
+            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.identifier.Visible = false;
+            this.identifier.Width = 28;
+            // 
+            // name
+            // 
+            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.name.HeaderText = "Name";
+            this.name.MaxInputLength = 20;
+            this.name.MinimumWidth = 50;
+            this.name.Name = "name";
+            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            // 
+            // color
+            // 
+            this.color.HeaderText = "";
+            this.color.Name = "color";
+            this.color.Visible = false;
+            // 
+            // latency
+            // 
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.latency.DefaultCellStyle = dataGridViewCellStyle5;
+            this.latency.HeaderText = "Ping";
+            this.latency.MinimumWidth = 28;
+            this.latency.Name = "latency";
+            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.latency.Visible = false;
+            this.latency.Width = 28;
+            // 
+            // dc
+            // 
+            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dc.HeaderText = "DC";
+            this.dc.MinimumWidth = 28;
+            this.dc.Name = "dc";
+            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.dc.Text = "DC";
+            this.dc.Visible = false;
+            this.dc.Width = 28;
             // 
             // GameServer
             // 
@@ -832,7 +821,6 @@ namespace Server
         }
 
         #endregion
-        private System.Windows.Forms.Label lblConnections;
         private System.Windows.Forms.TabControl tabSections;
         private System.Windows.Forms.TabPage tConsole;
         private System.Windows.Forms.TabPage tLobby;
@@ -861,11 +849,6 @@ namespace Server
         private System.Windows.Forms.Timer tPing;
         private System.Windows.Forms.Label lblColor;
         private System.Windows.Forms.Button cmdColor;
-        private System.Windows.Forms.DataGridViewTextBoxColumn identifier;
-        private System.Windows.Forms.DataGridViewTextBoxColumn name;
-        private System.Windows.Forms.DataGridViewTextBoxColumn color;
-        private System.Windows.Forms.DataGridViewTextBoxColumn latency;
-        private System.Windows.Forms.DataGridViewButtonColumn dc;
         private System.Windows.Forms.Button btnSetDraw;
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.NumericUpDown nudSize;
@@ -883,6 +866,11 @@ namespace Server
         private System.Windows.Forms.CheckBox cbFillDraw;
         private System.Windows.Forms.PictureBox picDrawing;
         private System.Windows.Forms.CheckBox cbTrans;
+        private System.Windows.Forms.DataGridViewTextBoxColumn identifier;
+        private System.Windows.Forms.DataGridViewTextBoxColumn name;
+        private System.Windows.Forms.DataGridViewTextBoxColumn color;
+        private System.Windows.Forms.DataGridViewTextBoxColumn latency;
+        private System.Windows.Forms.DataGridViewButtonColumn dc;
     }
 }
 

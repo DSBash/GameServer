@@ -18,6 +18,9 @@ namespace Server
             box.SelectionColor = color;
             box.AppendText(text);
             box.SelectionColor = box.ForeColor;
+            //box.Focus();                                                                            // Set Focus to lobby to
+            box.SelectionStart = box.Text.Length;                                                   // scroll lobby to end
+            box.ScrollToCaret();
         }
     }
 }
