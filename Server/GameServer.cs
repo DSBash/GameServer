@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.VisualBasic.Devices;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,7 +24,8 @@ namespace Server
 {
     public partial class GameServer : Form
     {
-#region Host Specific Declarations
+        #region Declarations
+        #region Host Specific Declarations
         private bool listening = false;
         private Thread listener = null;
         private Thread disconnect = null;
@@ -33,21 +35,21 @@ namespace Server
             public string Name { get; set; }
             public int[] Color { get; set; }
         }
-        private class MyPlayers
+        public class MyPlayers
         {
-            public long id;
-            public Color color;
-            public StringBuilder username;
-            public TcpClient client;
-            public NetworkStream stream;
-            public byte[] buffer;
-            public StringBuilder data;
-            public EventWaitHandle handle;
+            public long id { get; set; }
+            public Color color { get; set; }
+            public StringBuilder username { get; set; }
+            public TcpClient client { get; set; }
+            public NetworkStream stream { get; set; }
+            public byte[] buffer { get; set; }
+            public StringBuilder data { get; set; }
+            public EventWaitHandle handle { get; set; }
         };
         private static readonly ConcurrentDictionary<long, MyPlayers> players = new();
-#endregion
-
-#region Client Specific Declarations
+        #endregion
+       
+        #region Client Specific Declarations
         private bool connected = false;
         private Thread client = null;
         private class Client
@@ -62,36 +64,66 @@ namespace Server
             public EventWaitHandle handle;
         };
         private Client clientObject;
-#endregion Declarations
+        #endregion Declarations
+       
+        #region Drawing Delclarations
+        public class DrawPackage
+        {
+            public string PenColor { get; set; }
+            public string BrushColor { get; set; }
+            public string DrawType { get; set; }
+            public Point[] PPath { get; set; }
+            public bool Fill { get; set; }
+            public int PenSize { get; set; }
+            public Point PT1 { get; set; }
+            public Point PT2 { get; set; }
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int PT1X { get; set; }
+            public int PT1Y { get; set; }
+            public int PT2X { get; set; }
+            public int PT2Y { get; set; }
+        }
+        public class FillPackage
+        {
+            public string FillColor { get; set; }
+            public int X { get; set; }
+            public int Y { get; set; }
+        }
 
-#region General Declarations
-        private bool unReadConsole;
-        private ContextMenu tabCM;
+        readonly Bitmap BM;
+        Graphics G;
+        GraphicsPath mPath;
+        Point PT2, PT1;
+        int x, y, PT1X, PT1Y, PT2X, PT2Y;
+        private bool Drawing = false;
+        private bool remoteDraw = false;
+        private Color _previousBackColor = Color.Linen;
+        private Color _newBackColor;
+        #endregion
+
+        #region General Declarations
         private Task send = null;
-        private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";
-        //var encryptedString = AesOperation.EncryptString(AeS, strToEnc);
-        //var decryptedString = AesOperation.DecryptString(AeS, strToDec);
-
-        /* Used to enable Console Output */
-        /*
+        private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";                    // AES Key
+        
+        private List<string> MSGHistory = new();                                                    // CLI History
+        private int HistoryIndex = -1;
+        /* Used to enable Console Output
                 [DllImport("kernel32.dll", SetLastError = true)]
                 [return: MarshalAs(UnmanagedType.Bool)]
                 static extern bool AllocConsole();
         */
         #endregion
+        #endregion
 
-#region Form
-        public GameServer(string PlayerName)                                                        // On Open 
+
+        #region Form
+        public GameServer(string PlayerName)                                                             // Main 
         {
             InitializeComponent();
             //AllocConsole();
             txtName.Text = Environment.UserName;
 
-            /* // Fills the Grid            
-            for (int i = 0; i <= 3;i++){
-                string[] row = new string[] { i.ToString(), "", "", "0", "" };
-                clientsDataGridView.Rows.Add(row);
-            }*/
             /* // Opens multiple forms
                         txtName.Text = PlayerName;
                         if (PlayerName == "Host") {
@@ -120,17 +152,38 @@ namespace Server
             G.Clear(btnBGColor.BackColor);
 
         }
+        private void GameServer_Load(object sender, EventArgs e)                                    // On Open 
+        {
+            ContextMenu tabCM = new();
+            tabCM.MenuItems.Add("BG Color");
+            tabCM.MenuItems.Add("Clear");
+            tabCM.MenuItems.Add("Export");
+            tabCM.MenuItems[0].Click += new EventHandler(BGC_Click);
+            tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
+            tabCM.MenuItems[2].Click += new EventHandler(ExportText);
+            tabSections.ContextMenu = tabCM;
+            /* // Fills the Grid            
+            for (int i = 0; i <= 3;i++){
+                string[] row = new string[] { i.ToString(), "", "", "0", "" };
+                clientsDataGridView.Rows.Add(row);
+            }*/
+        }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit 
         {
+            picDrawing.Dispose();
+            BM.Dispose();
+            G.Dispose();
+            DeleteTempImage();
+
             listening = false;
             if (connected) {
                 clientObject.client.Close();
             }
             Disconnect();
         }
-#endregion
+        #endregion
 
-#region Console & Chats
+        #region Console & Chats
         private void Console(string msg = "")                                                       // Console message / Clear if empty 
         {
             txtConsole.Invoke((MethodInvoker)delegate {
@@ -164,8 +217,8 @@ namespace Server
                     }
                 }
                 string[] colParts = playerColor.Split(',');                                         // Format string to Color
-                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3])); 
-                
+                Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+
                 txtLobby.Invoke((MethodInvoker)delegate {
                     if (tabSections.SelectedIndex != 1) { tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count); }  // If not in focus change the Tab text
                     txtLobby.AppendText(formattedMSG, msgColor);                                    // Post actual msg
@@ -187,9 +240,9 @@ namespace Server
             }
 
         }
-#endregion
+        #endregion
 
-#region Message formatters
+        #region Message formatters
         private string StackTrace()                                                                 // Better Debug Info 
         {
             StackTrace stackTrace = new();
@@ -211,15 +264,34 @@ namespace Server
         {
             return string.Format("SYSTEM: {0}", msg);
         }
-#endregion
+        #endregion
 
-#region Messagebox & Send
-        private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Send on <Enter> 
+        #region Messagebox & Send
+        private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // MSG History and Send on <Enter> 
         {
-            if (e.KeyCode == Keys.Enter) {
+            #region Command Line History
+            if (e.KeyCode == Keys.Up) {                                 // User pressed up arrow key
+                if (HistoryIndex > 0) {
+                    HistoryIndex--;                                     // Decrement the command index to retrieve the previous command
+                    txtMessage.Text = MSGHistory[HistoryIndex];
+                }
+            } else if (e.KeyCode == Keys.Down) {                        // User pressed down arrow key
+                if (HistoryIndex < MSGHistory.Count - 1) {
+                    HistoryIndex++;                                     // Increment the command index to retrieve the next command
+                    txtMessage.Text = MSGHistory[HistoryIndex];
+                } else {
+                    HistoryIndex = MSGHistory.Count;                    // User has reached the end of the command history
+                    txtMessage.Clear();                                 // Clear the textbox
+                }
+                #endregion
+            } else if (e.KeyCode == Keys.Enter) {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
                 string msg = txtMessage.Text;
+
+                MSGHistory.Add(msg);                                                            // CLH
+                HistoryIndex = MSGHistory.Count;
+
                 if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
                     PostChat(txtName.Text.Trim(), msg);
                     if (listening) {
@@ -230,7 +302,7 @@ namespace Server
                     }
                 } else {
                     if (listening) {
-                        if (msg.Contains("/msg")) {                                                 // PM - get MSG   /msg Player 1 Some text.
+                        if (msg.Contains("/msg")) {                                                 // MSG - get PM   /msg Player 1 Some text.
                             foreach (DataGridViewRow row in clientsDataGridView.Rows) {
                                 if (msg.Contains(row.Cells[1].Value.ToString())) {                  // if name in grid
                                     int index = msg.IndexOf(row.Cells[1].Value.ToString());         // get start of name
@@ -247,6 +319,9 @@ namespace Server
                                 }
                             }
                         }
+                        if (msg.StartsWith("/send")) {                                              // Drawing - Send the Image to Clients
+                            SendBitmap();
+                        }
                     }
                     if (connected) {
                         foreach (DataGridViewRow row in clientsDataGridView.Rows) {
@@ -258,12 +333,12 @@ namespace Server
                                 Send(string.Format("/msg:{0}:{1}", row.Cells[1].Value.ToString(), msg));
                             }
                         }
+                        if (msg.StartsWith("/picme")) {
+                            FileReceive();                                                          // Get Drawing from Server
+                        }
                     }
                     if (msg.StartsWith("/save")) {
                         SaveBitmap();
-                    }
-                    if (msg.StartsWith("/send")) {
-                        SendBitmap();
                     }
                     if (msg.StartsWith("/export")) {
                         ExportText(sender, e);
@@ -284,9 +359,9 @@ namespace Server
                 txtMessage.Text = "Type and press enter to send.";
             }
         }
-#endregion
+        #endregion
 
-#region DataGrid Management
+        #region DataGrid Management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client 
         {
             int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;                 // convert COLOURS to string  - From Color to ARGB
@@ -363,39 +438,7 @@ namespace Server
         }
         #endregion
 
-#region Drawing
-        public class DrawPackage
-        {
-            public string PenColor { get; set; }
-            public string BrushColor { get; set; }
-            public string DrawType { get; set; }
-            public Point[] PPath { get; set; }
-            public bool Fill { get; set; }
-            public int PenSize { get; set; }
-            public Point PT1 { get; set; }
-            public Point PT2 { get; set; }
-            public int X { get; set; }
-            public int Y { get; set; }
-            public int PT1X { get; set; }
-            public int PT1Y { get; set; }
-            public int PT2X { get; set; }
-            public int PT2Y { get; set; }
-        }
-        public class FillPackage
-        {
-            public string FillColor { get; set; }
-            public int X { get; set; }
-            public int Y { get; set; }
-        }
-
-        readonly Bitmap BM;
-        Graphics G;
-        GraphicsPath mPath;
-        Point PT2, PT1;
-        int x, y, PT1X, PT1Y, PT2X, PT2Y;
-        private bool Drawing = false;
-        private bool remoteDraw = false;
-
+        #region Drawing
         private DrawPackage PrepareDrawPackage()                                                    // Create a Draw Pakage 
         {
             int cA = btnColor.BackColor.A; int cB = btnColor.BackColor.B; int cR = btnColor.BackColor.R; int cG = btnColor.BackColor.G;
@@ -475,6 +518,7 @@ namespace Server
             CmdClear_Click(sender, e);
             HostSendPublic("CMD:ClearDrawing");
         }
+
 
         private void Drawing_MouseDown(object sender, MouseEventArgs e)                             // Start Drawing points 
         {
@@ -579,6 +623,7 @@ namespace Server
             UpdateCanvas();
         }
 
+
         private void Drawing_MouseClick(object sender, MouseEventArgs e)                            // Fill Tool 
         {
             if (Drawing && cbBType.Text == "Fill Tool" && e.Button == MouseButtons.Left) {
@@ -601,6 +646,12 @@ namespace Server
                     Send(json /*+ "\n"*/);                                                                  // Client Send Draw Package
                 }
             }
+        }
+        static Point Set_Point(PictureBox pb, Point pt)                                             // Fill Point 
+        {
+            float pX = 1f * pb.Image.Width / pb.Width;
+            float pY = 1f * pb.Image.Height / pb.Height;
+            return new Point((int)(pt.X * pX), (int)(pt.Y * pY));
         }
         private void FillTool(Bitmap bm, int x, int y, Color c2)                                    // Fill Process 
         {
@@ -629,18 +680,12 @@ namespace Server
                 }
             }
         }
-        static Point Set_Point(PictureBox pb, Point pt)                                             // Fill Point 
-        {
-            float pX = 1f * pb.Image.Width / pb.Width;
-            float pY = 1f * pb.Image.Height / pb.Height;
-            return new Point((int)(pt.X * pX), (int)(pt.Y * pY));
-        }
 
 
-        private void SaveBitmap()                                                                   // Bitmap Save Routine
+        private void SaveBitmap()                                                                   // Bitmap Save Routine 
         {
             var sfd = new SaveFileDialog {
-                Filter = "Image(*.jpg)|*.jpg|(*.*|*.*"
+                Filter = "Bitmap Image |*.bmp|JPEG Image |*.jpeg|Png Image |*.png|Tiff Image |*.tiff|Wmf Image |*.wmf|All Filetypes (*.*)|*.*\""
             };
             if (sfd.ShowDialog() == DialogResult.OK) {
                 Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
@@ -648,37 +693,42 @@ namespace Server
                 Console("Image Saved: " + sfd.FileName);
             }
         }
-        private void SendBitmap()                                                                   // Bitmap Send Routine
+        private void SendBitmap()                                                                   // Bitmap Send Routine 
         {
-            //Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
-            MemoryStream memoryStream = new();
-            BM.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Bmp);
-            byte[] imageArray = memoryStream.ToArray();
-            string b64Image = Convert.ToBase64String(imageArray);                                   // Convert To
-
-            Dictionary<string, string> bitmapUpdate = new() {                                       // Collect info to send as object Handshake
-                { "bitmap", b64Image },
-            };
-            JavaScriptSerializer json = new();                                                      // Format the Handshake object
-
-            if (listening) {
-                HostSendPublic(json.Serialize(bitmapUpdate));                                       // Host Send Draw Package
-            } else if (connected) {
-                Send(json.Serialize(bitmapUpdate));                                                 // Client Send Draw Package
+            HostSendPublic("CMD:ReceiveDrawing");                                                   // CMD to make Client begin File server
+            //string tempFolder = Environment.GetEnvironmentVariable("temp");
+            string appPath = Application.StartupPath;
+            string filePath = Path.Combine(appPath, "picDrawing.tmp");
+            Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
+            btm.Save(filePath, ImageFormat.Jpeg);
+            SendFile(filePath);
+            DeleteTempImage(filePath);
+        }
+        private void DeleteTempImage(string filePath = "")                                               // Remove tmp image file 
+        {            
+            if (filePath.Length > 0) {
+                try {
+                    File.Delete(filePath);
+                    Console("Temp file successfully deleted.");
+                } catch (Exception ex) {
+                    Console(ErrorMsg("DF1: " + ex.Message));
+                }
             }
+            else {
+                string runPath = Application.StartupPath;
+                string[] tempFiles = Directory.GetFiles(runPath, "*.tmp");
+                foreach (string tempFile in tempFiles) { 
+                    try {
+                        File.Delete(tempFile);
+                        Console("Temp file successfully deleted.");
+                    } catch (Exception ex) {
+                        Console(ErrorMsg("DF2: " + ex.Message));
+                    }
+                }
+            } 
         }
-        private void ReceiveBitmap(string rbitmap)
-        {
 
-            var img = Image.FromStream(new MemoryStream(Convert.FromBase64String(rbitmap)));     // Convert Back
-            Bitmap BM = new(img);
-            picDrawing.Invoke((MethodInvoker)delegate {
-                picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
-            });
-            G = Graphics.FromImage(BM);                                                             // Set the canvas
-            G.SmoothingMode = SmoothingMode.AntiAlias;
 
-        }
         private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
         {
             Bitmap savedImage = (Bitmap)picDrawing.Image;                                           // Save the current image to a Bitmap object
@@ -771,14 +821,14 @@ namespace Server
                 remoteDraw = false;
             });
         }
-# endregion
+        #endregion
 
-#region Network
+        #region Network
         // Host, Join, and DC
         private void Connected(bool status)                                                         // Client active toggle 
         {
             cmdJoin.Invoke((MethodInvoker)delegate {
-                connected = status;
+                connected = status;                
                 if (status) {
                     txtAddress.Enabled = false;
                     txtPort.Enabled = false;
@@ -790,7 +840,9 @@ namespace Server
                     btnColor.BackColor = cmdColor.BackColor;
                     cmdJoin.Text = "Disconnect";
                     tPing.Enabled = true;
+                    Program.mainForm.Text = "Joined as " + txtName.Text.Trim();
                     Console(SystemMsg("You are now connected"));
+                    FileReceive();                                                                  // Get Drawing on connect
                 } else {
                     txtAddress.Enabled = true;
                     txtPort.Enabled = true;
@@ -799,6 +851,7 @@ namespace Server
                     cmdHost.Enabled = true;
                     cmdJoin.Text = "Connect";
                     tPing.Enabled = false;
+                    Program.mainForm.Text = "Join or Host";
                     ClearDataGrid();
                     Console(SystemMsg("You are now disconnected"));
                 }
@@ -807,7 +860,7 @@ namespace Server
         private void Listening(bool status)                                                         // Host active toggle 
         {
             cmdHost.Invoke((MethodInvoker)delegate {
-                listening = status;
+                listening = status;                
                 if (status) {
                     txtAddress.Enabled = false;
                     txtPort.Enabled = false;
@@ -820,7 +873,9 @@ namespace Server
                     btnColor.BackColor = cmdColor.BackColor;
                     cmdHost.Text = "Stop";
                     tPing.Enabled = true;
+                    Program.mainForm.Text = txtName.Text.Trim() + " is Hosting";
                     Console(SystemMsg("Server has started"));
+                    FileServe();                                                                    // Start File Server
                 } else {
                     txtAddress.Enabled = true;
                     txtPort.Enabled = true;
@@ -829,6 +884,7 @@ namespace Server
                     cmdJoin.Enabled = true;
                     cmdHost.Text = "Host";
                     tPing.Enabled = false;
+                    Program.mainForm.Text = "Join or Host";
                     ClearDataGrid();
                     Console(SystemMsg("Server has stopped"));
                 }
@@ -887,12 +943,12 @@ namespace Server
         }
         private void Connection(MyPlayers obj)                                                      // H - Multi TCP to clients 
         {
-            if (Authorize(obj)) {
-                players.TryAdd(obj.id, obj);
-                AddToGrid(obj.id, obj.username.ToString(), obj.color);                  // get client COLOURS add to grind
+            if (Authorize(obj)) {                                                                   // If authorized
                 string msg = string.Format("{0} has connected.", obj.username);
-                Console(SystemMsg(msg));
-                HostSendPublic(SystemMsg(msg), obj.id);
+                players.TryAdd(obj.id, obj);
+                AddToGrid(obj.id, obj.username.ToString(), obj.color);                              // Add new client to grid
+                Console(SystemMsg(msg));               
+                HostSendPublic(SystemMsg(msg), obj.id);                                             // Broadcast the Con
                 while (obj.client.Connected) {
                     try {
                         obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
@@ -901,12 +957,12 @@ namespace Server
                         Console(ErrorMsg("HC: " + ex.Message));
                     }
                 }
-                obj.client.Close();
+                obj.client.Close();                                                                 // DC Client
                 players.TryRemove(obj.id, out MyPlayers tmp);
-                RemoveFromGrid(tmp.id);
+                RemoveFromGrid(tmp.id);                                                             // Remove from grid
                 msg = string.Format("{0} has disconnected.", tmp.username);
                 Console(SystemMsg(msg));
-                HostSendPublic(SystemMsg(msg), tmp.id);
+                HostSendPublic(SystemMsg(msg), tmp.id);                                             // Broadcast the DC
             }
         }
         private void Listener(IPAddress ip, int port)                                               // H - Multi TCP to clients 
@@ -1215,6 +1271,187 @@ namespace Server
             }
         }
 
+        // Backwards Drawing File Transfer 
+        private void SendFile(string fn)                                                            // Send file - FileName 
+        {
+            try {
+                //IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
+                IPAddress ipAddress = IPAddress.Parse(txtAddress.Text);
+                IPEndPoint ipEnd = new(ipAddress, 8008);
+                Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
+
+                string fileName = fn;
+                byte[] fileNameByte = Encoding.ASCII.GetBytes(fileName);
+                byte[] fileNameLen = BitConverter.GetBytes(fileNameByte.Length);
+                byte[] fileData = File.ReadAllBytes(fileName);
+                byte[] clientData = new byte[4 + fileNameByte.Length + fileData.Length];
+
+                fileNameLen.CopyTo(clientData, 0);
+                fileNameByte.CopyTo(clientData, 4);
+                fileData.CopyTo(clientData, 4 + fileNameByte.Length);
+                clientSocket.Connect(ipEnd);
+                clientSocket.Send(clientData);
+                clientSocket.Close();
+
+                //[0]filenamelen[4]filenamebyte[*]filedata
+            } catch (Exception ex) {
+                Console(ErrorMsg("SF: " + ex.Message));
+            } 
+        }
+        private void ReceiveFile(Socket clientSocket/*, string n*/)                                 // Receive / Save / Show 
+        {
+            Console("Incoming file....");
+            byte[] clientData = new byte[1024 * 5000];
+            int receivedBytesLen = clientSocket.Receive(clientData);
+            int fileNameLen = BitConverter.ToInt32(clientData, 0);
+            //string filePath = Encoding.ASCII.GetString(clientData, 4, fileNameLen);               // use native file path
+            string appPath = Application.StartupPath;
+            string filePath = Path.Combine(appPath, "picDrawing.tmp");                              // set AppPath
+            BinaryWriter bWrite = new(File.Open(filePath/* + n*/, FileMode.Create));
+            bWrite.Write(clientData, 4 + fileNameLen, receivedBytesLen - 4 - fileNameLen);
+            bWrite.Close();
+            clientSocket.Close();
+
+            //[0]filenamelen[4]filenamebyte[*]filedata
+
+            Image BM = Image.FromFile(filePath); // Load image from a file
+            picDrawing.Invoke((MethodInvoker)delegate {
+                picDrawing.Image = BM;
+                picDrawing.Refresh();
+            });
+            G = Graphics.FromImage(BM);
+            G.SmoothingMode = SmoothingMode.AntiAlias;
+
+            //DeleteTempImage(filePath);
+        }
+        private void ListenForFile()                                                                // Client side Server for Drawing files 
+        {
+            IPAddress ipAddress = IPAddress.Parse(txtAddress.Text);
+            IPEndPoint ipEnd = new(ipAddress, 8008);
+            Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP); ;
+            serverSocket.Bind(ipEnd);
+
+            int counter = 0;
+            serverSocket.Listen(8008);
+            Console("Picture Server Started");
+            while (true) {
+                counter += 1;
+                Socket clientSocket = serverSocket.Accept();
+                Console("Picture #:" + Convert.ToString(counter));
+                Thread receiveThread = new(delegate () {
+                    ReceiveFile(clientSocket/*, Convert.ToString(counter)*/);
+                });
+                receiveThread.Start();
+                receiveThread.Join();                                                               // Wait for the serveThread to complete its execution
+                if (receiveThread.ThreadState == System.Threading.ThreadState.Stopped) {            // Check if the serveThread has completed its execution
+                    Console("Picture Sent");
+                    //break;
+                }
+            }
+        }
+
+        // Drawing File Transfer
+        private void FileServe()                                                                    // Host File Server 
+        {
+            try {
+                Thread.Sleep(100);
+                var serverSocket = new TcpListener(IPAddress.Any, 8008);
+                var clientSocket = default(TcpClient);
+                int counter = 0;
+
+                Console("File Server Started");
+                var source = new CancellationTokenSource();
+                Task.Factory.StartNew(() =>
+                {
+                    while (true) {
+                        serverSocket.Start();
+                        clientSocket = serverSocket.AcceptTcpClient();
+                        counter += 1;
+                        var networkStream = clientSocket.GetStream();
+                        Console("Connection #: " + counter.ToString() + " started.");
+
+                        string appPath = Application.StartupPath;
+                        string filePath = Path.Combine(appPath, "picDrawing.tmp");
+                        Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
+                        btm.Save(filePath, ImageFormat.Jpeg);
+
+                        byte[] fileNameByte = Encoding.ASCII.GetBytes(filePath);
+                        byte[] fileNameLen = BitConverter.GetBytes(fileNameByte.Length);
+                        byte[] fileData = File.ReadAllBytes(filePath);
+                        byte[] clientData = new byte[4 + fileNameByte.Length + fileData.Length];
+
+                        fileNameLen.CopyTo(clientData, 0);
+                        fileNameByte.CopyTo(clientData, 4);
+                        fileData.CopyTo(clientData, 4 + fileNameByte.Length);
+
+                        networkStream.Write(clientData, 0, clientData.Length);
+
+                        networkStream.Close();
+                        clientSocket.Close();
+                        //serverSocket.Stop();
+                        DeleteTempImage(filePath);
+                        Console("Connection #: " + counter.ToString() + " closed.");
+                    }
+                }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            } catch (Exception w) {
+                MessageBox.Show("FS: Connection error: " + w.ToString());
+            }            
+        }
+        private void FileReceive()                                                                  // Client File Receiver 
+        {
+            var client = new TcpClient(txtAddress.Text, 8008);
+            var networkStream = client.GetStream();
+            Console("Receiving Drawing.");
+            byte[] fileNameLenBytes = new byte[4];
+            networkStream.Read(fileNameLenBytes, 0, 4);
+
+            int fileNameLen = BitConverter.ToInt32(fileNameLenBytes, 0);
+            byte[] fileNameBytes = new byte[fileNameLen];
+            networkStream.Read(fileNameBytes, 0, fileNameLen);
+
+            //string fileName = Encoding.ASCII.GetString(fileNameBytes);
+            string fileName = "Temp_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".tmp";
+            string filePath = Path.Combine(Application.StartupPath, fileName);
+            //string filePath = Path.Combine(Application.StartupPath, "Temp.tmp");  //working
+
+            /*            using (var fileStream = new FileStream(filePath, FileMode.Open)) {                      // Set Image from Stream
+                            Image BM = Image.FromStream(fileStream);
+                            picDrawing.Invoke((MethodInvoker)delegate {
+                                picDrawing.Image = BM;
+                                picDrawing.Refresh();
+                                G = Graphics.FromImage(BM);
+                                G.SmoothingMode = SmoothingMode.AntiAlias;
+                            });
+                        }
+            */
+
+
+            // From File
+            using (var fileStream = new FileStream(filePath, FileMode.Create)) {
+                byte[] buffer = new byte[client.ReceiveBufferSize];
+                int bytesRead;
+
+                while ((bytesRead = networkStream.Read(buffer, 0, buffer.Length)) > 0) {
+                    fileStream.Write(buffer, 0, bytesRead);
+                    Console("Received");
+                }
+            }
+            Image BM = Image.FromFile(filePath); // Load image from a file
+            picDrawing.Invoke((MethodInvoker)delegate {
+                picDrawing.Image = BM;
+                picDrawing.Refresh();
+                G = Graphics.FromImage(BM);
+                G.SmoothingMode = SmoothingMode.AntiAlias;
+            });                                             // End From File
+
+            DeleteTempImage(filePath);
+
+            Console("Drawing Received.");
+            networkStream.Close();
+            client.Close();
+        }
+
+
 
         // Host and Client Read
         private void Read(IAsyncResult result)                                                      // / *** READ ***/ 
@@ -1298,8 +1535,7 @@ namespace Server
                     obj.handle.Set();
                 }
             }                                                                                // Client stream reader
-            else
-            {
+            else {
                 if (clientObject == null) { return; }
                 int bytes = 0;
                 if (clientObject.client.Connected) {
@@ -1366,24 +1602,15 @@ namespace Server
                                         EventArgs e = new();
                                         CmdClear_Click(sender, e);
                                         break;
+                                    case "ReceiveDrawing":
+                                        ListenForFile();                                            // Client open server to receive
+                                        break;
                                     default:
                                         break;
                                 }
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
                                 return;
-                            }
-
-                            if (hostData.Contains("bitmap")) {                                      // Client Receive - Image
-                                JavaScriptSerializer json = new();
-                                Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(clientObject.data.ToString());
-                                if (data.ContainsKey("bitmap")) {
-                                    ReceiveBitmap(data["bitmap"]);
-                                    clientObject.data.Clear();
-                                    clientObject.handle.Set();
-                                    return;
-                                }
-                                // {{"bitmap":"Qk2mtw4AAAAAADYAAAAoAAAANgIAAKoBAAABACAAAAAAAAAAAADEDgAAxA4AAAAAAAAAAAAA5vD6/ ....  m8Pr/"}}
                             }
 
                             string[] dataParts = hostData.Split(':');
@@ -1404,9 +1631,9 @@ namespace Server
         }
 
         // / *** READ ***/ 
-#endregion
+        #endregion
 
-# region Routines
+        #region Routines
         private void SetColour(object sender)                                                       // Set's all Colour related Buttons 
         {
             Button clickedButton = (Button)sender;
@@ -1420,9 +1647,9 @@ namespace Server
             if (diag.ShowDialog() == DialogResult.OK)
                 clickedButton.BackColor = diag.Color;
         }
-#endregion
+        #endregion
 
-#region Controls
+        #region Controls
         private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
         {
             if (sender is System.Windows.Forms.MenuItem) {
@@ -1458,8 +1685,6 @@ namespace Server
         {
             BGC_Click(sender, e);
         }
-        private Color _previousBackColor = Color.Linen;
-        private Color _newBackColor;
         private void BGColor_BackColorChanged(object sender, EventArgs e)                           // Set BG (use Fill) 
         {
             _newBackColor = ((Control)sender).BackColor;
@@ -1490,9 +1715,6 @@ namespace Server
         {
             if (cbTrans.Checked) { btnBGColor.BackColor = Color.Transparent; }
         }
-
-
-
         private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser / set starting brush to same 
         {
             SetColour(sender);
@@ -1553,7 +1775,6 @@ namespace Server
                     listener.Start();
                     ClearDataGrid();
                     AddToGrid(0, username, cmdColor.BackColor);
-                    tabSections.SelectTab(1);
                     txtMessage.Focus();
                     txtMessage.SelectionStart = txtMessage.Text.Length;
                 }
@@ -1631,25 +1852,11 @@ namespace Server
                 txtMessage.SelectionStart = txtMessage.Text.Length;
             }
         }
-        private void TabSections_MouseClick(object sender, MouseEventArgs e)                        // Tab Context Menu 
-        {
-            if (e.Button == MouseButtons.Right) {
-                ContextMenu tabCM = new();
-                tabCM.MenuItems.Add("BG Color");
-                tabCM.MenuItems.Add("Clear");
-                tabCM.MenuItems.Add("Export");
-                tabCM.MenuItems[0].Click += new EventHandler(BGC_Click);
-                tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
-                tabCM.MenuItems[2].Click += new EventHandler(ExportText);
-                tabSections.ContextMenu = tabCM;
-            }
-        }
         private void TabSections_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (tabSections.SelectedIndex == 0) { tabSections.TabPages[0].Text = "Console"; }
             if (tabSections.SelectedIndex == 1) { tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count); }
         }
         #endregion
-
     }
 }
