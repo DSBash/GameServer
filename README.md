@@ -2,24 +2,24 @@
 GameServer with chat and whiteboard : [GameServer](https://github.com/DSBash/GameServer)
 
 ## Features
-
-* Sychronise and ASync TCP connections
+* Single Client / Server UI
+* Custom IP and Port specifications
+* Synchronous and ASynchronous TCP connections
 * AES Encryption
-* JSON formating of Objects
-* Public and Private Chats w/ Colour!
+* JSON Object formatting
+* Key / Password authorization for join
 * Multiplayer Drawing / Whiteboard
+* Public and Private Chats w/ Colour
 
-
-## Commands
-* /msg <UserName> <Msg>
-* /save = Saves the current Drawing to file
-* /export = Saves the current tabs Text box contents to file
-
-## Host only
-* /send = Test feature to have clients become file server to receive current Host Drawing
-
-## Client only
-* /picme = get new copy of the current Host Drawing
+## Text Commands
+### Shared
+* > /msg UserName Message
+* > /save = Saves the current Drawing to file
+* > /export = Saves the current tabs Text box contents to file
+### Host only
+* > /send = Test feature to have clients become file server to receive current Host Drawing
+### Client only
+* > /picme = get new copy of the current Host Drawing
 
 
 ## Interface
