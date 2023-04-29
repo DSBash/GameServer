@@ -5,7 +5,7 @@ Client / Server application with public broadcast and private send methods. : [G
 * Single WinForm Client/Server Interface
 * Custom IP and Port Specifications
 * Synchronous and ASynchronous TCP Connections
-* JSON Object Formatting
+* JSON Object Formatting using [Newtonsoft.Json](https://www.newtonsoft.com/)
 * AES Encryption
 * Key/Password Authorization
 * Multiplayer Drawing / Whiteboard
