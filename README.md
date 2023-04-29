@@ -41,4 +41,4 @@ Fill option works great with Shapes and 'Pen w/ Close' (filling the whole image 
 - add text image to drawings
 - debug mode
 - transparent drawing canvas to show game below
-- incorporate with : [GameServer](https://github.com/DSBash/GridGame)
+- incorporate with : [GridGame](https://github.com/DSBash/GridGame)
