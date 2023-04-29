@@ -5,7 +5,7 @@ namespace Server
 {
     static class Program
     {
-        public static GameServer mainForm { get; set; }
+        public static GameServer MainForm { get; set; }
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -14,8 +14,8 @@ namespace Server
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            mainForm = new("Host");
-            Application.Run(mainForm);
+            MainForm = new(/*"Host"*/);
+            Application.Run(MainForm);
 
         }
     }

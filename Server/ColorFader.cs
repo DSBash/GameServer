@@ -24,8 +24,8 @@ namespace Unclassified.UI
 		private bool hueMode;
 		private byte ratio;
 		private NumericUpDown numericControl;
-		private int marginBottom = 3;
-		private int paddingH = 4;
+		private readonly int marginBottom = 3;
+		private readonly int paddingH = 4;
 
 		public event EventHandler RatioChanged;
 
@@ -99,12 +99,12 @@ namespace Unclassified.UI
 			{
 				if (numericControl != null)
 				{
-					numericControl.ValueChanged -= new EventHandler(numericControl_ValueChanged);
+					numericControl.ValueChanged -= new EventHandler(NumericControl_ValueChanged);
 				}
 				numericControl = value;
 				if (numericControl != null)
 				{
-					numericControl.ValueChanged += new EventHandler(numericControl_ValueChanged);
+					numericControl.ValueChanged += new EventHandler(NumericControl_ValueChanged);
 				}
 			}
 		}
@@ -185,7 +185,7 @@ namespace Unclassified.UI
 			ratio = 0;
 		}
 
-		private void numericControl_ValueChanged(object sender, EventArgs e)
+		private void NumericControl_ValueChanged(object sender, EventArgs e)
 		{
 			if (numericControl.Value == -1)
 			{
@@ -225,39 +225,30 @@ namespace Unclassified.UI
 					Color backColor2 = Color.Silver;
 
 					int size = 2 * 3;
-					using (Bitmap bmp = new Bitmap(size, size))
-					{
-						for (int x = 0; x < bmp.Width; x++)
-						{
-							for (int y = 0; y < bmp.Height; y++)
-							{
-								if (x < bmp.Width / 2 && y < bmp.Height / 2 ||
-									x >= bmp.Width / 2 && y >= bmp.Height / 2)
-								{
-									bmp.SetPixel(x, y, backColor1);
-								}
-								else
-								{
-									bmp.SetPixel(x, y, backColor2);
-								}
-							}
-						}
-						using (Brush b = new TextureBrush(bmp))
-						{
-							pe.Graphics.FillRectangle(b, new Rectangle(paddingH, 0, Width - 2 * paddingH, Height - marginBottom));
-						}
-					}
-				}
+                    using Bitmap bmp = new(size, size);
+                    for (int x = 0; x < bmp.Width; x++) {
+                        for (int y = 0; y < bmp.Height; y++) {
+                            if (x < bmp.Width / 2 && y < bmp.Height / 2 ||
+                                x >= bmp.Width / 2 && y >= bmp.Height / 2) {
+                                bmp.SetPixel(x, y, backColor1);
+                            } else {
+                                bmp.SetPixel(x, y, backColor2);
+                            }
+                        }
+                    }
+                    using Brush b = new TextureBrush(bmp);
+                    pe.Graphics.FillRectangle(b, new Rectangle(paddingH, 0, Width - 2 * paddingH, Height - marginBottom));
+                }
 
 				if (colorMid.IsEmpty)
 				{
-					LinearGradientBrush gradient = new LinearGradientBrush(new Point(), new Point(Width, 0), color1, color2);
+					LinearGradientBrush gradient = new(new Point(), new Point(Width, 0), color1, color2);
 					pe.Graphics.FillRectangle(gradient, new Rectangle(paddingH, 0, Width - 2 * paddingH, Height - marginBottom));
 					gradient.Dispose();
 				}
 				else
 				{
-					LinearGradientBrush gradient = new LinearGradientBrush(new Point(), new Point(Width / 2, 0), color1, colorMid);
+					LinearGradientBrush gradient = new(new Point(), new Point(Width / 2, 0), color1, colorMid);
 					pe.Graphics.FillRectangle(gradient, new Rectangle(paddingH, 0, Width / 2 - paddingH, Height - marginBottom));
 					gradient.Dispose();
 
@@ -271,11 +262,9 @@ namespace Unclassified.UI
 				for (int x = paddingH; x < Width - paddingH; x++)
 				{
 					byte h = (byte) Math.Round((double) (x - paddingH) / (Width - paddingH) * 255);
-					using (Pen p = new Pen(ColorMath.HslToRgb(new HslColor(h, 255, 128))))
-					{
-						pe.Graphics.DrawLine(p, x, 0, x, Height - marginBottom);
-					}
-				}
+                    using Pen p = new(ColorMath.HslToRgb(new HslColor(h, 255, 128)));
+                    pe.Graphics.DrawLine(p, x, 0, x, Height - marginBottom);
+                }
 			}
 
 			pe.Graphics.InterpolationMode = InterpolationMode.High;
@@ -286,14 +275,14 @@ namespace Unclassified.UI
 			int y0 = Height - 7;
 			int triangleWidth = 5;
 			int triangleHeight = 9;
-			GraphicsPath trianglePath = new GraphicsPath();
+			GraphicsPath trianglePath = new();
 			trianglePath.AddLine(x0 - triangleWidth, y0 + triangleHeight, x0 + 0, y0 + 0);
 			trianglePath.AddLine(x0 + 0, y0 + 0, x0 + triangleWidth, y0 + triangleHeight);
 			trianglePath.CloseFigure();
-			SolidBrush triangleBrush = new SolidBrush(Color.Black);
+			SolidBrush triangleBrush = new(Color.Black);
 			pe.Graphics.FillPath(triangleBrush, trianglePath);
 			triangleBrush.Dispose();
-			Pen trianglePen = new Pen(SystemColors.Control);
+			Pen trianglePen = new(SystemColors.Control);
 			pe.Graphics.DrawPath(trianglePen, trianglePath);
 			trianglePen.Dispose();
 			trianglePath.Dispose();
@@ -308,10 +297,7 @@ namespace Unclassified.UI
 				if (x > Width - paddingH) x = Width - paddingH;
 				Ratio = (byte) ((double) (x - paddingH) / (Width - 2 * paddingH) * 255);
 
-				if (numericControl != null)
-				{
-					numericControl.Focus();
-				}
+				numericControl?.Focus();
 			}
 			
 			base.OnMouseDown(e);
@@ -332,8 +318,7 @@ namespace Unclassified.UI
 
 		protected void OnRatioChanged()
 		{
-			if (RatioChanged != null)
-				RatioChanged(this, EventArgs.Empty);
-		}
+            RatioChanged?.Invoke(this, EventArgs.Empty);
+        }
 	}
 }

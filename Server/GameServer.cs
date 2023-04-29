@@ -37,6 +37,7 @@ namespace Server
         }
         public class MyPlayers
         {
+#pragma warning disable IDE1006                             // Naming Styles
             public long id { get; set; }
             public Color color { get; set; }
             public StringBuilder username { get; set; }
@@ -45,6 +46,7 @@ namespace Server
             public byte[] buffer { get; set; }
             public StringBuilder data { get; set; }
             public EventWaitHandle handle { get; set; }
+#pragma warning restore IDE1006                             // Naming Styles
         };
         private static readonly ConcurrentDictionary<long, MyPlayers> players = new();
         #endregion
@@ -118,7 +120,7 @@ namespace Server
 
 
         #region Form
-        public GameServer(string PlayerName)                                                        // Main 
+        public GameServer(/*string PlayerName*/)                                                        // Main 
         {
             InitializeComponent();
             //AllocConsole();
@@ -148,9 +150,7 @@ namespace Server
             BM = new(picDrawing.Width, picDrawing.Height);
             picDrawing.Image = BM;
             G = Graphics.FromImage(BM);
-            G.SmoothingMode = SmoothingMode.AntiAlias;
             G.Clear(Color.Transparent);
-
         }
         private void GameServer_Load(object sender, EventArgs e)                                    // On Open 
         {
@@ -666,7 +666,19 @@ namespace Server
                 }
             }
         }
+        public void ReplaceTargetColor(Bitmap BM,Color tCol,Color rCol)                             // Replaces TrueTransP with Color.Transparancy 
+        {
+            if (tCol == Color.Empty) { tCol = Color.LightGoldenrodYellow; }                         // if empty convert TTP to C.T
+            if (rCol == Color.Empty) { rCol = Color.Transparent; }
 
+            for (int x = 0; x < BM.Width; x++) {
+                for (int y = 0; y < BM.Height; y++) {
+                    if (BM.GetPixel(x, y) == tCol) {
+                        BM.SetPixel(x, y, rCol);
+                    }
+                }
+            }
+        }
 
         private void DeleteTemps(string filePath = "")                                              // Remove tmp image file 
         {
@@ -693,7 +705,7 @@ namespace Server
         private void SaveDrawing()                                                                  // Drawing Save Routine 
         {
             SaveFileDialog saveFileDialog = new() {                                                 // Prompt user for Save File
-                Filter = "JPEG Image|*.jpg|PNG Image|*.png|Bitmap Image|*.bmp|GIF Image|*.gif"
+                Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp|GIF Image|*.gif"
             };
             if (saveFileDialog.ShowDialog() == DialogResult.OK) {
                 string fileName = saveFileDialog.FileName;
@@ -718,12 +730,11 @@ namespace Server
                         return;
                 }
                 Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
+                if (imageFormat == ImageFormat.Png) { ReplaceTargetColor(btm,Color.Empty,Color.Empty); }    // True-TransP conversion
                 btm.Save(saveFileDialog.FileName, imageFormat);                                     // Save the image in the selected format                
                 Console("Image Saved: " + saveFileDialog.FileName);
             }
         }
-
-
 
         private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
         {
@@ -734,7 +745,6 @@ namespace Server
             }
             picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
             G = Graphics.FromImage(BM);                                                             // Set the canvas
-            G.SmoothingMode = SmoothingMode.AntiAlias;
         }
         private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
         {
@@ -821,7 +831,7 @@ namespace Server
 
         #region Network
         // Host, Join, and DC
-        private void Connected(bool status)                                                         // Client active toggle 
+        private void Connected(bool status)                                                         // Client Connected Tasks 
         {
             cmdJoin.Invoke((MethodInvoker)delegate {
                 connected = status;
@@ -836,7 +846,7 @@ namespace Server
                     cmdJoin.Enabled = !cmdJoin.Enabled;
                     cmdJoin.Text = "Disconnect";
 
-                    Program.mainForm.Text = "Joined as " + txtName.Text.Trim();
+                    Program.MainForm.Text = "Joined as " + txtName.Text.Trim();
                     Console(SystemMsg("You are now connected"));
                     FileReceive();                                                                  // Get Drawing on connect
                 } else {
@@ -844,13 +854,13 @@ namespace Server
                     cmdJoin.Enabled = !cmdJoin.Enabled;
                     cmdJoin.Text = "Connect";
 
-                    Program.mainForm.Text = "Join or Host";
+                    Program.MainForm.Text = "Join or Host";
                     ClearDataGrid();
                     Console(SystemMsg("You are now disconnected"));
                 }
             });
         }
-        private void Listening(bool status)                                                         // Host active toggle 
+        private void Listening(bool status)                                                         // Hosting Tasks 
         {
             cmdHost.Invoke((MethodInvoker)delegate {
                 listening = status;
@@ -858,17 +868,21 @@ namespace Server
                     ToggleNetworkControls();
                     clientsDataGridView.Columns["dc"].Visible = true;
                     clientsDataGridView.Columns["latency"].Visible = true;
+
                     btnClearAll.Visible = true;
                     btnColor.SelectedColor = cmdColor.SelectedColor;
+
                     cmdHost.Enabled = !cmdHost.Enabled;
                     cmdHost.Text = "Stop";
-                    Program.mainForm.Text = txtName.Text.Trim() + " is Hosting";
+
+                    Program.MainForm.Text = txtName.Text.Trim() + " is Hosting";
                     Console(SystemMsg("Server has started"));
                     FileServe();                                                                    // Start File Server
                 } else {
                     ToggleNetworkControls();
                     cmdHost.Text = "Host";
-                    Program.mainForm.Text = "Join or Host";
+                    Program.MainForm.Text = "Join or Host";
+
                     ClearDataGrid();
                     Console(SystemMsg("Server has stopped"));
                     drawingSocket?.Stop();
@@ -1323,7 +1337,7 @@ namespace Server
                 picDrawing.Refresh();
             });
             G = Graphics.FromImage(BM);
-            G.SmoothingMode = SmoothingMode.AntiAlias;
+
         }
         private void ListenForFile()                                                                // Client side Server for Drawing files 
         {
@@ -1441,7 +1455,7 @@ namespace Server
                 picDrawing.Refresh();
                 Console("Image Set.");
                 G = Graphics.FromImage(BM);                                                         // Prep Canvas for Drawing
-                G.SmoothingMode = SmoothingMode.AntiAlias;
+    
             });
             // End From File
 
@@ -1646,19 +1660,6 @@ namespace Server
 
             tPing.Enabled = !tPing.Enabled;
         }
-        private void SetColour(object sender)                                                       // Set's all Colour related Buttons 
-        {
-            /*            Button clickedButton = (Button)sender;
-                        ColorDialog diag = new() {
-                            AllowFullOpen = true,
-                            ShowHelp = true,
-                            CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
-                            Color = clickedButton.BackColor                                                     // Sets initial color to current button backcolor             
-                        };
-                        //using var diag = new ColorDialog();
-                        if (diag.ShowDialog() == DialogResult.OK)
-                            clickedButton.BackColor = diag.Color;*/
-        }
         private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
         {
             if (sender is System.Windows.Forms.MenuItem) {
@@ -1707,7 +1708,7 @@ namespace Server
             _previousBackColor = _newBackColor;
             picDrawing.Image = BM;
             G = Graphics.FromImage(BM);                                                             // Set the canvas
-            G.SmoothingMode = SmoothingMode.AntiAlias;
+
         }
         private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
         {
@@ -1722,7 +1723,11 @@ namespace Server
         }
         private void Trans_CheckedChanged(object sender, EventArgs e)                               // Transparent Canvas 
         {
-            if (cbTrans.Checked) { btnBGColor.SelectedColor = Color.Transparent; }
+            if (cbTrans.Checked) {
+                this.TransparencyKey = Color.LightGoldenrodYellow;                                  // 250,250,210
+                picDrawing.BackColor = Color.LightGoldenrodYellow;
+                btnBGColor.SelectedColor = Color.LightGoldenrodYellow;            
+            }
         }
         private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles RoomKey Mask 
         {

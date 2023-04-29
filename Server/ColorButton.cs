@@ -209,19 +209,19 @@ namespace Unclassified.UI
             }
         }
 
-        private void colorSelector_SelectedColorChanged(object sender, EventArgs e)
+        private void ColorSelector_SelectedColorChanged(object sender, EventArgs e)
         {
             SelectedColor = colorSelector.SelectedColor;
         }
 
-        private void colorSelector_CloseRequested(object sender, EventArgs e)
+        private void ColorSelector_CloseRequested(object sender, EventArgs e)
         {
             if (dropDown != null && !dropDown.IsDisposed && dropDown.Visible) {
                 dropDown.Close();
             }
         }
 
-        private void colorSelector_CancelRequested(object sender, EventArgs e)
+        private void ColorSelector_CancelRequested(object sender, EventArgs e)
         {
             if (dropDown != null && !dropDown.IsDisposed && dropDown.Visible) {
                 SelectedColor = lastOpenColor;
@@ -229,7 +229,7 @@ namespace Unclassified.UI
             }
         }
 
-        private void dropDown_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        private void DropDown_Closed(object sender, ToolStripDropDownClosedEventArgs e)
         {
             lastCloseTime = DateTime.UtcNow;
         }
@@ -251,24 +251,24 @@ namespace Unclassified.UI
                 Padding = new Padding(6),
                 Font = Font
             };
-            colorSelector.SelectedColorChanged += colorSelector_SelectedColorChanged;
-            colorSelector.CloseRequested += colorSelector_CloseRequested;
-            colorSelector.CancelRequested += colorSelector_CancelRequested;
+            colorSelector.SelectedColorChanged += ColorSelector_SelectedColorChanged;
+            colorSelector.CloseRequested += ColorSelector_CloseRequested;
+            colorSelector.CancelRequested += ColorSelector_CancelRequested;
 
-            ToolStripControlHost controlHost = new(colorSelector);
-            controlHost.Margin = new Padding(1);   // Preserve the dropdown border
+            ToolStripControlHost controlHost = new(colorSelector) {
+                Margin = new Padding(1)   // Preserve the dropdown border
+            };
 
-            dropDown = new ToolStripDropDown();
-            dropDown.Padding = Padding.Empty;
+            dropDown = new ToolStripDropDown {
+                Padding = Padding.Empty
+            };
             dropDown.Items.Add(controlHost);
-            dropDown.Closed += dropDown_Closed;
+            dropDown.Closed += DropDown_Closed;
         }
 
         protected void OnSelectedColorChanged()
         {
-            if (SelectedColorChanged != null) {
-                SelectedColorChanged(this, EventArgs.Empty);
-            }
+            SelectedColorChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

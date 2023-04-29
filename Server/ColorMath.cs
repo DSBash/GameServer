@@ -106,6 +106,8 @@ namespace Unclassified.Drawing
 		/// <param name="dividend">Dividend.</param>
 		/// <param name="divisor">Divisor.</param>
 		/// <returns></returns>
+		/// 
+/*
 		private static int Mod(int dividend, int divisor)
 		{
 			if (divisor <= 0) throw new ArgumentOutOfRangeException("divisor", "The divisor cannot be zero or negative.");
@@ -113,7 +115,7 @@ namespace Unclassified.Drawing
 			if (i < 0) i += divisor;
 			return i;
 		}
-
+*/
 		/// <summary>
 		/// Computes the grey value value of a color.
 		/// </summary>

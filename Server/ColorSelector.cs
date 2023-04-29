@@ -47,10 +47,11 @@ namespace Unclassified.UI
 		public event EventHandler SelectedColorChanged;
 		public event EventHandler CloseRequested;
 		public event EventHandler CancelRequested;
-		#endregion Events
+        #endregion Events
 
-		#region Localisation
-		public string T_ExtendedView
+        #region Localisation
+		#pragma warning disable IDE1006 // Naming Styles
+        public string T_ExtendedView
 		{
 			get { return ExtendedViewCheck.Text; }
 			set { ExtendedViewCheck.Text = value; }
@@ -109,9 +110,11 @@ namespace Unclassified.UI
 			get { return CSSrgbLabel.Text; }
 			set { CSSrgbLabel.Text = value; }
 		}
-		
-		public string T_HTML
-		{
+
+
+        public string T_HTML
+
+        {
 			get { return HTMLLabel.Text; }
 			set { HTMLLabel.Text = value; }
 		}
@@ -188,10 +191,11 @@ namespace Unclassified.UI
 					break;
 			}
 		}
-		#endregion Localisation
+		#pragma warning restore IDE1006 // Naming Styles
+        #endregion Localisation
 
-		#region Public properties
-		public Color SelectedColor
+        #region Public properties
+        public Color SelectedColor
 		{
 			get
 			{
@@ -212,11 +216,8 @@ namespace Unclassified.UI
 
 					UpdateColors();
 
-					if (SelectedColorChanged != null)
-					{
-						SelectedColorChanged(this, EventArgs.Empty);
-					}
-				}
+                    SelectedColorChanged?.Invoke(this, EventArgs.Empty);
+                }
 			}
 		}
 
@@ -278,7 +279,7 @@ namespace Unclassified.UI
 			{
 				updatingFaders = true;
 
-				HslColor hsl = new HslColor(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
+				HslColor hsl = new(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
 				Color rgb = ColorMath.HslToRgb(hsl);
 
 				faderRed.Ratio = rgb.R;
@@ -291,13 +292,13 @@ namespace Unclassified.UI
 			}
 		}
 
-		private void colorWheel1_HueChanged(object sender, EventArgs e)
+		private void ColorWheel1_HueChanged(object sender, EventArgs e)
 		{
 			updatingFaders = true;
 
 			faderHue.Ratio = colorWheel1.Hue;
 
-			HslColor hsl = new HslColor(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
+			HslColor hsl = new(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
 			Color rgb = ColorMath.HslToRgb(hsl);
 
 			faderRed.Ratio = rgb.R;
@@ -309,14 +310,14 @@ namespace Unclassified.UI
 			updatingFaders = false;
 		}
 
-		private void colorWheel1_SLChanged(object sender, EventArgs e)
+		private void ColorWheel1_SLChanged(object sender, EventArgs e)
 		{
 			updatingFaders = true;
 
 			faderSaturation.Ratio = colorWheel1.Saturation;
 			faderLightness.Ratio = colorWheel1.Lightness;
 
-			HslColor hsl = new HslColor(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
+			HslColor hsl = new(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
 			Color rgb = ColorMath.HslToRgb(hsl);
 
 			faderRed.Ratio = rgb.R;
@@ -328,7 +329,7 @@ namespace Unclassified.UI
 			updatingFaders = false;
 		}
 
-		private void textRGB_TextChanged(object sender, EventArgs e)
+		private void TextRGB_TextChanged(object sender, EventArgs e)
 		{
 			if (!updatingRGBText)
 			{
@@ -364,7 +365,7 @@ namespace Unclassified.UI
 			}
 		}
 
-		private void textHex_TextChanged(object sender, EventArgs e)
+		private void TextHex_TextChanged(object sender, EventArgs e)
 		{
 			if (!updatingHexText)
 			{
@@ -393,7 +394,7 @@ namespace Unclassified.UI
 			}
 		}
 
-		private void picturePalette_Click(object sender, EventArgs e)
+		private void PicturePalette_Click(object sender, EventArgs e)
 		{
 			Control c = sender as Control;
 			Color color = c.BackColor;
@@ -403,11 +404,8 @@ namespace Unclassified.UI
 
 			if (!ExtendedViewCheck.Checked)
 			{
-				if (CloseRequested != null)
-				{
-					CloseRequested(this, EventArgs.Empty);
-				}
-			}
+                CloseRequested?.Invoke(this, EventArgs.Empty);
+            }
 		}
 
 		private void ExtendedViewCheck_CheckedChanged(object sender, EventArgs e)
@@ -426,19 +424,13 @@ namespace Unclassified.UI
 
 		private void OKActionButton_Click(object sender, EventArgs e)
 		{
-			if (CloseRequested != null)
-			{
-				CloseRequested(this, EventArgs.Empty);
-			}
-		}
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
 
 		private void CancelActionButton_Click(object sender, EventArgs e)
 		{
-			if (CancelRequested != null)
-			{
-				CancelRequested(this, EventArgs.Empty);
-			}
-		}
+            CancelRequested?.Invoke(this, EventArgs.Empty);
+        }
 		#endregion Sub-control event handlers
 
 		#region Management methods
@@ -455,7 +447,7 @@ namespace Unclassified.UI
 			faderBlue.Color1 = Color.FromArgb(c.R, c.G, 0);
 			faderBlue.Color2 = Color.FromArgb(c.R, c.G, 255);
 
-			HslColor hsl = new HslColor(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
+			HslColor hsl = new(faderHue.Ratio, faderSaturation.Ratio, faderLightness.Ratio);
 
 			faderSaturation.Color1 = ColorMath.HslToRgb(new HslColor(hsl.H, 0, hsl.L));
 			faderSaturation.Color2 = ColorMath.HslToRgb(new HslColor(hsl.H, 255, hsl.L));

@@ -174,7 +174,7 @@ namespace Unclassified.UI
 			x += wheelBitmap.Width / 2;
 			y += wheelBitmap.Width / 2;
 			Color c = ColorMath.ToGray(ColorMath.HslToRgb(new HslColor(hue, 255, 128))) > 128 ? Color.Black : Color.White;
-			using (Pen p = new Pen(c))
+			using (Pen p = new(c))
 			{
 				pe.Graphics.DrawEllipse(p, x - 3, y - 3, 6, 6);
 			}
@@ -194,22 +194,20 @@ namespace Unclassified.UI
 					x += wheelBitmap.Width / 2;
 					y += wheelBitmap.Width / 2;
 					c = ColorMath.ToGray(ColorMath.HslToRgb(new HslColor(sHue, 255, 128))) > 128 ? Color.Black : Color.White;
-					//using (Pen p = new Pen(Color.FromArgb(128, c)))
-					//{
-					//    pe.Graphics.DrawRectangle(p, x - 2, y - 2, 4, 4);
-					//}
-					using (Brush b = new SolidBrush(Color.FromArgb(128, c)))
-					{
-						pe.Graphics.FillRectangle(b, x - 2, y - 2, 4, 4);
-					}
-				}
+                    //using (Pen p = new Pen(Color.FromArgb(128, c)))
+                    //{
+                    //    pe.Graphics.DrawRectangle(p, x - 2, y - 2, 4, 4);
+                    //}
+                    using Brush b = new SolidBrush(Color.FromArgb(128, c));
+                    pe.Graphics.FillRectangle(b, x - 2, y - 2, 4, 4);
+                }
 			}
 
 			// Draw inner color marker
 			x = slBitmap.Width / 2 + saturation * (slBitmap.Width - 1) / 255;
 			y = slBitmap.Width / 2 + lightness * (slBitmap.Width - 1) / 255;
 			c = ColorMath.ToGray(ColorMath.HslToRgb(new HslColor(hue, saturation, lightness))) > 128 ? Color.Black : Color.White;
-			using (Pen p = new Pen(c))
+			using (Pen p = new(c))
 			{
 				pe.Graphics.DrawEllipse(p, x - 3, y - 3, 6, 6);
 			}
@@ -229,7 +227,7 @@ namespace Unclassified.UI
 				else
 				{
 					int halfWheelWidth = wheelBitmap.Width / 2;
-					Point center = new Point(halfWheelWidth, halfWheelWidth);
+					Point center = new(halfWheelWidth, halfWheelWidth);
 					double dist = GetDistance(new Point(e.X, e.Y), center);
 					if (dist >= halfWheelWidth * 0.78 && dist < halfWheelWidth)
 					{
@@ -263,7 +261,7 @@ namespace Unclassified.UI
 				else if (draggingHue)
 				{
 					int halfWheelWidth = wheelBitmap.Width / 2;
-					Point center = new Point(halfWheelWidth, halfWheelWidth);
+					Point center = new(halfWheelWidth, halfWheelWidth);
 					double radAngle = Math.Atan2(e.Y - center.Y, e.X - center.X);
 					double factor = 128.0 / Math.PI;   // map -pi...pi to 0...255 => map 0...pi to 0...128
 					// Calculation notes see PrepareWheelBitmap()
@@ -277,11 +275,10 @@ namespace Unclassified.UI
 
 		private void PrepareWheelBitmap()
 		{
-			if (wheelBitmap != null)
-				wheelBitmap.Dispose();
+			wheelBitmap?.Dispose();
 
 			int width = Math.Min(ClientSize.Width, ClientSize.Height);
-			Point center = new Point(width / 2, width / 2);
+			Point center = new(width / 2, width / 2);
 			if (width < 10)
 			{
 				wheelBitmap = null;
@@ -303,9 +300,7 @@ namespace Unclassified.UI
 			double maxDist = width / 2 - 1;
 			double factor = 128.0 / Math.PI;   // map -pi...pi to 0...255 => map 0...pi to 0...128
 
-			BitmapData bmData;
-			byte[] bytes;
-			BitmapReadBytes(wheelBitmap, out bytes, out bmData);
+			BitmapReadBytes(wheelBitmap, out byte[] bytes, out BitmapData bmData);
 			for (int y = 0; y < width; y++)
 			{
 				for (int x = 0; x < width; x++)
@@ -346,8 +341,7 @@ namespace Unclassified.UI
 
 		private void PrepareSLBitmap()
 		{
-			if (slBitmap != null)
-				slBitmap.Dispose();
+			slBitmap?.Dispose();
 
 			int width = Math.Min(ClientSize.Width, ClientSize.Height) / 2;
 			if (width < 10)
@@ -359,9 +353,7 @@ namespace Unclassified.UI
 			// Prepare Bitmap
 			slBitmap = new Bitmap(width, width);
 
-			BitmapData bmData;
-			byte[] bytes;
-			BitmapReadBytes(slBitmap, out bytes, out bmData);
+			BitmapReadBytes(slBitmap, out byte[] bytes, out BitmapData bmData);
 			for (int y = 0; y < width; y++)
 			{
 				for (int x = 0; x < width; x++)
@@ -421,14 +413,12 @@ namespace Unclassified.UI
 
 		protected void OnHueChanged()
 		{
-			if (HueChanged != null)
-				HueChanged(this, EventArgs.Empty);
-		}
+            HueChanged?.Invoke(this, EventArgs.Empty);
+        }
 
 		protected void OnSLChanged()
 		{
-			if (SLChanged != null)
-				SLChanged(this, EventArgs.Empty);
-		}
+            SLChanged?.Invoke(this, EventArgs.Empty);
+        }
 	}
 }

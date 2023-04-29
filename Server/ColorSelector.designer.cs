@@ -434,7 +434,7 @@ namespace Unclassified.UI
 			this.textRGB.Name = "textRGB";
 			this.textRGB.Size = new System.Drawing.Size(154, 20);
 			this.textRGB.TabIndex = 28;
-			this.textRGB.TextChanged += new System.EventHandler(this.textRGB_TextChanged);
+			this.textRGB.TextChanged += new System.EventHandler(this.TextRGB_TextChanged);
 			// 
 			// textHex
 			// 
@@ -446,7 +446,7 @@ namespace Unclassified.UI
 			this.textHex.Name = "textHex";
 			this.textHex.Size = new System.Drawing.Size(154, 20);
 			this.textHex.TabIndex = 30;
-			this.textHex.TextChanged += new System.EventHandler(this.textHex_TextChanged);
+			this.textHex.TextChanged += new System.EventHandler(this.TextHex_TextChanged);
 			// 
 			// CSSrgbLabel
 			// 
@@ -643,7 +643,7 @@ namespace Unclassified.UI
 			this.pictureBox2.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox2.TabIndex = 7;
 			this.pictureBox2.TabStop = false;
-			this.pictureBox2.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox2.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox3
 			// 
@@ -654,7 +654,7 @@ namespace Unclassified.UI
 			this.pictureBox3.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox3.TabIndex = 7;
 			this.pictureBox3.TabStop = false;
-			this.pictureBox3.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox3.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox4
 			// 
@@ -665,7 +665,7 @@ namespace Unclassified.UI
 			this.pictureBox4.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox4.TabIndex = 7;
 			this.pictureBox4.TabStop = false;
-			this.pictureBox4.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox4.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox5
 			// 
@@ -676,7 +676,7 @@ namespace Unclassified.UI
 			this.pictureBox5.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox5.TabIndex = 7;
 			this.pictureBox5.TabStop = false;
-			this.pictureBox5.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox5.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox6
 			// 
@@ -687,7 +687,7 @@ namespace Unclassified.UI
 			this.pictureBox6.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox6.TabIndex = 7;
 			this.pictureBox6.TabStop = false;
-			this.pictureBox6.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox6.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox7
 			// 
@@ -699,7 +699,7 @@ namespace Unclassified.UI
 			this.pictureBox7.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox7.TabIndex = 7;
 			this.pictureBox7.TabStop = false;
-			this.pictureBox7.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox7.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox8
 			// 
@@ -710,7 +710,7 @@ namespace Unclassified.UI
 			this.pictureBox8.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox8.TabIndex = 11;
 			this.pictureBox8.TabStop = false;
-			this.pictureBox8.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox8.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox9
 			// 
@@ -721,7 +721,7 @@ namespace Unclassified.UI
 			this.pictureBox9.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox9.TabIndex = 12;
 			this.pictureBox9.TabStop = false;
-			this.pictureBox9.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox9.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox10
 			// 
@@ -732,7 +732,7 @@ namespace Unclassified.UI
 			this.pictureBox10.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox10.TabIndex = 13;
 			this.pictureBox10.TabStop = false;
-			this.pictureBox10.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox10.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox11
 			// 
@@ -743,7 +743,7 @@ namespace Unclassified.UI
 			this.pictureBox11.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox11.TabIndex = 8;
 			this.pictureBox11.TabStop = false;
-			this.pictureBox11.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox11.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox12
 			// 
@@ -754,7 +754,7 @@ namespace Unclassified.UI
 			this.pictureBox12.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox12.TabIndex = 9;
 			this.pictureBox12.TabStop = false;
-			this.pictureBox12.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox12.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox13
 			// 
@@ -766,7 +766,7 @@ namespace Unclassified.UI
 			this.pictureBox13.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox13.TabIndex = 10;
 			this.pictureBox13.TabStop = false;
-			this.pictureBox13.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox13.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox14
 			// 
@@ -777,7 +777,7 @@ namespace Unclassified.UI
 			this.pictureBox14.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox14.TabIndex = 17;
 			this.pictureBox14.TabStop = false;
-			this.pictureBox14.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox14.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox15
 			// 
@@ -788,7 +788,7 @@ namespace Unclassified.UI
 			this.pictureBox15.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox15.TabIndex = 18;
 			this.pictureBox15.TabStop = false;
-			this.pictureBox15.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox15.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox16
 			// 
@@ -799,7 +799,7 @@ namespace Unclassified.UI
 			this.pictureBox16.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox16.TabIndex = 19;
 			this.pictureBox16.TabStop = false;
-			this.pictureBox16.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox16.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox17
 			// 
@@ -810,7 +810,7 @@ namespace Unclassified.UI
 			this.pictureBox17.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox17.TabIndex = 14;
 			this.pictureBox17.TabStop = false;
-			this.pictureBox17.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox17.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox18
 			// 
@@ -821,7 +821,7 @@ namespace Unclassified.UI
 			this.pictureBox18.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox18.TabIndex = 15;
 			this.pictureBox18.TabStop = false;
-			this.pictureBox18.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox18.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox19
 			// 
@@ -833,7 +833,7 @@ namespace Unclassified.UI
 			this.pictureBox19.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox19.TabIndex = 16;
 			this.pictureBox19.TabStop = false;
-			this.pictureBox19.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox19.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox20
 			// 
@@ -844,7 +844,7 @@ namespace Unclassified.UI
 			this.pictureBox20.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox20.TabIndex = 23;
 			this.pictureBox20.TabStop = false;
-			this.pictureBox20.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox20.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox21
 			// 
@@ -855,7 +855,7 @@ namespace Unclassified.UI
 			this.pictureBox21.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox21.TabIndex = 24;
 			this.pictureBox21.TabStop = false;
-			this.pictureBox21.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox21.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox22
 			// 
@@ -866,7 +866,7 @@ namespace Unclassified.UI
 			this.pictureBox22.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox22.TabIndex = 25;
 			this.pictureBox22.TabStop = false;
-			this.pictureBox22.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox22.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox23
 			// 
@@ -877,7 +877,7 @@ namespace Unclassified.UI
 			this.pictureBox23.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox23.TabIndex = 20;
 			this.pictureBox23.TabStop = false;
-			this.pictureBox23.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox23.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox24
 			// 
@@ -888,7 +888,7 @@ namespace Unclassified.UI
 			this.pictureBox24.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox24.TabIndex = 21;
 			this.pictureBox24.TabStop = false;
-			this.pictureBox24.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox24.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox25
 			// 
@@ -900,7 +900,7 @@ namespace Unclassified.UI
 			this.pictureBox25.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox25.TabIndex = 22;
 			this.pictureBox25.TabStop = false;
-			this.pictureBox25.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox25.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox26
 			// 
@@ -911,7 +911,7 @@ namespace Unclassified.UI
 			this.pictureBox26.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox26.TabIndex = 29;
 			this.pictureBox26.TabStop = false;
-			this.pictureBox26.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox26.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox27
 			// 
@@ -922,7 +922,7 @@ namespace Unclassified.UI
 			this.pictureBox27.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox27.TabIndex = 30;
 			this.pictureBox27.TabStop = false;
-			this.pictureBox27.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox27.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox28
 			// 
@@ -933,7 +933,7 @@ namespace Unclassified.UI
 			this.pictureBox28.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox28.TabIndex = 31;
 			this.pictureBox28.TabStop = false;
-			this.pictureBox28.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox28.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox29
 			// 
@@ -944,7 +944,7 @@ namespace Unclassified.UI
 			this.pictureBox29.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox29.TabIndex = 26;
 			this.pictureBox29.TabStop = false;
-			this.pictureBox29.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox29.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox30
 			// 
@@ -955,7 +955,7 @@ namespace Unclassified.UI
 			this.pictureBox30.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox30.TabIndex = 27;
 			this.pictureBox30.TabStop = false;
-			this.pictureBox30.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox30.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox31
 			// 
@@ -967,7 +967,7 @@ namespace Unclassified.UI
 			this.pictureBox31.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox31.TabIndex = 28;
 			this.pictureBox31.TabStop = false;
-			this.pictureBox31.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox31.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox32
 			// 
@@ -978,7 +978,7 @@ namespace Unclassified.UI
 			this.pictureBox32.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox32.TabIndex = 35;
 			this.pictureBox32.TabStop = false;
-			this.pictureBox32.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox32.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox33
 			// 
@@ -989,7 +989,7 @@ namespace Unclassified.UI
 			this.pictureBox33.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox33.TabIndex = 36;
 			this.pictureBox33.TabStop = false;
-			this.pictureBox33.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox33.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox34
 			// 
@@ -1000,7 +1000,7 @@ namespace Unclassified.UI
 			this.pictureBox34.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox34.TabIndex = 37;
 			this.pictureBox34.TabStop = false;
-			this.pictureBox34.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox34.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox35
 			// 
@@ -1011,7 +1011,7 @@ namespace Unclassified.UI
 			this.pictureBox35.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox35.TabIndex = 32;
 			this.pictureBox35.TabStop = false;
-			this.pictureBox35.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox35.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox36
 			// 
@@ -1022,7 +1022,7 @@ namespace Unclassified.UI
 			this.pictureBox36.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox36.TabIndex = 33;
 			this.pictureBox36.TabStop = false;
-			this.pictureBox36.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox36.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox37
 			// 
@@ -1034,7 +1034,7 @@ namespace Unclassified.UI
 			this.pictureBox37.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox37.TabIndex = 34;
 			this.pictureBox37.TabStop = false;
-			this.pictureBox37.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox37.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox38
 			// 
@@ -1045,7 +1045,7 @@ namespace Unclassified.UI
 			this.pictureBox38.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox38.TabIndex = 41;
 			this.pictureBox38.TabStop = false;
-			this.pictureBox38.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox38.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox39
 			// 
@@ -1056,7 +1056,7 @@ namespace Unclassified.UI
 			this.pictureBox39.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox39.TabIndex = 42;
 			this.pictureBox39.TabStop = false;
-			this.pictureBox39.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox39.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox40
 			// 
@@ -1067,7 +1067,7 @@ namespace Unclassified.UI
 			this.pictureBox40.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox40.TabIndex = 43;
 			this.pictureBox40.TabStop = false;
-			this.pictureBox40.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox40.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox41
 			// 
@@ -1078,7 +1078,7 @@ namespace Unclassified.UI
 			this.pictureBox41.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox41.TabIndex = 38;
 			this.pictureBox41.TabStop = false;
-			this.pictureBox41.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox41.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox42
 			// 
@@ -1089,7 +1089,7 @@ namespace Unclassified.UI
 			this.pictureBox42.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox42.TabIndex = 39;
 			this.pictureBox42.TabStop = false;
-			this.pictureBox42.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox42.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox43
 			// 
@@ -1101,7 +1101,7 @@ namespace Unclassified.UI
 			this.pictureBox43.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox43.TabIndex = 40;
 			this.pictureBox43.TabStop = false;
-			this.pictureBox43.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox43.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox44
 			// 
@@ -1112,7 +1112,7 @@ namespace Unclassified.UI
 			this.pictureBox44.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox44.TabIndex = 47;
 			this.pictureBox44.TabStop = false;
-			this.pictureBox44.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox44.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox45
 			// 
@@ -1123,7 +1123,7 @@ namespace Unclassified.UI
 			this.pictureBox45.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox45.TabIndex = 48;
 			this.pictureBox45.TabStop = false;
-			this.pictureBox45.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox45.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox46
 			// 
@@ -1134,7 +1134,7 @@ namespace Unclassified.UI
 			this.pictureBox46.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox46.TabIndex = 49;
 			this.pictureBox46.TabStop = false;
-			this.pictureBox46.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox46.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox47
 			// 
@@ -1145,7 +1145,7 @@ namespace Unclassified.UI
 			this.pictureBox47.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox47.TabIndex = 44;
 			this.pictureBox47.TabStop = false;
-			this.pictureBox47.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox47.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox48
 			// 
@@ -1156,7 +1156,7 @@ namespace Unclassified.UI
 			this.pictureBox48.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox48.TabIndex = 45;
 			this.pictureBox48.TabStop = false;
-			this.pictureBox48.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox48.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// pictureBox49
 			// 
@@ -1168,7 +1168,7 @@ namespace Unclassified.UI
 			this.pictureBox49.Size = new System.Drawing.Size(16, 16);
 			this.pictureBox49.TabIndex = 46;
 			this.pictureBox49.TabStop = false;
-			this.pictureBox49.Click += new System.EventHandler(this.picturePalette_Click);
+			this.pictureBox49.Click += new System.EventHandler(this.PicturePalette_Click);
 			// 
 			// ActionsPanel
 			// 
@@ -1308,8 +1308,8 @@ namespace Unclassified.UI
 			this.colorWheel1.Size = new System.Drawing.Size(160, 160);
 			this.colorWheel1.TabIndex = 2;
 			this.colorWheel1.Text = "colorWheel1";
-			this.colorWheel1.HueChanged += new System.EventHandler(this.colorWheel1_HueChanged);
-			this.colorWheel1.SLChanged += new System.EventHandler(this.colorWheel1_SLChanged);
+			this.colorWheel1.HueChanged += new System.EventHandler(this.ColorWheel1_HueChanged);
+			this.colorWheel1.SLChanged += new System.EventHandler(this.ColorWheel1_SLChanged);
 			// 
 			// ColorSelector
 			// 

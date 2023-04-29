@@ -32,8 +32,8 @@ namespace Server
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
             this.txtConsole = new System.Windows.Forms.TextBox();
@@ -455,9 +455,9 @@ namespace Server
             // identifier
             // 
             this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle9.SelectionBackColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle9.SelectionForeColor = System.Drawing.Color.Black;
-            this.identifier.DefaultCellStyle = dataGridViewCellStyle9;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.Transparent;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.Color.Black;
+            this.identifier.DefaultCellStyle = dataGridViewCellStyle1;
             this.identifier.HeaderText = "#";
             this.identifier.MinimumWidth = 28;
             this.identifier.Name = "identifier";
@@ -468,9 +468,9 @@ namespace Server
             // name
             // 
             this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle10.SelectionBackColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle10.SelectionForeColor = System.Drawing.Color.Black;
-            this.name.DefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.Transparent;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.Black;
+            this.name.DefaultCellStyle = dataGridViewCellStyle2;
             this.name.HeaderText = "Name";
             this.name.MaxInputLength = 20;
             this.name.MinimumWidth = 50;
@@ -657,8 +657,6 @@ namespace Server
             // 
             this.cbTrans.AutoSize = true;
             this.cbTrans.BackColor = System.Drawing.Color.Transparent;
-            this.cbTrans.Checked = true;
-            this.cbTrans.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbTrans.Location = new System.Drawing.Point(90, 19);
             this.cbTrans.Margin = new System.Windows.Forms.Padding(0);
             this.cbTrans.Name = "cbTrans";
@@ -700,12 +698,12 @@ namespace Server
             // 
             // btnBGColor
             // 
-            this.btnBGColor.BackColor = System.Drawing.Color.Transparent;
+            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
             this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnBGColor.Location = new System.Drawing.Point(5, 16);
             this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
             this.btnBGColor.Name = "btnBGColor";
-            this.btnBGColor.SelectedColor = System.Drawing.Color.Transparent;
+            this.btnBGColor.SelectedColor = System.Drawing.Color.Linen;
             this.btnBGColor.Size = new System.Drawing.Size(42, 20);
             this.btnBGColor.TabIndex = 0;
             this.btnBGColor.UseVisualStyleBackColor = false;
@@ -838,7 +836,7 @@ namespace Server
             // 
             // picDrawing
             // 
-            this.picDrawing.BackColor = System.Drawing.SystemColors.ScrollBar;
+            this.picDrawing.BackColor = System.Drawing.Color.Linen;
             this.picDrawing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.picDrawing.Location = new System.Drawing.Point(150, 0);
             this.picDrawing.Margin = new System.Windows.Forms.Padding(0);
