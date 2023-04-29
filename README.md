@@ -9,7 +9,7 @@ Client / Server application with public broadcast and private send methods. : [G
 * AES Encryption
 * Key/Password Authorization
 * Multiplayer Drawing / Whiteboard
-* Public and Private Chats w/ Colour (Color Scripts by: [Copyright (c) 2012, Yves Goergen](http://unclassified.software/) )
+* Public and Private Chats w/ Colour (Color Controls by: [Copyright (c) 2012, Yves Goergen](http://unclassified.software/) )
 * Client list (click to add '/msg clientname' for PM)
 * Sent Command/Message History
 
