@@ -4,14 +4,15 @@ Client / Server application with public broadcast and private send methods. : [G
 ## Features
 * Single WinForm Client/Server Interface
 * Custom IP and Port Specifications
-* Synchronous and ASynchronous TCP Connections
+* Synchronous and Asynchronous TCP Connections
 * JSON Object Formatting using [Newtonsoft.Json](https://www.newtonsoft.com/)
-* AES Encryption
-* Key/Password Authorization
+* AES Encryption for secure transmitions
+* Key/Password and Unique-name Authorizations
 * Multiplayer Drawing / Whiteboard
 * Public and Private Chats w/ Colour (Color Controls by: [Copyright (c) 2012, Yves Goergen](http://unclassified.software/) )
 * Client list (click to add '/msg clientname' for PM)
-* Sent Command/Message History
+* Command Line History (up/down arrows)
+* Exportable Console and Message logs
 
 ### Chat and Commands
 Public and Private messages that use colour for easy reading. Messages have Date and Time pre-fix for refrence.
@@ -35,10 +36,10 @@ Fill option works great with Shapes and 'Pen w/ Close' (filling the whole image 
 
 
 ### Known Issues
-- Fill tool causes out of memory error at times, carefull filling manual 'Pen' drawing and/or the open Canvas.
+- Fill tool causes out of memory error (carefull filling manual 'Pen' drawing and/or the open Canvas)
 
 ### To Do:
-- add text image to drawings
-- debug mode
+- add imagetext to drawings
+- debug mode(s)
 - transparent drawing canvas to show game below
 - incorporate with : [GridGame](https://github.com/DSBash/GridGame)
