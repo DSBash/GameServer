@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using Unclassified.UI;
 
 namespace Server
 {
@@ -31,8 +32,8 @@ namespace Server
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
             this.txtConsole = new System.Windows.Forms.TextBox();
@@ -62,28 +63,33 @@ namespace Server
             this.cmdHost = new System.Windows.Forms.Button();
             this.cmdJoin = new System.Windows.Forms.Button();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
+            this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
             this.txtMessage = new System.Windows.Forms.TextBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.gbSettings = new System.Windows.Forms.GroupBox();
             this.lblColor = new System.Windows.Forms.Label();
-            this.cmdColor = new System.Windows.Forms.Button();
+            this.cmdColor = new Unclassified.UI.ColorButton();
             this.gbDrawings = new System.Windows.Forms.GroupBox();
             this.gbBG = new System.Windows.Forms.GroupBox();
             this.cbTrans = new System.Windows.Forms.CheckBox();
             this.btnClearAll = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.btnClear = new System.Windows.Forms.Button();
-            this.btnBGColor = new System.Windows.Forms.Button();
+            this.btnBGColor = new Unclassified.UI.ColorButton();
             this.gbBrush = new System.Windows.Forms.GroupBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.btnFillColor = new System.Windows.Forms.Button();
+            this.btnFillColor = new Unclassified.UI.ColorButton();
             this.cbFillDraw = new System.Windows.Forms.CheckBox();
             this.cbBType = new System.Windows.Forms.ComboBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.btnColor = new System.Windows.Forms.Button();
+            this.btnColor = new Unclassified.UI.ColorButton();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
             this.btnSetDraw = new System.Windows.Forms.Button();
             this.picDrawing = new System.Windows.Forms.PictureBox();
@@ -92,11 +98,6 @@ namespace Server
             this.tPing = new System.Windows.Forms.Timer(this.components);
             this.colorBindingSource = new System.Windows.Forms.BindingSource(this.components);
             this.playerPackageBindingSource1 = new System.Windows.Forms.BindingSource(this.components);
-            this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -385,7 +386,7 @@ namespace Server
             // 
             // cmdHost
             // 
-            this.cmdHost.Location = new System.Drawing.Point(70, 95);
+            this.cmdHost.Location = new System.Drawing.Point(71, 95);
             this.cmdHost.Margin = new System.Windows.Forms.Padding(0);
             this.cmdHost.Name = "cmdHost";
             this.cmdHost.Size = new System.Drawing.Size(70, 23);
@@ -397,7 +398,7 @@ namespace Server
             // 
             // cmdJoin
             // 
-            this.cmdJoin.Location = new System.Drawing.Point(5, 95);
+            this.cmdJoin.Location = new System.Drawing.Point(4, 95);
             this.cmdJoin.Margin = new System.Windows.Forms.Padding(0);
             this.cmdJoin.Name = "cmdJoin";
             this.cmdJoin.Size = new System.Drawing.Size(70, 23);
@@ -450,6 +451,58 @@ namespace Server
             this.clientsDataGridView.TabIndex = 33;
             this.clientsDataGridView.TabStop = false;
             this.clientsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.ClientsDataGridView_CellClick);
+            // 
+            // identifier
+            // 
+            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle9.SelectionBackColor = System.Drawing.Color.Transparent;
+            dataGridViewCellStyle9.SelectionForeColor = System.Drawing.Color.Black;
+            this.identifier.DefaultCellStyle = dataGridViewCellStyle9;
+            this.identifier.HeaderText = "#";
+            this.identifier.MinimumWidth = 28;
+            this.identifier.Name = "identifier";
+            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.identifier.Visible = false;
+            this.identifier.Width = 28;
+            // 
+            // name
+            // 
+            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            dataGridViewCellStyle10.SelectionBackColor = System.Drawing.Color.Transparent;
+            dataGridViewCellStyle10.SelectionForeColor = System.Drawing.Color.Black;
+            this.name.DefaultCellStyle = dataGridViewCellStyle10;
+            this.name.HeaderText = "Name";
+            this.name.MaxInputLength = 20;
+            this.name.MinimumWidth = 50;
+            this.name.Name = "name";
+            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            // 
+            // color
+            // 
+            this.color.HeaderText = "";
+            this.color.Name = "color";
+            this.color.Visible = false;
+            // 
+            // latency
+            // 
+            this.latency.HeaderText = "Ping";
+            this.latency.MinimumWidth = 28;
+            this.latency.Name = "latency";
+            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.latency.Visible = false;
+            this.latency.Width = 28;
+            // 
+            // dc
+            // 
+            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dc.HeaderText = "DC";
+            this.dc.MinimumWidth = 28;
+            this.dc.Name = "dc";
+            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.dc.Text = "DC";
+            this.dc.Visible = false;
+            this.dc.Width = 28;
             // 
             // txtMessage
             // 
@@ -526,6 +579,7 @@ namespace Server
             // 
             // gbSettings
             // 
+            this.gbSettings.Controls.Add(this.cmdHost);
             this.gbSettings.Controls.Add(this.lblColor);
             this.gbSettings.Controls.Add(this.cmdColor);
             this.gbSettings.Controls.Add(this.txtPort);
@@ -536,7 +590,6 @@ namespace Server
             this.gbSettings.Controls.Add(this.cmdJoin);
             this.gbSettings.Controls.Add(this.txtName);
             this.gbSettings.Controls.Add(this.lblPort);
-            this.gbSettings.Controls.Add(this.cmdHost);
             this.gbSettings.Controls.Add(this.cbMask);
             this.gbSettings.Controls.Add(this.lblAddress);
             this.gbSettings.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -567,10 +620,10 @@ namespace Server
             this.cmdColor.Location = new System.Drawing.Point(110, 25);
             this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
             this.cmdColor.Name = "cmdColor";
+            this.cmdColor.SelectedColor = System.Drawing.Color.Yellow;
             this.cmdColor.Size = new System.Drawing.Size(25, 20);
             this.cmdColor.TabIndex = 56;
             this.cmdColor.UseVisualStyleBackColor = false;
-            this.cmdColor.Click += new System.EventHandler(this.CmdPlayerColor_Click);
             // 
             // gbDrawings
             // 
@@ -604,6 +657,8 @@ namespace Server
             // 
             this.cbTrans.AutoSize = true;
             this.cbTrans.BackColor = System.Drawing.Color.Transparent;
+            this.cbTrans.Checked = true;
+            this.cbTrans.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbTrans.Location = new System.Drawing.Point(90, 19);
             this.cbTrans.Margin = new System.Windows.Forms.Padding(0);
             this.cbTrans.Name = "cbTrans";
@@ -645,16 +700,16 @@ namespace Server
             // 
             // btnBGColor
             // 
-            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
+            this.btnBGColor.BackColor = System.Drawing.Color.Transparent;
             this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnBGColor.Location = new System.Drawing.Point(5, 16);
             this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
             this.btnBGColor.Name = "btnBGColor";
+            this.btnBGColor.SelectedColor = System.Drawing.Color.Transparent;
             this.btnBGColor.Size = new System.Drawing.Size(42, 20);
             this.btnBGColor.TabIndex = 0;
             this.btnBGColor.UseVisualStyleBackColor = false;
             this.btnBGColor.BackColorChanged += new System.EventHandler(this.BGColor_BackColorChanged);
-            this.btnBGColor.Click += new System.EventHandler(this.BGColor_Click);
             // 
             // gbBrush
             // 
@@ -690,10 +745,10 @@ namespace Server
             this.btnFillColor.Location = new System.Drawing.Point(58, 72);
             this.btnFillColor.Margin = new System.Windows.Forms.Padding(0);
             this.btnFillColor.Name = "btnFillColor";
+            this.btnFillColor.SelectedColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
             this.btnFillColor.Size = new System.Drawing.Size(28, 20);
             this.btnFillColor.TabIndex = 6;
             this.btnFillColor.UseVisualStyleBackColor = false;
-            this.btnFillColor.Click += new System.EventHandler(this.FillColor_Click);
             // 
             // cbFillDraw
             // 
@@ -748,10 +803,10 @@ namespace Server
             this.btnColor.Location = new System.Drawing.Point(5, 15);
             this.btnColor.Margin = new System.Windows.Forms.Padding(0);
             this.btnColor.Name = "btnColor";
+            this.btnColor.SelectedColor = System.Drawing.Color.Green;
             this.btnColor.Size = new System.Drawing.Size(28, 20);
             this.btnColor.TabIndex = 0;
             this.btnColor.UseVisualStyleBackColor = false;
-            this.btnColor.Click += new System.EventHandler(this.DrawColor_Click);
             // 
             // nudSize
             // 
@@ -845,58 +900,6 @@ namespace Server
             // 
             this.playerPackageBindingSource1.DataSource = typeof(Server.GameServer.PlayerPackage);
             // 
-            // identifier
-            // 
-            this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.Color.Black;
-            this.identifier.DefaultCellStyle = dataGridViewCellStyle1;
-            this.identifier.HeaderText = "#";
-            this.identifier.MinimumWidth = 28;
-            this.identifier.Name = "identifier";
-            this.identifier.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.identifier.Visible = false;
-            this.identifier.Width = 28;
-            // 
-            // name
-            // 
-            this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.Black;
-            this.name.DefaultCellStyle = dataGridViewCellStyle2;
-            this.name.HeaderText = "Name";
-            this.name.MaxInputLength = 20;
-            this.name.MinimumWidth = 50;
-            this.name.Name = "name";
-            this.name.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            // 
-            // color
-            // 
-            this.color.HeaderText = "";
-            this.color.Name = "color";
-            this.color.Visible = false;
-            // 
-            // latency
-            // 
-            this.latency.HeaderText = "Ping";
-            this.latency.MinimumWidth = 28;
-            this.latency.Name = "latency";
-            this.latency.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.latency.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
-            this.latency.Visible = false;
-            this.latency.Width = 28;
-            // 
-            // dc
-            // 
-            this.dc.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.dc.HeaderText = "DC";
-            this.dc.MinimumWidth = 28;
-            this.dc.Name = "dc";
-            this.dc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.dc.Text = "DC";
-            this.dc.Visible = false;
-            this.dc.Width = 28;
-            // 
             // GameServer
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
@@ -975,21 +978,21 @@ namespace Server
         private System.Windows.Forms.RichTextBox txtLobby;
         private System.Windows.Forms.Timer tPing;
         private System.Windows.Forms.Label lblColor;
-        private System.Windows.Forms.Button cmdColor;
+        private ColorButton cmdColor;
         private System.Windows.Forms.Button btnSetDraw;
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.NumericUpDown nudSize;
-        private System.Windows.Forms.Button btnColor;
+        private ColorButton btnColor;
         private System.Windows.Forms.GroupBox gbBG;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Button btnBGColor;
+        private ColorButton btnBGColor;
         private System.Windows.Forms.GroupBox gbBrush;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnClearAll;
         private System.Windows.Forms.ComboBox cbBType;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Button btnFillColor;
+        private ColorButton btnFillColor;
         private System.Windows.Forms.CheckBox cbFillDraw;
         private System.Windows.Forms.PictureBox picDrawing;
         private System.Windows.Forms.CheckBox cbTrans;

@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic.Devices;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -29,7 +28,7 @@ namespace Server
         private bool listening = false;
         private Thread listener = null;
         private Thread disconnect = null;
-        private TcpListener drawingSocket; 
+        private readonly TcpListener drawingSocket;
         public class PlayerPackage
         {
             public int Id { get; set; }
@@ -49,7 +48,7 @@ namespace Server
         };
         private static readonly ConcurrentDictionary<long, MyPlayers> players = new();
         #endregion
-       
+
         #region Client Specific Declarations
         private bool connected = false;
         private Thread client = null;
@@ -66,7 +65,7 @@ namespace Server
         };
         private Client clientObject;
         #endregion Declarations
-       
+
         #region Drawing Delclarations
         public class DrawPackage
         {
@@ -106,7 +105,7 @@ namespace Server
         #region General Declarations
         private Task send = null;
         private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";                    // AES Key
-        
+
         private readonly List<string> MSGHistory = new();                                                    // CLI History
         private int HistoryIndex = -1;
         /* Used to enable Console
@@ -437,9 +436,9 @@ namespace Server
         #region Drawing
         private DrawPackage PrepareDrawPackage()                                                    // Create a Draw Pakage 
         {
-            int cA = btnColor.BackColor.A; int cB = btnColor.BackColor.B; int cR = btnColor.BackColor.R; int cG = btnColor.BackColor.G;
+            int cA = btnColor.SelectedColor.A; int cB = btnColor.SelectedColor.B; int cR = btnColor.SelectedColor.R; int cG = btnColor.SelectedColor.G;
             string pcString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);                     // convert COLOURS to string  - From Color to ARGB
-            int bA = btnFillColor.BackColor.A; int bB = btnFillColor.BackColor.B; int bR = btnFillColor.BackColor.R; int bG = btnFillColor.BackColor.G;
+            int bA = btnFillColor.SelectedColor.A; int bB = btnFillColor.SelectedColor.B; int bR = btnFillColor.SelectedColor.R; int bG = btnFillColor.SelectedColor.G;
             string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert COLOURS to string  - From Color to ARGB
 
             DrawPackage drawPack = new() {                                                          // Prep Draw Package for send
@@ -493,18 +492,9 @@ namespace Server
                 btnSetDraw.Text = "Settings";
             }
         }
-        private void DrawColor_Click(object sender, EventArgs e)                                    // Set Drawing Colour 
-        {
-            SetColour(sender);
-        }
-        private void FillColor_Click(object sender, EventArgs e)                                    // Set Fill Colour 
-        {
-            SetColour(sender);
-        }
         private void CmdClear_Click(object sender, EventArgs e)                                     // Clears the gfx 
         {
-            //using var G = picDrawing.CreateGraphics();
-            G.Clear(btnBGColor.BackColor);
+            G.Clear(btnBGColor.SelectedColor);
             picDrawing.Invoke((MethodInvoker)delegate {
                 picDrawing.Refresh();
             });
@@ -565,8 +555,8 @@ namespace Server
         {
             if (Drawing) {
                 Graphics G = e.Graphics;
-                Pen pen = new(btnColor.BackColor, (int)nudSize.Value);
-                SolidBrush brush = new(btnFillColor.BackColor);
+                Pen pen = new(btnColor.SelectedColor, (int)nudSize.Value);
+                SolidBrush brush = new(btnFillColor.SelectedColor);
                 switch (cbBType.Text) {
                     case "Circle":
                         G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);                                 // Draw
@@ -624,9 +614,9 @@ namespace Server
         {
             if (Drawing && cbBType.Text == "Fill Tool" && e.Button == MouseButtons.Left) {
                 Point canvas = Set_Point(picDrawing, e.Location);                                   // Get location of canvas
-                FillTool(BM, canvas.X, canvas.Y, btnFillColor.BackColor);
+                FillTool(BM, canvas.X, canvas.Y, btnFillColor.SelectedColor);
 
-                int bA = btnFillColor.BackColor.A; int bB = btnFillColor.BackColor.B; int bR = btnFillColor.BackColor.R; int bG = btnFillColor.BackColor.G;
+                int bA = btnFillColor.SelectedColor.A; int bB = btnFillColor.SelectedColor.B; int bR = btnFillColor.SelectedColor.R; int bG = btnFillColor.SelectedColor.G;
                 string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert COLOURS to string  - From Color to ARGB
                 FillPackage fillPack = new() {
                     FillColor = bcString,
@@ -679,7 +669,7 @@ namespace Server
 
 
         private void DeleteTemps(string filePath = "")                                              // Remove tmp image file 
-        {            
+        {
             if (filePath.Length > 0) {
                 try {
                     File.Delete(filePath);
@@ -687,11 +677,10 @@ namespace Server
                 } catch (Exception ex) {
                     Console(ErrorMsg("DF1: " + ex.Message));
                 }
-            }
-            else {
+            } else {
                 string runPath = Application.StartupPath;
                 string[] tempFiles = Directory.GetFiles(runPath, "*.tmp");
-                foreach (string tempFile in tempFiles) { 
+                foreach (string tempFile in tempFiles) {
                     try {
                         File.Delete(tempFile);
                         Console("Temp file successfully deleted.");
@@ -699,14 +688,14 @@ namespace Server
                         Console(ErrorMsg("DF2: " + ex.Message));
                     }
                 }
-            } 
+            }
         }
         private void SaveDrawing()                                                                  // Drawing Save Routine 
         {
             SaveFileDialog saveFileDialog = new() {                                                 // Prompt user for Save File
                 Filter = "JPEG Image|*.jpg|PNG Image|*.png|Bitmap Image|*.bmp|GIF Image|*.gif"
             };
-            if (saveFileDialog.ShowDialog() == DialogResult.OK) { 
+            if (saveFileDialog.ShowDialog() == DialogResult.OK) {
                 string fileName = saveFileDialog.FileName;
                 string extension = Path.GetExtension(fileName);
                 ImageFormat imageFormat;
@@ -835,14 +824,14 @@ namespace Server
         private void Connected(bool status)                                                         // Client active toggle 
         {
             cmdJoin.Invoke((MethodInvoker)delegate {
-                connected = status;                
+                connected = status;
                 if (status) {
                     ToggleNetworkControls();
                     clientsDataGridView.Columns["dc"].Visible = false;
                     clientsDataGridView.Columns["latency"].Visible = true;
 
                     btnClearAll.Visible = false;
-                    btnColor.BackColor = cmdColor.BackColor;
+                    btnColor.SelectedColor = cmdColor.SelectedColor;
 
                     cmdJoin.Enabled = !cmdJoin.Enabled;
                     cmdJoin.Text = "Disconnect";
@@ -864,13 +853,13 @@ namespace Server
         private void Listening(bool status)                                                         // Host active toggle 
         {
             cmdHost.Invoke((MethodInvoker)delegate {
-                listening = status;                
+                listening = status;
                 if (status) {
                     ToggleNetworkControls();
                     clientsDataGridView.Columns["dc"].Visible = true;
                     clientsDataGridView.Columns["latency"].Visible = true;
                     btnClearAll.Visible = true;
-                    btnColor.BackColor = cmdColor.BackColor;
+                    btnColor.SelectedColor = cmdColor.SelectedColor;
                     cmdHost.Enabled = !cmdHost.Enabled;
                     cmdHost.Text = "Stop";
                     Program.mainForm.Text = txtName.Text.Trim() + " is Hosting";
@@ -913,7 +902,7 @@ namespace Server
                 clientObject = new Client {
                     username = username,
                     key = roomkey,
-                    color = cmdColor.BackColor,                                                     // save player COLOURS to Client
+                    color = cmdColor.SelectedColor,                                                     // save player COLOURS to Client
                     client = new TcpClient(),
                 };
                 clientObject.client.Connect(ip, port);
@@ -943,7 +932,7 @@ namespace Server
                 string msg = string.Format("{0} has connected.", obj.username);
                 players.TryAdd(obj.id, obj);
                 AddToGrid(obj.id, obj.username.ToString(), obj.color);                              // Add new client to grid
-                Console(SystemMsg(msg));               
+                Console(SystemMsg(msg));
                 HostSendPublic(SystemMsg(msg), obj.id);                                             // Broadcast the Con
                 while (obj.client.Connected) {
                     try {
@@ -1151,7 +1140,7 @@ namespace Server
             Dictionary<string, string> handShake = new() {                                          // Collect info to send as object Handshake
                 { "username", clientObject.username },
                 { "roomkey", clientObject.key },
-                { "color" , Convert.ToString(cmdColor.BackColor.A) +","+ Convert.ToString(cmdColor.BackColor.R) +","+ Convert.ToString(cmdColor.BackColor.G) +","+ Convert.ToString(cmdColor.BackColor.B) }, // Send COLOURS to host
+                { "color" , Convert.ToString(cmdColor.SelectedColor.A) +","+ Convert.ToString(cmdColor.SelectedColor.R) +","+ Convert.ToString(cmdColor.SelectedColor.G) +","+ Convert.ToString(cmdColor.SelectedColor.B) }, // Send COLOURS to host
             };
             JavaScriptSerializer json = new();                                                      // Format the Handshake object
             Send(json.Serialize(handShake));                                                        // Client send Handshake to Host
@@ -1276,7 +1265,7 @@ namespace Server
         #region Backwards Client Drawing Server
         // Client Server - Drawing File Transfer
         private void SendDrawing()                                                                  // Drawing Send Routine 
-{
+        {
             HostSendPublic("CMD:ReceiveDrawing");                                                   // CMD to make Client begin File server
 
             string appPath = Application.StartupPath;                                               // Prep the file
@@ -1310,7 +1299,7 @@ namespace Server
                 //[0]filenamelen[4]filenamebyte[*]filedata
             } catch (Exception ex) {
                 Console(ErrorMsg("SF: " + ex.Message));
-            } 
+            }
         }
         private void ReceiveFile(Socket clientSocket, string n)                                     // Receive / Save / Show 
         {
@@ -1360,8 +1349,8 @@ namespace Server
                 }
             }
         }
-        #endregion      
-        
+        #endregion
+
         // Host Server - Drawing File Transfer
         private void FileServe()                                                                    // Host File Server 
         {
@@ -1371,13 +1360,12 @@ namespace Server
                 var clientSocket = default(TcpClient);
                 int counter = 0;
                 var source = new CancellationTokenSource();
-                Task.Factory.StartNew(() =>
-                {
+                Task.Factory.StartNew(() => {
                     while (true) {
                         drawingSocket.Start();                                                      // Start Drawing Server
                         Console("File Server Started");
                         clientSocket = drawingSocket.AcceptTcpClient();                             // New client socket on connect
-                        counter += 1;                                                               
+                        counter += 1;
                         var networkStream = clientSocket.GetStream();
                         Console("Connection #: " + counter.ToString() + " started.");
 
@@ -1400,13 +1388,13 @@ namespace Server
                         networkStream.Close();                                                      // Clean up
                         clientSocket.Close();
                         Console("Connection #: " + counter.ToString() + " closed.");
-                        
+
                         DeleteTemps(filePath);
                     }
                 }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             } catch (Exception w) {
                 MessageBox.Show("FS: Connection error: " + w.ToString());
-            }            
+            }
         }
         private void FileReceive()                                                                  // Client File Receiver 
         {
@@ -1459,7 +1447,7 @@ namespace Server
 
             Console("Closing Connection.");
             networkStream.Close();                                                                  // Clean up
-            client.Close();   
+            client.Close();
         }
 
         // Host and Client Read
@@ -1660,16 +1648,16 @@ namespace Server
         }
         private void SetColour(object sender)                                                       // Set's all Colour related Buttons 
         {
-            Button clickedButton = (Button)sender;
-            ColorDialog diag = new() {
-                AllowFullOpen = true,
-                ShowHelp = true,
-                CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
-                Color = clickedButton.BackColor                                                     // Sets initial color to current button backcolor             
-            };
-            //using var diag = new ColorDialog();
-            if (diag.ShowDialog() == DialogResult.OK)
-                clickedButton.BackColor = diag.Color;
+            /*            Button clickedButton = (Button)sender;
+                        ColorDialog diag = new() {
+                            AllowFullOpen = true,
+                            ShowHelp = true,
+                            CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
+                            Color = clickedButton.BackColor                                                     // Sets initial color to current button backcolor             
+                        };
+                        //using var diag = new ColorDialog();
+                        if (diag.ShowDialog() == DialogResult.OK)
+                            clickedButton.BackColor = diag.Color;*/
         }
         private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
         {
@@ -1734,12 +1722,7 @@ namespace Server
         }
         private void Trans_CheckedChanged(object sender, EventArgs e)                               // Transparent Canvas 
         {
-            if (cbTrans.Checked) { btnBGColor.BackColor = Color.Transparent; }
-        }
-        private void CmdPlayerColor_Click(object sender, EventArgs e)                               // Player Color Chooser / set starting brush to same 
-        {
-            SetColour(sender);
-            btnColor.BackColor = cmdColor.BackColor;
+            if (cbTrans.Checked) { btnBGColor.SelectedColor = Color.Transparent; }
         }
         private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles RoomKey Mask 
         {
@@ -1759,7 +1742,7 @@ namespace Server
                 } else if (listener == null || !listener.IsAlive) {
                     string address = txtAddress.Text.Trim();
                     string number = txtPort.Text.Trim();
-                    if (txtName.Text.Trim() == "Player 1") { txtName.Text = "Host"; cmdColor.BackColor = Color.Yellow; }
+                    if (txtName.Text.Trim() == "Player 1") { txtName.Text = "Host"; cmdColor.SelectedColor = Color.Yellow; }
                     string username = txtName.Text.Trim();
                     bool error = false;
                     IPAddress ip = null;
@@ -1798,7 +1781,7 @@ namespace Server
                         listener.Start();
 
                         ClearDataGrid();
-                        AddToGrid(0, username, cmdColor.BackColor);
+                        AddToGrid(0, username, cmdColor.SelectedColor);
                     }
                 }
             }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -1814,9 +1797,9 @@ namespace Server
                 } else if (client == null || !client.IsAlive) {
                     string address = txtAddress.Text.Trim();
                     string number = txtPort.Text.Trim();
-                    if (txtName.Text.Trim() == "Player 1") { cmdColor.BackColor = Color.Red; }
-                    if (txtName.Text.Trim() == "Player 2") { cmdColor.BackColor = Color.Green; }
-                    if (txtName.Text.Trim() == "Player 3") { cmdColor.BackColor = Color.Blue; }
+                    if (txtName.Text.Trim() == "Player 1") { cmdColor.SelectedColor = Color.Red; }
+                    if (txtName.Text.Trim() == "Player 2") { cmdColor.SelectedColor = Color.Green; }
+                    if (txtName.Text.Trim() == "Player 3") { cmdColor.SelectedColor = Color.Blue; }
                     string username = txtName.Text.Trim();
                     bool error = false;
                     IPAddress ip = null;

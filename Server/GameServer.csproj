@@ -52,6 +52,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ColorButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ColorFader.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ColorMath.cs" />
+    <Compile Include="ColorSelector.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ColorSelector.designer.cs">
+      <DependentUpon>ColorSelector.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ColorWheel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Encryption.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GameServer.cs">
@@ -62,6 +78,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="ColorSelector.resx">
+      <DependentUpon>ColorSelector.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GameServer.resx">
       <DependentUpon>GameServer.cs</DependentUpon>
     </EmbeddedResource>
