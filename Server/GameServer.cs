@@ -25,19 +25,19 @@ namespace Server
     {
         #region Declarations
         #region Host Specific Declarations
-        private bool listening = false;
-        private Thread listener = null;
-        private Thread disconnect = null;
-        private readonly TcpListener drawingSocket;
-        public class PlayerPackage
+        private bool listening = false;                                                             // Host / Client Mode Marker
+        private Thread listener = null;                                                             // Host TCP Listener
+        private Thread disconnect = null;                                                           // Manage Disconnects
+        private readonly TcpListener drawingSocket;                                                 // For sending image of the drawing
+        public class PlayerPackage                                                                  // To Broadcast to Clients 
         {
             public int Id { get; set; }
             public string Name { get; set; }
             public int[] Color { get; set; }
         }
-        public class MyPlayers
+        public class MyPlayers                                                                      // Handles Connections 
         {
-#pragma warning disable IDE1006                             // Naming Styles
+        #pragma warning disable IDE1006                             // Naming Styles
             public long id { get; set; }
             public Color color { get; set; }
             public StringBuilder username { get; set; }
@@ -46,15 +46,15 @@ namespace Server
             public byte[] buffer { get; set; }
             public StringBuilder data { get; set; }
             public EventWaitHandle handle { get; set; }
-#pragma warning restore IDE1006                             // Naming Styles
+        #pragma warning restore IDE1006                             // Naming Styles
         };
         private static readonly ConcurrentDictionary<long, MyPlayers> players = new();
         #endregion
 
         #region Client Specific Declarations
-        private bool connected = false;
-        private Thread client = null;
-        private class Client
+        private bool connected = false;                                                             // Client / Host Mode Marker
+        private Thread client = null;                                                               // The Client TCP
+        private class Client                                                                        // Client information to send to Host 
         {
             public string username;
             public string key;
@@ -65,11 +65,11 @@ namespace Server
             public StringBuilder data;
             public EventWaitHandle handle;
         };
-        private Client clientObject;
+        private Client clientObject;                                                                // The Client Object
         #endregion Declarations
 
         #region Drawing Delclarations
-        public class DrawPackage
+        public class DrawPackage                                                                    // Details needed to Draw and Broadcast 
         {
             public string PenColor { get; set; }
             public string BrushColor { get; set; }
@@ -86,29 +86,29 @@ namespace Server
             public int PT2X { get; set; }
             public int PT2Y { get; set; }
         }
-        public class FillPackage
+        public class FillPackage                                                                    // Details needed to Fill and Broadcast 
         {
             public string FillColor { get; set; }
             public int X { get; set; }
             public int Y { get; set; }
         }
 
-        readonly Bitmap BM;
-        Graphics G;
-        GraphicsPath mPath;
-        Point PT2, PT1;
-        int x, y, PT1X, PT1Y, PT2X, PT2Y;
-        private bool Drawing = false;
-        private bool remoteDraw = false;
-        private Color _previousBackColor = Color.Linen;
-        private Color _newBackColor;
+        readonly Bitmap BM;                                                                         // The Drawing
+        Graphics G;                                                                                 // The Canvas
+        GraphicsPath mPath;                                                                         // Pen Path
+        Point PT2, PT1;                                                                             // Points for Drawing
+        int x, y, PT1X, PT1Y, PT2X, PT2Y;                                                           // Math Points
+        private bool Drawing = false;                                                               // Local Drawing Toggle
+        private bool remoteDraw = false;                                                            // Remote Drawing Toggle
+        private Color _preBC = Color.Linen;                                                         // Fill 
+        private Color _newBC;                                                                       // Fill
         #endregion
 
         #region General Declarations
         private Task send = null;
         private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";                    // AES Key
 
-        private readonly List<string> MSGHistory = new();                                                    // CLI History
+        private readonly List<string> MSGHistory = new();                                           // CLI History
         private int HistoryIndex = -1;
         /* Used to enable Console
                 [DllImport("kernel32.dll", SetLastError = true)]
@@ -180,6 +180,234 @@ namespace Server
                 clientObject.client.Close();
             }
             Disconnect();
+        }
+        #endregion
+
+        #region Controls & Routines
+        private void ToggleNetworkControls()                                                        // Toggle controls for networking 
+        {
+            txtAddress.Enabled = !txtAddress.Enabled;
+            txtPort.Enabled = !txtPort.Enabled;
+            txtName.Enabled = !txtName.Enabled;
+            txtRoomKey.Enabled = !txtRoomKey.Enabled;
+
+            cmdHost.Enabled = !cmdHost.Enabled;
+            cmdJoin.Enabled = !cmdJoin.Enabled;
+
+            tPing.Enabled = !tPing.Enabled;
+        }
+        private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
+        {
+            if (sender is System.Windows.Forms.MenuItem) {
+                ColorDialog MyDialog = new() {
+                    AllowFullOpen = true,
+                    ShowHelp = true,
+                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
+                };
+                if (MyDialog.ShowDialog() == DialogResult.OK) {
+                    if (tabSections.SelectedTab.Name == "tConsole") {
+                        txtConsole.BackColor = MyDialog.Color;                                      // Update the text box color if the user clicks OK
+                    }
+                    if (tabSections.SelectedTab.Name == "tLobby") {
+                        txtLobby.BackColor = MyDialog.Color;                                        // Update the text box color if the user clicks OK
+                    }
+                }
+            }
+            if (sender is System.Windows.Forms.Button) {
+                Button clickedButton = (Button)sender;
+                ColorDialog MyDialog = new() {
+                    AllowFullOpen = true,
+                    ShowHelp = true,
+                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
+                    Color = clickedButton.BackColor                                                 // Sets the initial color select to the current text color.             
+                };
+                if (MyDialog.ShowDialog() == DialogResult.OK) {
+                    clickedButton.BackColor = MyDialog.Color;
+                }
+            }
+
+        }
+        private void BGColor_Click(object sender, EventArgs e)                                      // Get Background color of Canvas 
+        {
+            BGC_Click(sender, e);
+        }
+        private void BGColor_BackColorChanged(object sender, EventArgs e)                           // Set BG (use Fill) 
+        {
+            _newBC = ((Control)sender).BackColor;
+            for (int x = 0; x < BM.Width; x++) {                                                    // Iterate over the pixels in the bitmap
+                for (int y = 0; y < BM.Height; y++) {
+                    if (BM.GetPixel(x, y).R == _preBC.R && BM.GetPixel(x, y).G == _preBC.G && BM.GetPixel(x, y).B == _preBC.B) {    // Check if the current pixel has the original color                        
+                        BM.SetPixel(x, y, _newBC);                                           // Replace the color of the current pixel with the replacement color
+                    }
+                }
+            }
+            _preBC = _newBC;
+            picDrawing.Image = BM;
+            G = Graphics.FromImage(BM);                                                             // Set the canvas
+
+        }
+        private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
+        {
+            if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
+            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(null, null); }
+        }
+        private void FillToggle_CheckedChanged(object sender, EventArgs e)                          // Change to /w Close if on Pen or start 
+        {
+            if (!cbFillDraw.Checked || cbBType.Text == "Pen" || cbBType.Text == "Shape / Style") {
+                cbBType.SelectedItem = "Pen w/ Close";
+            }
+        }
+        private void Trans_CheckedChanged(object sender, EventArgs e)                               // Transparent Canvas 
+        {
+            if (cbTrans.Checked) {
+                this.TransparencyKey = Color.LightGoldenrodYellow;                                  // 250,250,210
+                picDrawing.BackColor = Color.LightGoldenrodYellow;
+                btnBGColor.SelectedColor = Color.LightGoldenrodYellow;            
+            }
+        }
+        private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles RoomKey Mask 
+        {
+            if (txtRoomKey.PasswordChar == '*') {
+                txtRoomKey.PasswordChar = '\0';
+            } else {
+                txtRoomKey.PasswordChar = '*';
+            }
+        }
+        private void CmdHost_Click(object sender, EventArgs e)                                      // Host start 
+        {
+            var source = new CancellationTokenSource();
+            Task.Factory.StartNew(() => {
+                if (listening) {
+                    listening = false;
+                    RemoveFromGrid(0);
+                } else if (listener == null || !listener.IsAlive) {
+                    string address = txtAddress.Text.Trim();
+                    string number = txtPort.Text.Trim();
+                    if (txtName.Text.Trim() == "Player 1") { txtName.Text = "Host"; cmdColor.SelectedColor = Color.Yellow; }
+                    string username = txtName.Text.Trim();
+                    bool error = false;
+                    IPAddress ip = null;
+                    if (address.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Address is required"));
+                    } else {
+                        try {
+                            ip = Dns.GetHostEntry(address)
+                                .AddressList
+                                .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                        } catch {
+                            error = true;
+                            Console(SystemMsg("Address is not valid"));
+                        }
+                    }
+                    int port = -1;
+                    if (number.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Port number is required"));
+                    } else if (!int.TryParse(number, out port)) {
+                        error = true;
+                        Console(SystemMsg("Port number is not valid"));
+                    } else if (port < 0 || port > 65535) {
+                        error = true;
+                        Console(SystemMsg("Port number is out of range"));
+                    }
+                    if (username.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Username is required"));
+                    }
+                    if (!error) {
+                        listener = new Thread(() => Listener(ip, port)) {
+                            IsBackground = true
+                        };
+                        listener.Start();
+
+                        ClearDataGrid();
+                        AddToGrid(0, username, cmdColor.SelectedColor);
+                    }
+                }
+            }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            txtMessage.Focus();
+            txtMessage.SelectionStart = txtMessage.Text.Length;
+        }
+        private void CmdJoin_Click(object sender, EventArgs e)                                      // Client start 
+        {
+            var source = new CancellationTokenSource();
+            Task.Factory.StartNew(() => {
+                if (connected) {
+                    clientObject.client.Close();
+                } else if (client == null || !client.IsAlive) {
+                    string address = txtAddress.Text.Trim();
+                    string number = txtPort.Text.Trim();
+                    if (txtName.Text.Trim() == "Player 1") { cmdColor.SelectedColor = Color.Red; }
+                    if (txtName.Text.Trim() == "Player 2") { cmdColor.SelectedColor = Color.Green; }
+                    if (txtName.Text.Trim() == "Player 3") { cmdColor.SelectedColor = Color.Blue; }
+                    string username = txtName.Text.Trim();
+                    bool error = false;
+                    IPAddress ip = null;
+                    if (address.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Address is required"));
+                    } else {
+                        try {
+                            ip = Dns.GetHostEntry(address)
+                                .AddressList
+                                .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                        } catch {
+                            error = true;
+                            Console(SystemMsg("Address is not valid"));
+                        }
+                    }
+                    int port = -1;
+                    if (number.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Port number is required"));
+                    } else if (!int.TryParse(number, out port)) {
+                        error = true;
+                        Console(SystemMsg("Port number is not valid"));
+                    } else if (port < 0 || port > 65535) {
+                        error = true;
+                        Console(SystemMsg("Port number is out of range"));
+                    }
+                    if (username.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Username is required"));
+                    }
+                    if (!error) {
+                        client = new Thread(() => Connection(ip, port, username, txtRoomKey.Text)) {
+                            IsBackground = true
+                        };
+                        client.Start();
+                    }
+                }
+            }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+        private void ClientsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)      // Grid Button Clicks / Private Message / Ping / DC 
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["dc"].Index) {      // DC button
+                long.TryParse(clientsDataGridView.Rows[e.RowIndex].Cells["identifier"].Value.ToString(), out long id);
+                if (id == 0) { id = -1; }
+                Disconnect(id);
+            }
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["latency"].Index) { // Ping selected client
+                var BtnCell = (DataGridViewTextBoxCell)clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                BtnCell.Value = Ping(GetPlayerAddress(e.RowIndex));
+            }
+            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["name"].Index) {    // Private msg
+                string name = clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
+                string prevMSG = txtMessage.Text;
+                if (prevMSG.EndsWith("ype and press enter to send.")) { txtMessage.Text = prevMSG = ""; }
+                if (prevMSG.StartsWith("/msg")) {
+                    string[] msgParts = prevMSG.Split(' ');
+                    txtMessage.Text = string.Format("/msg {0} {1}", name, msgParts[2].Trim());
+                } else { txtMessage.Text = string.Format("/msg {0} {1}", name, prevMSG); }
+                txtMessage.Focus();
+                txtMessage.SelectionStart = txtMessage.Text.Length;
+            }
+        }
+        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabSections.SelectedIndex == 0) { tabSections.TabPages[0].Text = "Console"; }
+            if (tabSections.SelectedIndex == 1) { tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count); }
         }
         #endregion
 
@@ -357,12 +585,12 @@ namespace Server
         #endregion
 
         #region ClientsDataGrid Management
-        private void AddToGrid(long id, string name, Color color)                                   // Add Client 
+        private void AddToGrid(long id, string name, Color color)                                   // Add Client details to the Grid
         {
             int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;                 // convert COLOURS to string  - From Color to ARGB
             string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
             clientsDataGridView.Invoke((MethodInvoker)delegate {
-                if (clientsDataGridView.RowCount > (int)id) {
+                if (clientsDataGridView.RowCount > (int)id) {                                       // Update Row
                     DataGridViewCell cellID = clientsDataGridView.Rows[(int)id].Cells[0];
                     cellID.Value = id.ToString();
                     DataGridViewCell cellName = clientsDataGridView.Rows[(int)id].Cells[1];
@@ -370,29 +598,27 @@ namespace Server
                     DataGridViewCell cellCol = clientsDataGridView.Rows[(int)id].Cells[2];
                     cellCol.Value = colorString;
                     DataGridViewCell cellLat = clientsDataGridView.Rows[(int)id].Cells[3];
-                    cellLat.Value = "0";
+                    cellLat.Value = "ms";
                 } else {
                     string dcText = "DC";
-                    if (id == 0) { dcText = "All"; }
-                    string[] row = new string[] { id.ToString(), name, colorString, "0", dcText };
-                    clientsDataGridView.Rows.Add(row);
+                    if (id == 0) { dcText = "All"; }                                                // Host button
+                    string[] row = new string[] { id.ToString(), name, colorString, "ms", dcText };
+                    clientsDataGridView.Rows.Add(row);                                              // Add row
                 }
             });
             DataGridViewRow nrow = clientsDataGridView.Rows[(int)id];
-            nrow.DefaultCellStyle.BackColor = color;
+            nrow.DefaultCellStyle.BackColor = color;                                                // Set Row Color
             tabSections.Invoke((MethodInvoker)delegate {
-                tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count);
+                tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count);    // Update the Connection count on Lobby tab
             });
-            if (listening) { UpdateDataContents(); }
+            if (listening) { UpdateDataContents(); }                                                // If hosting broadcast to Clients
         }
-        private void RemoveFromGrid(long id)                                                        // Remove Client 
+        private void RemoveFromGrid(long id)                                                        // Remove Client from Grid 
         {
             clientsDataGridView.Invoke((MethodInvoker)delegate {
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                    if (row.Cells["identifier"].Value.ToString() == id.ToString()) {
-
-                        clientsDataGridView.Rows.RemoveAt(row.Index);
-
+                    if (row.Cells["identifier"].Value.ToString() == id.ToString()) {                // If the row matches
+                        clientsDataGridView.Rows.RemoveAt(row.Index);                               // Remove the row
                         break;
                     }
                 }
@@ -408,7 +634,7 @@ namespace Server
                 clientsDataGridView.Rows.Clear();
             });
         }
-        private void UpdateDataContents()                                                           // Host Collect, format and send DataGrid contents 
+        private void UpdateDataContents()                                                           // Host - Collect, format and send DataGrid contents 
         {
             if (clientsDataGridView.RowCount > 1) {
                 string GridContents = null;
@@ -434,19 +660,20 @@ namespace Server
         #endregion
 
         #region Drawing
-        private DrawPackage PrepareDrawPackage()                                                    // Create a Draw Pakage 
+        private DrawPackage PrepareDrawPackage()                                                    // Draw Pakage Constructor
         {
             int cA = btnColor.SelectedColor.A; int cB = btnColor.SelectedColor.B; int cR = btnColor.SelectedColor.R; int cG = btnColor.SelectedColor.G;
-            string pcString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);                     // convert COLOURS to string  - From Color to ARGB
+            string pcString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);                     // convert Colours to string
             int bA = btnFillColor.SelectedColor.A; int bB = btnFillColor.SelectedColor.B; int bR = btnFillColor.SelectedColor.R; int bG = btnFillColor.SelectedColor.G;
-            string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert COLOURS to string  - From Color to ARGB
+            string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert Colours to string
 
-            DrawPackage drawPack = new() {                                                          // Prep Draw Package for send
+            DrawPackage drawPack = new() {                                                          // Create the Draw Package
                 PenColor = pcString,
                 PenSize = (int)nudSize.Value,
                 BrushColor = bcString,
                 DrawType = cbBType.Text,
                 Fill = cbFillDraw.Checked,
+
                 PT1 = PT1,
                 PT2 = PT2,
                 X = x,
@@ -457,9 +684,9 @@ namespace Server
                 PT2Y = PT2Y
             };
             if (mPath != null) {
-                drawPack.PPath ??= new Point[mPath.PointCount];
+                drawPack.PPath ??= new Point[mPath.PointCount];                                     // Create a path for the package
                 for (int i = 0; i < mPath.PointCount; i++) {
-                    drawPack.PPath[i] = new((int)mPath.PathPoints[i].X, (int)mPath.PathPoints[i].Y);
+                    drawPack.PPath[i] = new((int)mPath.PathPoints[i].X, (int)mPath.PathPoints[i].Y);    // Add path points to package
                 }
             }
 
@@ -470,12 +697,12 @@ namespace Server
         }
         private Color ArgbColor(string wholeColor)                                                  // Converts String in "A,R,G,B" to Color 
         {
-            string[] ColorParts = wholeColor.Split(',');                                            // Seperate colour parts for Pen
+            string[] ColorParts = wholeColor.Split(',');                                            // Seperate colour string parts to
             int ColA = Convert.ToInt32(ColorParts[0]);
             int ColR = Convert.ToInt32(ColorParts[1]);
             int ColG = Convert.ToInt32(ColorParts[2]);
             int ColB = Convert.ToInt32(ColorParts[3]);
-            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);
+            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);                               // recplicate as Colour
             return argbColor;
         }
         private void SetDraw_Click(object sender, EventArgs e)                                      // Toggles Settings and Drawings Group Boxes 
@@ -551,7 +778,7 @@ namespace Server
                 x = e.Location.X; y = e.Location.Y;
             }
         }
-        private void Drawing_Paint(object sender, PaintEventArgs e)                                 // Draw shape Preview 
+        private void Drawing_Paint(object sender, PaintEventArgs e)                                 // Shape Preview 
         {
             if (Drawing) {
                 Graphics G = e.Graphics;
@@ -614,26 +841,27 @@ namespace Server
         {
             if (Drawing && cbBType.Text == "Fill Tool" && e.Button == MouseButtons.Left) {
                 Point canvas = Set_Point(picDrawing, e.Location);                                   // Get location of canvas
-                FillTool(BM, canvas.X, canvas.Y, btnFillColor.SelectedColor);
-
+                FillTool(BM, canvas.X, canvas.Y, btnFillColor.SelectedColor);                       // Do the Fill
+            
                 int bA = btnFillColor.SelectedColor.A; int bB = btnFillColor.SelectedColor.B; int bR = btnFillColor.SelectedColor.R; int bG = btnFillColor.SelectedColor.G;
-                string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert COLOURS to string  - From Color to ARGB
-                FillPackage fillPack = new() {
+                string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                 // Convert colours to strings of their ARGB
+                
+                FillPackage fillPack = new() {                                                      // Details for Broadcast
                     FillColor = bcString,
                     X = canvas.X,
                     Y = canvas.Y
                 };
 
                 if (listening) {
-                    string json = JsonConvert.SerializeObject(fillPack);                             // Format the Package 
-                    HostSendPublic(json /*+ "\n"*/);                                                        // Host Send Draw Package
+                    string json = JsonConvert.SerializeObject(fillPack);                            // Format the Package 
+                    HostSendPublic(json);                                                           // Host Send Fill Package
                 } else if (connected) {
-                    string json = JsonConvert.SerializeObject(fillPack);                             // Format the Package 
-                    Send(json /*+ "\n"*/);                                                                  // Client Send Draw Package
+                    string json = JsonConvert.SerializeObject(fillPack);                            // Format the Package 
+                    Send(json);                                                                     // Client Send Fill Package
                 }
             }
         }
-        static Point Set_Point(PictureBox pb, Point pt)                                             // Fill Point 
+        static Point Set_Point(PictureBox pb, Point pt)                                             // Calculare Fill Point on Canvas
         {
             float pX = 1f * pb.Image.Width / pb.Width;
             float pY = 1f * pb.Image.Height / pb.Height;
@@ -641,14 +869,14 @@ namespace Server
         }
         private void FillTool(Bitmap bm, int x, int y, Color c2)                                    // Fill Process 
         {
-            Color c1 = bm.GetPixel(x, y);                                                     // Get color of clicked area
+            Color c1 = bm.GetPixel(x, y);                                                           // Get color of clicked pixel
             Stack<Point> pixel = new();
-            pixel.Push(new Point(x, y));
-            bm.SetPixel(x, y, c2);
+            pixel.Push(new Point(x, y));                                                            
+            bm.SetPixel(x, y, c2);                                                                  // Replaced clicked pixel color
             if (c1 == c2) return;
             while (pixel.Count > 0) {
                 Point pt = (Point)pixel.Pop();
-                if (pt.X > 0 && pt.Y > 0 /*&& pt.X < (bm.Height-1)*/) {   // half screen fill fix
+                if (pt.X > 0 && pt.Y > 0) {                                                         // check 4 pixels around XY
                     Validate(bm, pixel, pt.X - 1, pt.Y, c1, c2);
                     Validate(bm, pixel, pt.X, pt.Y - 1, c1, c2);
                     Validate(bm, pixel, pt.X + 1, pt.Y, c1, c2);
@@ -659,22 +887,22 @@ namespace Server
         private void Validate(Bitmap bm, Stack<Point> sp, int x, int y, Color c1, Color c2)         // Fill 
         {
             if (x < bm.Width && y < bm.Height) {
-                Color cx = bm.GetPixel(x, y);
+                Color cx = bm.GetPixel(x, y);                                                       // Get pixel color
                 if (cx == c1) {
                     sp.Push(new Point(x, y));
-                    bm.SetPixel(x, y, c2);
+                    bm.SetPixel(x, y, c2);                                                          // Change pixel color
                 }
             }
         }
-        public void ReplaceTargetColor(Bitmap BM,Color tCol,Color rCol)                             // Replaces TrueTransP with Color.Transparancy 
+        public void ReplaceTargetColor(Bitmap BM,Color tCol,Color rCol)                             // Replace target pixel colour 
         {
-            if (tCol == Color.Empty) { tCol = Color.LightGoldenrodYellow; }                         // if empty convert TTP to C.T
-            if (rCol == Color.Empty) { rCol = Color.Transparent; }
+            if (tCol == Color.Empty) { tCol = Color.LightGoldenrodYellow; }                         // If Empty, replaces TrueTransP Key Color 
+            if (rCol == Color.Empty) { rCol = Color.Transparent; }                                  // with Color.Transparancy
 
             for (int x = 0; x < BM.Width; x++) {
-                for (int y = 0; y < BM.Height; y++) {
-                    if (BM.GetPixel(x, y) == tCol) {
-                        BM.SetPixel(x, y, rCol);
+                for (int y = 0; y < BM.Height; y++) {                                               // Loop over image 
+                    if (BM.GetPixel(x, y) == tCol) {                                                // When mathching target caolour
+                        BM.SetPixel(x, y, rCol);                                                    // Change pixel to replacement colour
                     }
                 }
             }
@@ -684,17 +912,17 @@ namespace Server
         {
             if (filePath.Length > 0) {
                 try {
-                    File.Delete(filePath);
+                    File.Delete(filePath);                                                          // Delete specified temp file
                     Console("Temp file successfully deleted.");
                 } catch (Exception ex) {
                     Console(ErrorMsg("DF1: " + ex.Message));
                 }
             } else {
-                string runPath = Application.StartupPath;
-                string[] tempFiles = Directory.GetFiles(runPath, "*.tmp");
+                string runPath = Application.StartupPath;                                           // Directory to delete from
+                string[] tempFiles = Directory.GetFiles(runPath, "*.tmp");                          // Filetype to delete
                 foreach (string tempFile in tempFiles) {
                     try {
-                        File.Delete(tempFile);
+                        File.Delete(tempFile);                                                      // Delete those found
                         Console("Temp file successfully deleted.");
                     } catch (Exception ex) {
                         Console(ErrorMsg("DF2: " + ex.Message));
@@ -708,7 +936,7 @@ namespace Server
                 Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp|GIF Image|*.gif"
             };
             if (saveFileDialog.ShowDialog() == DialogResult.OK) {
-                string fileName = saveFileDialog.FileName;
+                string fileName = saveFileDialog.FileName;                                          // What and Where
                 string extension = Path.GetExtension(fileName);
                 ImageFormat imageFormat;
                 switch (extension.ToLower()) {                                                      // ImageFormat based on the file extension
@@ -730,7 +958,7 @@ namespace Server
                         return;
                 }
                 Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
-                if (imageFormat == ImageFormat.Png) { ReplaceTargetColor(btm,Color.Empty,Color.Empty); }    // True-TransP conversion
+                if (imageFormat == ImageFormat.Png) { ReplaceTargetColor(btm,Color.Empty,Color.Empty); }    // TrueTransP Key colour conversion
                 btm.Save(saveFileDialog.FileName, imageFormat);                                     // Save the image in the selected format                
                 Console("Image Saved: " + saveFileDialog.FileName);
             }
@@ -755,10 +983,10 @@ namespace Server
 
                 SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                          // Set Brush
 
-                GraphicsPath pPath = new();
+                GraphicsPath pPath = new();                                                         // Set Path
                 if (drawPackage.PPath != null && drawPackage.PPath.Length > 0) {
-                    for (int i = 0; i < drawPackage.PPath.Length; i++) {
-                        pPath.AddLines(new PointF[] {                                               // Add points to Path
+                    for (int i = 0; i < drawPackage.PPath.Length; i++) {                            // Add each Point
+                        pPath.AddLines(new PointF[] {                                               // to Draw Package
                                 drawPackage.PPath[i]
                         });
                     }
@@ -831,7 +1059,7 @@ namespace Server
 
         #region Network
         // Host, Join, and DC
-        private void Connected(bool status)                                                         // Client Connected Tasks 
+        private void Connected(bool status)                                                         // Client - Mode Tasks 
         {
             cmdJoin.Invoke((MethodInvoker)delegate {
                 connected = status;
@@ -860,7 +1088,7 @@ namespace Server
                 }
             });
         }
-        private void Listening(bool status)                                                         // Hosting Tasks 
+        private void Listening(bool status)                                                         // Host - Mode Tasks 
         {
             cmdHost.Invoke((MethodInvoker)delegate {
                 listening = status;
@@ -892,20 +1120,18 @@ namespace Server
         private void Disconnect(long id = -1)                                                       // Disconnect ID / All if empty 
         {
             if (disconnect == null || !disconnect.IsAlive) {
-                disconnect = new Thread(() => {
-                    if (id > 0) {
-                        players.TryGetValue(id, out MyPlayers obj);
-                        obj.client.Close();
-                        RemoveFromGrid(obj.id);
+                disconnect = new Thread(() => {                                                     // New Thread
+                    if (id > 0) {                                  
+                        players.TryGetValue(id, out MyPlayers obj);                                 // Check for the Specified Connection
+                        RemoveFromGrid(obj.id);                                                     // Remove from Grid
+                        obj.client.Close();                                                         // Close the Connection
                     } else {
-                        foreach (KeyValuePair<long, MyPlayers> obj in players) {
-                            obj.Value.client.Close();
-                            RemoveFromGrid(obj.Value.id);
+                        foreach (KeyValuePair<long, MyPlayers> obj in players) {                    // Each Client
+                            RemoveFromGrid(obj.Value.id);                                           // Remove and
+                            obj.Value.client.Close();                                               // Close
                         }
                     }
-                }) {
-                    IsBackground = true
-                };
+                }) { IsBackground = true };
                 disconnect.Start();
             }
         }
@@ -1645,234 +1871,6 @@ namespace Server
         //
         //
         // / *** READ ***/ 
-        #endregion
-
-        #region Controls & Routines
-        private void ToggleNetworkControls()                                                        // Toggle controls for networking 
-        {
-            txtAddress.Enabled = !txtAddress.Enabled;
-            txtPort.Enabled = !txtPort.Enabled;
-            txtName.Enabled = !txtName.Enabled;
-            txtRoomKey.Enabled = !txtRoomKey.Enabled;
-
-            cmdHost.Enabled = !cmdHost.Enabled;
-            cmdJoin.Enabled = !cmdJoin.Enabled;
-
-            tPing.Enabled = !tPing.Enabled;
-        }
-        private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
-        {
-            if (sender is System.Windows.Forms.MenuItem) {
-                ColorDialog MyDialog = new() {
-                    AllowFullOpen = true,
-                    ShowHelp = true,
-                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
-                };
-                if (MyDialog.ShowDialog() == DialogResult.OK) {
-                    if (tabSections.SelectedTab.Name == "tConsole") {
-                        txtConsole.BackColor = MyDialog.Color;                                      // Update the text box color if the user clicks OK
-                    }
-                    if (tabSections.SelectedTab.Name == "tLobby") {
-                        txtLobby.BackColor = MyDialog.Color;                                        // Update the text box color if the user clicks OK
-                    }
-                }
-            }
-            if (sender is System.Windows.Forms.Button) {
-                Button clickedButton = (Button)sender;
-                ColorDialog MyDialog = new() {
-                    AllowFullOpen = true,
-                    ShowHelp = true,
-                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
-                    Color = clickedButton.BackColor                                                 // Sets the initial color select to the current text color.             
-                };
-                if (MyDialog.ShowDialog() == DialogResult.OK) {
-                    clickedButton.BackColor = MyDialog.Color;
-                }
-            }
-
-        }
-        private void BGColor_Click(object sender, EventArgs e)                                      // Get Background color of Canvas 
-        {
-            BGC_Click(sender, e);
-        }
-        private void BGColor_BackColorChanged(object sender, EventArgs e)                           // Set BG (use Fill) 
-        {
-            _newBackColor = ((Control)sender).BackColor;
-            for (int x = 0; x < BM.Width; x++) {                                                    // Iterate over the pixels in the bitmap
-                for (int y = 0; y < BM.Height; y++) {
-                    if (BM.GetPixel(x, y).R == _previousBackColor.R && BM.GetPixel(x, y).G == _previousBackColor.G && BM.GetPixel(x, y).B == _previousBackColor.B) {    // Check if the current pixel has the original color                        
-                        BM.SetPixel(x, y, _newBackColor);                                           // Replace the color of the current pixel with the replacement color
-                    }
-                }
-            }
-            _previousBackColor = _newBackColor;
-            picDrawing.Image = BM;
-            G = Graphics.FromImage(BM);                                                             // Set the canvas
-
-        }
-        private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
-        {
-            if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
-            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(null, null); }
-        }
-        private void FillToggle_CheckedChanged(object sender, EventArgs e)                          // Change to /w Close if on Pen or start 
-        {
-            if (!cbFillDraw.Checked || cbBType.Text == "Pen" || cbBType.Text == "Shape / Style") {
-                cbBType.SelectedItem = "Pen w/ Close";
-            }
-        }
-        private void Trans_CheckedChanged(object sender, EventArgs e)                               // Transparent Canvas 
-        {
-            if (cbTrans.Checked) {
-                this.TransparencyKey = Color.LightGoldenrodYellow;                                  // 250,250,210
-                picDrawing.BackColor = Color.LightGoldenrodYellow;
-                btnBGColor.SelectedColor = Color.LightGoldenrodYellow;            
-            }
-        }
-        private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles RoomKey Mask 
-        {
-            if (txtRoomKey.PasswordChar == '*') {
-                txtRoomKey.PasswordChar = '\0';
-            } else {
-                txtRoomKey.PasswordChar = '*';
-            }
-        }
-        private void CmdHost_Click(object sender, EventArgs e)                                      // Host start 
-        {
-            var source = new CancellationTokenSource();
-            Task.Factory.StartNew(() => {
-                if (listening) {
-                    listening = false;
-                    RemoveFromGrid(0);
-                } else if (listener == null || !listener.IsAlive) {
-                    string address = txtAddress.Text.Trim();
-                    string number = txtPort.Text.Trim();
-                    if (txtName.Text.Trim() == "Player 1") { txtName.Text = "Host"; cmdColor.SelectedColor = Color.Yellow; }
-                    string username = txtName.Text.Trim();
-                    bool error = false;
-                    IPAddress ip = null;
-                    if (address.Length < 1) {
-                        error = true;
-                        Console(SystemMsg("Address is required"));
-                    } else {
-                        try {
-                            ip = Dns.GetHostEntry(address)
-                                .AddressList
-                                .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
-                        } catch {
-                            error = true;
-                            Console(SystemMsg("Address is not valid"));
-                        }
-                    }
-                    int port = -1;
-                    if (number.Length < 1) {
-                        error = true;
-                        Console(SystemMsg("Port number is required"));
-                    } else if (!int.TryParse(number, out port)) {
-                        error = true;
-                        Console(SystemMsg("Port number is not valid"));
-                    } else if (port < 0 || port > 65535) {
-                        error = true;
-                        Console(SystemMsg("Port number is out of range"));
-                    }
-                    if (username.Length < 1) {
-                        error = true;
-                        Console(SystemMsg("Username is required"));
-                    }
-                    if (!error) {
-                        listener = new Thread(() => Listener(ip, port)) {
-                            IsBackground = true
-                        };
-                        listener.Start();
-
-                        ClearDataGrid();
-                        AddToGrid(0, username, cmdColor.SelectedColor);
-                    }
-                }
-            }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-            txtMessage.Focus();
-            txtMessage.SelectionStart = txtMessage.Text.Length;
-        }
-        private void CmdJoin_Click(object sender, EventArgs e)                                      // Client start 
-        {
-            var source = new CancellationTokenSource();
-            Task.Factory.StartNew(() => {
-                if (connected) {
-                    clientObject.client.Close();
-                } else if (client == null || !client.IsAlive) {
-                    string address = txtAddress.Text.Trim();
-                    string number = txtPort.Text.Trim();
-                    if (txtName.Text.Trim() == "Player 1") { cmdColor.SelectedColor = Color.Red; }
-                    if (txtName.Text.Trim() == "Player 2") { cmdColor.SelectedColor = Color.Green; }
-                    if (txtName.Text.Trim() == "Player 3") { cmdColor.SelectedColor = Color.Blue; }
-                    string username = txtName.Text.Trim();
-                    bool error = false;
-                    IPAddress ip = null;
-                    if (address.Length < 1) {
-                        error = true;
-                        Console(SystemMsg("Address is required"));
-                    } else {
-                        try {
-                            ip = Dns.GetHostEntry(address)
-                                .AddressList
-                                .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
-                        } catch {
-                            error = true;
-                            Console(SystemMsg("Address is not valid"));
-                        }
-                    }
-                    int port = -1;
-                    if (number.Length < 1) {
-                        error = true;
-                        Console(SystemMsg("Port number is required"));
-                    } else if (!int.TryParse(number, out port)) {
-                        error = true;
-                        Console(SystemMsg("Port number is not valid"));
-                    } else if (port < 0 || port > 65535) {
-                        error = true;
-                        Console(SystemMsg("Port number is out of range"));
-                    }
-                    if (username.Length < 1) {
-                        error = true;
-                        Console(SystemMsg("Username is required"));
-                    }
-                    if (!error) {
-                        client = new Thread(() => Connection(ip, port, username, txtRoomKey.Text)) {
-                            IsBackground = true
-                        };
-                        client.Start();
-                    }
-                }
-            }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        }
-        private void ClientsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)      // Grid Button Clicks / Private Message / Ping / DC 
-        {
-            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["dc"].Index) {      // DC button
-                long.TryParse(clientsDataGridView.Rows[e.RowIndex].Cells["identifier"].Value.ToString(), out long id);
-                if (id == 0) { id = -1; }
-                Disconnect(id);
-            }
-            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["latency"].Index) { // Ping selected client
-                var BtnCell = (DataGridViewTextBoxCell)clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
-                BtnCell.Value = Ping(GetPlayerAddress(e.RowIndex));
-            }
-            if (e.RowIndex >= 0 && e.ColumnIndex == clientsDataGridView.Columns["name"].Index) {    // Private msg
-                string name = clientsDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString();
-                string prevMSG = txtMessage.Text;
-                if (prevMSG.EndsWith("ype and press enter to send.")) { txtMessage.Text = prevMSG = ""; }
-                if (prevMSG.StartsWith("/msg")) {
-                    string[] msgParts = prevMSG.Split(' ');
-                    txtMessage.Text = string.Format("/msg {0} {1}", name, msgParts[2].Trim());
-                } else { txtMessage.Text = string.Format("/msg {0} {1}", name, prevMSG); }
-                txtMessage.Focus();
-                txtMessage.SelectionStart = txtMessage.Text.Length;
-            }
-        }
-        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (tabSections.SelectedIndex == 0) { tabSections.TabPages[0].Text = "Console"; }
-            if (tabSections.SelectedIndex == 1) { tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count); }
-        }
         #endregion
     }
 }
