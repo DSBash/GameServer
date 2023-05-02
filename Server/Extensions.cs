@@ -12,12 +12,14 @@ namespace Server
     {
         public static void AppendText(this RichTextBox box, string text, Color color)
         {
-            box.SelectionStart = box.TextLength;
-            box.SelectionLength = 0;
-            box.SelectionColor = color;
-            box.AppendText(text);
-            box.SelectionStart = box.Text.Length;
-            box.ScrollToCaret();
+            box.Invoke((MethodInvoker)delegate {
+                box.SelectionStart = box.TextLength;
+                box.SelectionLength = 0;
+                box.SelectionColor = color;
+                box.AppendText(text);
+                box.SelectionStart = box.Text.Length;
+                box.ScrollToCaret();
+            });
         }
     }
 }

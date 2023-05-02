@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -18,6 +19,8 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using static Server.Encryption;
+using static Server.GameServer;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Server
 {
@@ -105,6 +108,15 @@ namespace Server
         #endregion
 
         #region General Declarations
+        public class MessagePackage                                                                    // Details needed to Draw and Broadcast 
+        {
+            public string Msg { get; set; }
+            public string From { get; set; }
+            public string To { get; set; }
+            public string MsgType { get; set; }
+        }
+        private bool remoteMsg = false;
+        private TabPage pmTab;
         private Task send = null;
         private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";                    // AES Key
 
@@ -120,7 +132,7 @@ namespace Server
 
 
         #region Form
-        public GameServer(/*string PlayerName*/)                                                        // Main 
+        public GameServer(/*string PlayerName*/)                                                    // Main 
         {
             InitializeComponent();
             //AllocConsole();
@@ -162,13 +174,17 @@ namespace Server
             tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
             tabCM.MenuItems[2].Click += new EventHandler(ExportText);
             tabSections.ContextMenu = tabCM;
+            
+            pmTab = tabSections.TabPages[2];                                                            // Save the PM Tab
+            tabSections.TabPages.Remove(pmTab);                                                         // "hIdE tHe tAB"
+
             /* // Fills the Grid            
             for (int i = 0; i <= 3;i++){
                 string[] row = new string[] { i.ToString(), "", "", "0", "" };
                 clientsDataGridView.Rows.Add(row);
             }*/
         }
-        private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit - Clean up
+        private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit - Clean up 
         {
             picDrawing.Dispose();
             BM.Dispose();
@@ -249,7 +265,7 @@ namespace Server
         private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
         {
             if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
-            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(null, null); }
+            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(MessagePack("","","","")); }
         }
         private void FillToggle_CheckedChanged(object sender, EventArgs e)                          // Change to /w Close if on Pen or start 
         {
@@ -404,10 +420,14 @@ namespace Server
                 txtMessage.SelectionStart = txtMessage.Text.Length;
             }
         }
-        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)
+        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)                   // Remove the *unread8 indicators
         {
-            if (tabSections.SelectedIndex == 0) { tabSections.TabPages[0].Text = "Console"; }
-            if (tabSections.SelectedIndex == 1) { tabSections.TabPages[1].Text = string.Format("Lobby ({0})", clientsDataGridView.Rows.Count); }
+            TabControl tabControl = (TabControl)sender;
+            TabPage selectedTabPage = tabControl.SelectedTab;
+
+            if (selectedTabPage.Text.Contains("*")) {
+                selectedTabPage.Text = selectedTabPage.Text.Replace("*", "");
+            }
         }
         #endregion
 
@@ -419,7 +439,7 @@ namespace Server
             for (int i = 2; i < stackTrace.FrameCount; i++) {                                       // start at 2 for ErrorMSG --> StackTrace(Self)
                 StackFrame callingFrame = stackTrace.GetFrame(i);                                   // get the stack frame for the calling method
                 MethodBase callingMethod = callingFrame.GetMethod();                                // get information about the calling method
-                string callingMethodName = callingMethod.Name + "-->";                             // get the name of the calling method
+                string callingMethodName = callingMethod.Name + "-->";                              // get the name of the calling method
                 stackList = string.Concat(callingMethodName, stackList);
                 if (i == 4) { break; }                                                              // Sets the Thread Depth
             }
@@ -442,81 +462,318 @@ namespace Server
                 } else {
                     txtConsole.Clear();
                 }
-                if (tabSections.SelectedIndex != 0) { tabSections.TabPages[0].Text = "*Console*"; } // If not in focus change the Tab text
+                if (tabSections.SelectedIndex != 0) {
+                    tabSections.Invoke((MethodInvoker)delegate {
+                        tabSections.TabPages[0].Text = "*Console*";
+                    });
+                }
             });
         }
-        private void PostChat(string username, string msg = "")                                     // Post the message / Clear if empty 
+        private MessagePackage MessagePack(string msg, string from, string to, string type)         // Create new Message Packages 
         {
-            if (msg == null || msg.Length < 1) {
-                txtLobby.Clear();
+            MessagePackage msgPack = new() {
+                Msg = msg,                                                                          // Add details
+                From = from,
+                To = to,
+                MsgType = type
+            };
+            
+            return msgPack;
+        }
+        private void PostChat(MessagePackage msgPack)                                               // Post the message / Clear if empty 
+        {
+            if (msgPack.Msg == null || msgPack.Msg.Length < 1) {
+                txtLobby.Invoke((MethodInvoker)delegate {
+                    txtLobby.Clear();
+                });
             } else {
-                string formattedMSG = "";                                                           // Format Messages
-                if (username.Contains("to you")) {                                                  // Private Messages
-                    username = username.Replace("to you", "").Trim();
-                    formattedMSG = string.Format("{0}[{1}] {2} to you: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-                    if (username == txtName.Text.Trim()) { formattedMSG = string.Format("{0}[{1}] You say to yourself: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg); }
-                } else {                                                                            // Public Messages
-                    formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-                }
-
-                string playerColor = "255,0,0,0,0";                                                 // Determine color for post using Grid
-                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                    if (row.Cells[1].Value != null && row.Cells[1].Value.ToString() == username) {
+                #region Message Color
+                string playerColor = "255,0,0,0,0";                        
+                foreach (DataGridViewRow row in clientsDataGridView.Rows) {                         // Determine color for post using Grid
+                    if (row.Cells[1].Value.ToString() == msgPack.From) {
                         playerColor = row.Cells[2].Value?.ToString();
                         break;
                     }
                 }
                 string[] colParts = playerColor.Split(',');                                         // Format string to Color
                 Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
+                #endregion
+                switch (msgPack.MsgType) {
+                #region Private Messages
+                case "Private":
+                    string formattedMSG = "";                                                   // To store formated Message
+                    TabPage tabPage = null;
+                    string tabName = "Lobby";
+                    if (msgPack.To == txtName.Text) {
+                        tabName = msgPack.From;  
+                    } else {                        
+                        tabName = msgPack.From;
+                        if (msgPack.From == txtName.Text) { tabName = msgPack.To; } 
+                    }
 
-                txtLobby.Invoke((MethodInvoker)delegate {
-                    if (tabSections.SelectedIndex != 1) { tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count); }  // If not in focus change the Tab text
-                    txtLobby.AppendText(formattedMSG, msgColor);                                    // Post actual msg
-                    txtMessage.Focus();                                                             // Leave focus for next message
-                });
+                    tabSections.Invoke((MethodInvoker)delegate {
+
+                        foreach (TabPage tab in tabSections.TabPages) {
+                            if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
+                                tabPage = tab;
+                                break;
+                            }
+                        }
+
+                        if (tabPage == null) {                                                  // If the tab is not found
+                            tabPage = new() {
+                                Name = "t" + tabName,
+                                Tag = "PM",
+                                Text = tabName
+                            };
+
+                            foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
+                                Control newControl = (Control)Activator.CreateInstance(control.GetType());
+                                newControl.Location = control.Location;
+                                newControl.Size = control.Size;
+                                newControl.Name = control.Name;
+                                newControl.Tag = control.Tag;
+                                newControl.BackColor = control.BackColor;
+                                tabPage.Controls.Add(newControl);
+                            }
+                            tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
+                        }
+
+                        if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
+                            formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
+
+                            if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
+                                tabPage.Text = string.Format("*" + tabName + "*");
+                            }
+                            textBox.AppendText(formattedMSG, msgColor);                         // Post actual msg
+                        }
+                    });
+
+
+                    break;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        /*
+                                                tabSections.Invoke((MethodInvoker)delegate {
+                                                    string tabName = "";
+                                                    if (msgPack.From == txtName.Text.Trim()) {                                // Determine Tab name
+                                                        tabName = msgPack.From;
+                                                    } else {
+                                                        tabName = msgPack.To;
+                                                    }
+
+                                                    foreach (TabPage tab in tabSections.TabPages) {
+                                                        if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
+                                                            tabPage = tab;
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    if (tabPage == null) {                                                  // If the tab is not found
+                                                        tabPage = new() {
+                                                            Name = "t" + tabName,
+                                                            Tag = "PM",
+                                                            Text = tabName
+                                                        };
+
+                                                        foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
+                                                            Control newControl = (Control)Activator.CreateInstance(control.GetType());
+                                                            newControl.Location = control.Location;
+                                                            newControl.Size = control.Size;
+                                                            newControl.Name = control.Name;
+                                                            newControl.Tag = control.Tag;
+                                                            newControl.BackColor = control.BackColor;
+                                                            tabPage.Controls.Add(newControl);
+                                                        }
+                                                        tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
+                                                    }
+
+                                                    if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
+                                                        formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
+
+                                                        if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
+                                                            tabPage.Text = string.Format("*" + msgPack.From + "*");
+                                                        }
+                                                        textBox.AppendText(formattedMSG, msgColor);                         // Post actual msg
+                                                    }
+                                                });
+                        break;*/
+                        #endregion
+                    case "Public":
+                        formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
+                        tabSections.Invoke((MethodInvoker)delegate {
+                            if (tabSections.SelectedIndex != 1) {                                   // If not in focus change the Tab text
+                                tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
+                            }
+                        });
+                        txtLobby.AppendText(formattedMSG, msgColor);                                // Post actual msg
+                        break;
+                    case "Console":
+                        Console(msgPack.Msg);
+                        break;
+                    case "System":
+                        SystemMsg(msgPack.Msg);
+                        break;
+                    default:
+                        break;
+                }
+
+                string json = JsonConvert.SerializeObject(msgPack) + "\n";                          // Format the Package 
+                if (listening && !remoteMsg) {
+                    HostSendPublic(json);                                                           // Host Send Draw Package
+                } else if (connected && !remoteMsg) {
+                    Send(json);                                                                     // Client Send Draw Package
+                }
+                remoteMsg = false;
+
+                /*                if (username.Contains("to you")) {                                                  // Private Messages
+                                    username = username.Replace("to you", "").Trim();
+                                    TabPage tabPage = null;
+                                    tabSections.Invoke((MethodInvoker)delegate {
+                                        foreach (TabPage tab in tabSections.TabPages) {
+                                            if (tab.Text == username
+                                            || tab.Text == "*" + username + "*" 
+                                            || tab.Text == txtName.Text.Trim()) {                                   // Search for a tab with the specified username
+                                                tabPage = tab;
+                                                break;
+                                            }
+                                        }
+
+                                        if (tabPage == null) {                                                      // If the tab is not found
+                                            tabPage = new();
+                                            tabPage.Name = "t" + username;
+                                            tabPage.Tag = "PM";
+                                            tabPage.Text = username;
+
+                                            foreach (Control control in pmTab.Controls) {                           // create copy the controls from pmTab
+                                                Control newControl = (Control)Activator.CreateInstance(control.GetType());
+                                                newControl.Location = control.Location;
+                                                newControl.Size = control.Size;
+                                                newControl.Name = control.Name;
+                                                newControl.Tag = control.Tag;
+                                                newControl.BackColor = control.BackColor;
+                                                tabPage.Controls.Add(newControl);
+                                            }                            
+                                            tabSections.TabPages.Add(tabPage);                                      // Add the new PM tab
+                                        }
+
+                                        if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
+                                            formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
+
+                                            if (tabSections.SelectedTab != tabPage) {                               // If not in focus change the Tab text
+                                                    tabPage.Text = string.Format("*" + username + "*");
+                                            }
+                                            textBox.AppendText(formattedMSG, msgColor);                             // Post actual msg
+                                            txtMessage.Focus();                                                     // Leave focus for next message
+                                        }
+                                    });
+                                #endregion 
+                                } else {                                                                            // Public Messages
+                                    formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
+                                    tabSections.Invoke((MethodInvoker)delegate {
+                                        if (tabSections.SelectedIndex != 1) {                                       // If not in focus change the Tab text
+                                                tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
+                                        }
+                                    });
+                                        txtLobby.AppendText(formattedMSG, msgColor);                                // Post actual msg
+                                        txtMessage.Focus();                                                         // Leave focus for next message
+                                }*/
             }
         }
-        private void ExportText(object sender, EventArgs e)                                         // Export Texts to txts 
+        private void ExportText(object sender, EventArgs e)                                         // Export to \exports\<tabname>.txts 
         {
-            if (tabSections.SelectedTab.Name == "tConsole") {
-                string path = AppDomain.CurrentDomain.BaseDirectory + "Console.txt"; // get the file path
-                string contents = Environment.NewLine + DateTime.Now.ToString("F") + Environment.NewLine + txtConsole.Text + Environment.NewLine; // get the textbox contents                    
-                File.AppendAllText(path, contents);
-            }
-            if (tabSections.SelectedTab.Name == "tLobby") {
-                string path = AppDomain.CurrentDomain.BaseDirectory + "Lobby.txt"; // get the file path
-                string contents = Environment.NewLine + DateTime.Now.ToString("F") + Environment.NewLine + txtLobby.Text + Environment.NewLine; // get the textbox contents                    
-                File.AppendAllText(path, contents);
-            }
+            MenuItem menuItem = sender as MenuItem;                                                 // Get the MenuItem that triggered the event
+            ContextMenu contextMenu = menuItem.Parent as ContextMenu;                               // Get the immediate parent of the MenuItem, which should be the ContextMenu
+            TabControl tabControl = contextMenu.SourceControl as TabControl;                        // Get the control on which the ContextMenu was displayed, which should be the TabControl
+            TabPage selectedTab = tabControl.SelectedTab;                                           // Get the selected TabPage
+            RichTextBox textBox = selectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();      // Get the textbox on the selected TabPage
 
+            string fileName = selectedTab.Tag.ToString() ;
+            if (fileName == "PM"){ fileName = fileName + "_" + selectedTab.Text; }
+            string path = AppDomain.CurrentDomain.BaseDirectory + "\\exports\\" + fileName + ".txt";// Get the file path
+
+            if (textBox != null) {
+                string contents = Environment.NewLine + DateTime.Now.ToString("F") + Environment.NewLine + textBox.Text + Environment.NewLine;
+                string folderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exports");
+                Directory.CreateDirectory(folderPath);                                              // create folder
+                File.AppendAllText(path, contents);                                                 // Save the file
+            }
         }
-        private void TxtMessage_Enter(object sender, EventArgs e)                                   // MSG Note 
+        private void TxtMessage_Enter(object sender, EventArgs e)                                   // Messagebox 
         {
             if (txtMessage.Text == "Type and press enter to send.") {
                 txtMessage.Text = "";
+                if (tabSections.SelectedTab.Tag.ToString() == "PM") {                               // If a PM tab is selected
+                    txtMessage.Text = "/msg " + tabSections.SelectedTab.Text + " ";                 // make PM easier
+                }
             }
         }
-        private void TxtMessage_Leave(object sender, EventArgs e)                                   // MSG Note 
+        private void TxtMessage_Leave(object sender, EventArgs e)                                   // Messagebox Note 
         {
             if (txtMessage.Text == "") {
                 txtMessage.Text = "Type and press enter to send.";
             }
         }
-        private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Commands / MSG History / Send on <Enter> 
+        private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Commands / History / Send on <Enter> 
         {
             #region Command Line History
-            if (e.KeyCode == Keys.Up) {                                 // User pressed up arrow key
+            if (e.KeyCode == Keys.Up) {                                                             // User pressed up arrow key
                 if (HistoryIndex > 0) {
-                    HistoryIndex--;                                     // Decrement the command index to retrieve the previous command
+                    HistoryIndex--;                                                                 // Decrement the command index to retrieve the previous command
                     txtMessage.Text = MSGHistory[HistoryIndex];
                 }
-            } else if (e.KeyCode == Keys.Down) {                        // User pressed down arrow key
+            } else if (e.KeyCode == Keys.Down) {                                                    // User pressed down arrow key
                 if (HistoryIndex < MSGHistory.Count - 1) {
-                    HistoryIndex++;                                     // Increment the command index to retrieve the next command
+                    HistoryIndex++;                                                                 // Increment the command index to retrieve the next command
                     txtMessage.Text = MSGHistory[HistoryIndex];
                 } else {
-                    HistoryIndex = MSGHistory.Count;                    // User has reached the end of the command history
-                    txtMessage.Clear();                                 // Clear the textbox
+                    HistoryIndex = MSGHistory.Count;                                                // User has reached the end of the command history
+                    txtMessage.Clear();                                                             // Clear the textbox
                 }
                 #endregion
             } else if (e.KeyCode == Keys.Enter) {
@@ -524,54 +781,54 @@ namespace Server
                 e.SuppressKeyPress = true;
                 string msg = txtMessage.Text;
 
-                MSGHistory.Add(msg);                                                            // CLH
+                MSGHistory.Add(msg);                                                                // CLH
                 HistoryIndex = MSGHistory.Count;
 
-                if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
-                    PostChat(txtName.Text.Trim(), msg);
-                    if (listening) {
-                        HostSendPublic(string.Format("{0}: {1}", txtName.Text.Trim(), msg));
-                    }
-                    if (connected) {
-                        Send(msg);
-                    }
+                if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {                    
+                    PostChat(MessagePack(txtMessage.Text.Trim(), txtName.Text.Trim(), "Lobby", "Public")  /*txtName.Text.Trim(), msg*/ );   // Post Public Message
                 } else {
-                    if (listening) {
-                        if (msg.Contains("/msg")) {                                                 // MSG - get PM   /msg Player 1 Some text.
-                            foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                    if (msg.StartsWith("/msg")) {                                                   // MSG - get PM
+                        foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                            if (msg.Contains(row.Cells[1].Value.ToString())) {                      // if name in grid
+                                int index = msg.IndexOf(row.Cells[1].Value.ToString());             // get start of name
+                                if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
+                                string hostPM = msg.Substring(index);                               // take text after length of name
+
+                                PostChat(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private"));
+                            }
+                        }
+
+                    /*     foreach (DataGridViewRow row in clientsDataGridView.Rows) {
                                 if (msg.Contains(row.Cells[1].Value.ToString())) {                  // if name in grid
                                     int index = msg.IndexOf(row.Cells[1].Value.ToString());         // get start of name
                                     if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
                                     string hostPM = msg.Substring(index);                           // take text after length of name
                                     if (row.Index > 0) {
-                                        if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player
-                                            HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);     // PM - format string to  - Private Send
-                                            Console(SystemMsg("PM Sent."));
+                                        if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player                                            
+                                            JavaScriptSerializer json = new();
+                                            if (listening) {
+                                                HostSendPrivate(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")), players[row.Index]);     // PM - format string to  - Private Send
+                                            } else if (connected) {
+                                                Send(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")));     // PM - Client Send
+                                            }
+                                            //HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);     // PM - format string to  - Private Send
+                                            Console(SystemMsg("Local PM Sent."));
                                         }
                                     } else {
-                                        PostChat(txtName.Text.Trim() + "to you", hostPM);
+                                        PostChat(MessagePack(hostPM, txtName.Text.Trim(), txtName.Text.Trim(), "Private") *//*txtName.Text.Trim() + "to you", hostPM*//* );
                                     }
                                 }
-                            }
-                        }
-                        if (msg.StartsWith("/send")) {                                              // Drawing - Send the Image to Clients
-                            SendDrawing();
-                        }
+                            }*/
                     }
-                    if (connected) {
-                        foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                            if (msg.Contains(row.Cells[1].Value.ToString())) {                      // Find name in PM
-                                int index = msg.IndexOf(row.Cells[1].Value.ToString());
-                                if (index != -1) { index += row.Cells[1].Value.ToString().Length; }
-                                string pMSG = msg.Substring(index);                                 // PM - format string to send to host
-                                msg = pMSG.Trim();
-                                Send(string.Format("/msg:{0}:{1}", row.Cells[1].Value.ToString(), msg));
-                            }
-                        }
-                        if (msg.StartsWith("/picme")) {
-                            FileReceive();                                                          // Get Drawing from Server
-                        }
+                     
+                    if (msg.StartsWith("/send")) {                                              // Drawing - Send the Image to Clients
+                        if (listening) { SendDrawing(); }
+                    }                    
+                 
+                    if (msg.StartsWith("/picme")) {
+                        if (connected) { FileReceive(); }                                        // Get Drawing from Server
                     }
+                    
                     if (msg.StartsWith("/save")) {
                         SaveDrawing();
                     }
@@ -831,7 +1088,7 @@ namespace Server
                 }
             }
         }
-        private void Drawing_Resize(object sender, EventArgs e)                                     // Recreate the Canvas at the right size 
+        private void Drawing_Resize(object sender, EventArgs e)                                     // Canvas resize 
         {
             UpdateCanvas();
         }
@@ -1715,7 +1972,38 @@ namespace Server
                             string clientData = AesOperation.DecryptString(AeS, obj.data.ToString()); // Decrypt
 
                             // Host Receive - PM
-                            if (clientData.Contains("/msg")) {
+                            if (clientData.StartsWith("{\"Msg\"")) {
+                                remoteMsg = true;
+                                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(clientData);
+                                switch (remoteMP.MsgType) {
+                                    case "Private":
+                                        for (int p = 1; p <= players.Count; p++) {                  // Determine the PM Dest
+                                            if (remoteMP.To == players[p].username.ToString()) {    // Dest is a player   
+                                                HostSendPrivate(clientData, players[p]);            // Host - Send PM
+                                                Console(SystemMsg("PM Relayed."));
+                                                obj.data.Clear();
+                                                obj.handle.Set();
+                                                return;
+                                            } else if (remoteMP.To == txtName.Text.Trim()) {        // Dest is host
+                                                PostChat(remoteMP);                                 // Post Host PM
+                                                obj.data.Clear();
+                                                obj.handle.Set();
+                                                return;
+                                            }
+                                        }
+                                        break;
+                                    case "Public":
+                                        PostChat(remoteMP);                                         // Host post
+                                        HostSendPublic(clientData, obj.id);                         // Host relay public message to other clients
+                                        obj.data.Clear();
+                                        obj.handle.Set();
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+/*                            if (clientData.Contains("/msg")) {
                                 string[] pMSG = clientData.Split(':');
                                 for (int p = 1; p <= players.Count; p++) {                          // Determine the PM Dest
                                     if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
@@ -1735,7 +2023,7 @@ namespace Server
                                 obj.data.Clear();
                                 obj.handle.Set();
                                 return;
-                            }
+                            }*/
 
                             // Host receive - Drawing
                             if (clientData.StartsWith("{\"PenColor\"")) {
@@ -1758,11 +2046,11 @@ namespace Server
                                 return;
                             }
 
-                            // Host Receive - Public Message
+/*                            // Host Receive - Public Message
                             PostChat(obj.username.ToString(), clientData);                          // Host post
                             HostSendPublic(string.Format("{0}:{1}", obj.username, clientData), obj.id);    // Host relay public message to other clients
                             obj.data.Clear();
-                            obj.handle.Set();
+                            obj.handle.Set();*/
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
@@ -1804,7 +2092,14 @@ namespace Server
                                 clientObject.handle.Set();
                                 return;
                             }
-
+                            if (hostData.StartsWith("{\"Msg\"")) {                                  // Client Receive - Message
+                                remoteMsg = true;
+                                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(hostData);
+                                PostChat(remoteMP);
+                                clientObject.data.Clear();
+                                clientObject.handle.Set();
+                                return;
+                            }
                             if (hostData.StartsWith("SYSTEM:")) {                                   // Client Receive - System Message
                                 string[] sysParts = hostData.Split(':');
                                 Console(sysParts[2]);
@@ -1853,7 +2148,7 @@ namespace Server
                             }
 
                             string[] dataParts = hostData.Split(':');
-                            PostChat(dataParts[0], dataParts[1]);                                 // Client Receive - Public Message
+                            Console("Unrecognized: " + hostData);                                 // Client Receive - Unformated Text
                             clientObject.data.Clear();
                             clientObject.handle.Set();
                         }
@@ -1874,3 +2169,14 @@ namespace Server
         #endregion
     }
 }
+/*
+ * Snips
+ 
+if (listening) { ;}
+else if (connected) { ;}
+
+
+
+
+
+*/
