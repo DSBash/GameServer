@@ -33,6 +33,9 @@ namespace Unclassified.UI
             set {
                 if (value != selectedColor) {
                     selectedColor = value;
+                    if (BackColor != value) {
+                        BackColor = value; 
+                    }
                     Invalidate();
                     OnSelectedColorChanged();
                 }
@@ -123,7 +126,7 @@ namespace Unclassified.UI
         public ColorButton()
         {
             base.Text = "";
-            selectedColor = Color.Black;
+            selectedColor = Color.Transparent;
 
             PrepareColorSelector();
         }

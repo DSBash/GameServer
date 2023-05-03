@@ -7,7 +7,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.IO.Ports;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -18,14 +17,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using Unclassified.UI;
 using static Server.Encryption;
-using static Server.GameServer;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
-namespace Server
-{
-    public partial class GameServer : Form
-    {
+namespace Server {
+    public partial class GameServer : Form {
         #region Declarations
         #region Host Specific Declarations
         private bool listening = false;                                                             // Host / Client Mode Marker
@@ -40,7 +36,7 @@ namespace Server
         }
         public class MyPlayers                                                                      // Handles Connections 
         {
-        #pragma warning disable IDE1006                             // Naming Styles
+#pragma warning disable IDE1006                             // Naming Styles
             public long id { get; set; }
             public Color color { get; set; }
             public StringBuilder username { get; set; }
@@ -49,7 +45,7 @@ namespace Server
             public byte[] buffer { get; set; }
             public StringBuilder data { get; set; }
             public EventWaitHandle handle { get; set; }
-        #pragma warning restore IDE1006                             // Naming Styles
+#pragma warning restore IDE1006                             // Naming Styles
         };
         private static readonly ConcurrentDictionary<long, MyPlayers> players = new();
         #endregion
@@ -103,12 +99,11 @@ namespace Server
         int x, y, PT1X, PT1Y, PT2X, PT2Y;                                                           // Math Points
         private bool Drawing = false;                                                               // Local Drawing Toggle
         private bool remoteDraw = false;                                                            // Remote Drawing Toggle
-        private Color _preBC = Color.Linen;                                                         // Fill 
-        private Color _newBC;                                                                       // Fill
+        private Color _preBC;                                                                       // BG replace
         #endregion
 
         #region General Declarations
-        public class MessagePackage                                                                    // Details needed to Draw and Broadcast 
+        public class MessagePackage                                                                 // Details needed to Draw and Broadcast 
         {
             public string Msg { get; set; }
             public string From { get; set; }
@@ -174,7 +169,7 @@ namespace Server
             tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
             tabCM.MenuItems[2].Click += new EventHandler(ExportText);
             tabSections.ContextMenu = tabCM;
-            
+
             pmTab = tabSections.TabPages[2];                                                            // Save the PM Tab
             tabSections.TabPages.Remove(pmTab);                                                         // "hIdE tHe tAB"
 
@@ -199,7 +194,16 @@ namespace Server
         }
         #endregion
 
-        #region Controls & Routines
+        #region Routines
+        private RichTextBox ReturnFirstBoxFrom(object sender)                                       // Get RTB from Sender(Menu) 
+        {                              
+            MenuItem menuItem = sender as MenuItem;                                                 // Get the MenuItem that triggered the event
+            ContextMenu contextMenu = menuItem.Parent as ContextMenu;                               // Get the immediate parent of the MenuItem, which should be the ContextMenu
+            TabControl tabControl = contextMenu.SourceControl as TabControl;                        // Get the control on which the ContextMenu was displayed, which should be the TabControl
+            TabPage selectedTab = tabControl.SelectedTab;                                           // Get the selected TabPage
+            RichTextBox textBox = selectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();      // Get the textbox on the selected TabPage
+            return textBox;
+        }
         private void ToggleNetworkControls()                                                        // Toggle controls for networking 
         {
             txtAddress.Enabled = !txtAddress.Enabled;
@@ -212,61 +216,60 @@ namespace Server
 
             tPing.Enabled = !tPing.Enabled;
         }
+        private string ColorToString(ref Color color)                                               // Converts Color to "A,R,G,B" 
+        {
+            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;
+            string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
+            return colorString;
+        }
+        private Color ArgbColor(string argb)                                                        // Converts "A,R,G,B" to Color 
+        {
+            string[] ColorParts = argb.Split(',');                                                  // Seperate colour parts
+            int ColA = Convert.ToInt32(ColorParts[0]);
+            int ColR = Convert.ToInt32(ColorParts[1]);
+            int ColG = Convert.ToInt32(ColorParts[2]);
+            int ColB = Convert.ToInt32(ColorParts[3]);
+            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);                               // Colour from ARGB
+            return argbColor;
+        }
+        #endregion
+
+        #region Controls
         private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
-        {
+{
             if (sender is System.Windows.Forms.MenuItem) {
+                RichTextBox textBox = ReturnFirstBoxFrom(sender);
+
                 ColorDialog MyDialog = new() {
                     AllowFullOpen = true,
                     ShowHelp = true,
-                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
+                    CustomColors = new int[] { textBox.BackColor.ToArgb(), 0xFFFF00, 0x00FFFF },
                 };
-                if (MyDialog.ShowDialog() == DialogResult.OK) {
-                    if (tabSections.SelectedTab.Name == "tConsole") {
-                        txtConsole.BackColor = MyDialog.Color;                                      // Update the text box color if the user clicks OK
-                    }
-                    if (tabSections.SelectedTab.Name == "tLobby") {
-                        txtLobby.BackColor = MyDialog.Color;                                        // Update the text box color if the user clicks OK
-                    }
-                }
-            }
-            if (sender is System.Windows.Forms.Button) {
-                Button clickedButton = (Button)sender;
-                ColorDialog MyDialog = new() {
-                    AllowFullOpen = true,
-                    ShowHelp = true,
-                    CustomColors = new int[] { 0xFF00FF, 0xFFFF00, 0x00FFFF },
-                    Color = clickedButton.BackColor                                                 // Sets the initial color select to the current text color.             
-                };
-                if (MyDialog.ShowDialog() == DialogResult.OK) {
-                    clickedButton.BackColor = MyDialog.Color;
-                }
-            }
 
-        }
-        private void BGColor_Click(object sender, EventArgs e)                                      // Get Background color of Canvas 
-        {
-            BGC_Click(sender, e);
-        }
-        private void BGColor_BackColorChanged(object sender, EventArgs e)                           // Set BG (use Fill) 
-        {
-            _newBC = ((Control)sender).BackColor;
-            for (int x = 0; x < BM.Width; x++) {                                                    // Iterate over the pixels in the bitmap
-                for (int y = 0; y < BM.Height; y++) {
-                    if (BM.GetPixel(x, y).R == _preBC.R && BM.GetPixel(x, y).G == _preBC.G && BM.GetPixel(x, y).B == _preBC.B) {    // Check if the current pixel has the original color                        
-                        BM.SetPixel(x, y, _newBC);                                           // Replace the color of the current pixel with the replacement color
-                    }
+                if (MyDialog.ShowDialog() == DialogResult.OK) {
+                    textBox.BackColor = MyDialog.Color;                                         // Update the text box color if the user clicks OK
+
                 }
             }
-            _preBC = _newBC;
-            picDrawing.Image = BM;
-            G = Graphics.FromImage(BM);                                                             // Set the canvas
-
         }
         private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
         {
             if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
-            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(MessagePack("","","","")); }
+            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(MessagePack("", "", "", "")); }
+            if (tabSections.SelectedTab.Tag.ToString() == "PM") { ReturnFirstBoxFrom(sender).Text = ""; }
         }
+        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)                   // Remove the *unread8 indicators 
+{
+            TabControl tabControl = (TabControl)sender;
+            TabPage selectedTabPage = tabControl.SelectedTab;
+
+            if (selectedTabPage.Text.Contains("*")) {
+                selectedTabPage.Text = selectedTabPage.Text.Replace("*", "");
+            }
+        }
+
+
+
         private void FillToggle_CheckedChanged(object sender, EventArgs e)                          // Change to /w Close if on Pen or start 
         {
             if (!cbFillDraw.Checked || cbBType.Text == "Pen" || cbBType.Text == "Shape / Style") {
@@ -278,7 +281,7 @@ namespace Server
             if (cbTrans.Checked) {
                 this.TransparencyKey = Color.LightGoldenrodYellow;                                  // 250,250,210
                 picDrawing.BackColor = Color.LightGoldenrodYellow;
-                btnBGColor.SelectedColor = Color.LightGoldenrodYellow;            
+                btnBGColor.SelectedColor = Color.LightGoldenrodYellow;
             }
         }
         private void CbMask_CheckedChanged(object sender, EventArgs e)                              // Handles RoomKey Mask 
@@ -420,15 +423,7 @@ namespace Server
                 txtMessage.SelectionStart = txtMessage.Text.Length;
             }
         }
-        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)                   // Remove the *unread8 indicators
-        {
-            TabControl tabControl = (TabControl)sender;
-            TabPage selectedTabPage = tabControl.SelectedTab;
 
-            if (selectedTabPage.Text.Contains("*")) {
-                selectedTabPage.Text = selectedTabPage.Text.Replace("*", "");
-            }
-        }
         #endregion
 
         #region Console & Chats & Message formatters
@@ -477,7 +472,7 @@ namespace Server
                 To = to,
                 MsgType = type
             };
-            
+
             return msgPack;
         }
         private void PostChat(MessagePackage msgPack)                                               // Post the message / Clear if empty 
@@ -488,7 +483,7 @@ namespace Server
                 });
             } else {
                 #region Message Color
-                string playerColor = "255,0,0,0,0";                        
+                string playerColor = "255,0,0,0,0";
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {                         // Determine color for post using Grid
                     if (row.Cells[1].Value.ToString() == msgPack.From) {
                         playerColor = row.Cells[2].Value?.ToString();
@@ -501,166 +496,80 @@ namespace Server
                 switch (msgPack.MsgType) {
                 #region Private Messages
                 case "Private":
-                    string formattedMSG = "";                                                   // To store formated Message
-                    TabPage tabPage = null;
-                    string tabName = "Lobby";
-                    if (msgPack.To == txtName.Text) {
-                        tabName = msgPack.From;  
-                    } else {                        
-                        tabName = msgPack.From;
-                        if (msgPack.From == txtName.Text) { tabName = msgPack.To; } 
+                    string formattedMSG = "";                                                       // To store formated Message
+                    if (msgPack.To == txtName.Text || msgPack.From == txtName.Text) {               // Mine in any way
+                        TabPage tabPage = null;
+                        string tabName = "Lobby";
+
+                        if (msgPack.To == txtName.Text) {
+                            tabName = msgPack.From;
+                        } else {
+                            tabName = msgPack.From;
+                            if (msgPack.From == txtName.Text) { tabName = msgPack.To; }
+                        }
+
+                        tabSections.Invoke((MethodInvoker)delegate {
+
+                            foreach (TabPage tab in tabSections.TabPages) {
+                                if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
+                                    tabPage = tab;
+                                    break;
+                                }
+                            }
+
+                            if (tabPage == null) {                                                  // If the tab is not found
+                                tabPage = new() {
+                                    Name = "t" + tabName,
+                                    Tag = "PM",
+                                    Text = tabName
+                                };
+
+                                foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
+                                    Control newControl = (Control)Activator.CreateInstance(control.GetType());
+                                    newControl.Location = control.Location;
+                                    newControl.Size = control.Size;
+                                    newControl.Name = control.Name;
+                                    newControl.Tag = control.Tag;
+                                    newControl.BackColor = control.BackColor;
+                                    tabPage.Controls.Add(newControl);
+                                }
+                                tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
+                            }
+
+                            if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
+                                formattedMSG = string.Format("{0}[{1}] {2} whispers: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
+
+                                if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
+                                    tabPage.Text = string.Format("*" + tabName + "*");
+                                }
+                                textBox.AppendText(formattedMSG, msgColor);                         // Post Private msg in Tab
+                            }
+
+                        });
                     }
+                    break;
+                #endregion
 
+                case "Public":
+                    formattedMSG = string.Format("{0}[{1}] From {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
                     tabSections.Invoke((MethodInvoker)delegate {
-
-                        foreach (TabPage tab in tabSections.TabPages) {
-                            if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
-                                tabPage = tab;
-                                break;
-                            }
-                        }
-
-                        if (tabPage == null) {                                                  // If the tab is not found
-                            tabPage = new() {
-                                Name = "t" + tabName,
-                                Tag = "PM",
-                                Text = tabName
-                            };
-
-                            foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
-                                Control newControl = (Control)Activator.CreateInstance(control.GetType());
-                                newControl.Location = control.Location;
-                                newControl.Size = control.Size;
-                                newControl.Name = control.Name;
-                                newControl.Tag = control.Tag;
-                                newControl.BackColor = control.BackColor;
-                                tabPage.Controls.Add(newControl);
-                            }
-                            tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
-                        }
-
-                        if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
-                            formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
-
-                            if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
-                                tabPage.Text = string.Format("*" + tabName + "*");
-                            }
-                            textBox.AppendText(formattedMSG, msgColor);                         // Post actual msg
+                        if (tabSections.SelectedIndex != 1) {                                       // If not in focus change the Tab text
+                            tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
                         }
                     });
-
-
+                    txtLobby.AppendText(formattedMSG, msgColor);                                    // Post Public msg in Lobby
                     break;
 
+                case "Console":
+                    Console(msgPack.Msg);
+                    break;
 
+                case "System":
+                    SystemMsg(msgPack.Msg);
+                    break;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                        /*
-                                                tabSections.Invoke((MethodInvoker)delegate {
-                                                    string tabName = "";
-                                                    if (msgPack.From == txtName.Text.Trim()) {                                // Determine Tab name
-                                                        tabName = msgPack.From;
-                                                    } else {
-                                                        tabName = msgPack.To;
-                                                    }
-
-                                                    foreach (TabPage tab in tabSections.TabPages) {
-                                                        if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
-                                                            tabPage = tab;
-                                                            break;
-                                                        }
-                                                    }
-
-                                                    if (tabPage == null) {                                                  // If the tab is not found
-                                                        tabPage = new() {
-                                                            Name = "t" + tabName,
-                                                            Tag = "PM",
-                                                            Text = tabName
-                                                        };
-
-                                                        foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
-                                                            Control newControl = (Control)Activator.CreateInstance(control.GetType());
-                                                            newControl.Location = control.Location;
-                                                            newControl.Size = control.Size;
-                                                            newControl.Name = control.Name;
-                                                            newControl.Tag = control.Tag;
-                                                            newControl.BackColor = control.BackColor;
-                                                            tabPage.Controls.Add(newControl);
-                                                        }
-                                                        tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
-                                                    }
-
-                                                    if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
-                                                        formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
-
-                                                        if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
-                                                            tabPage.Text = string.Format("*" + msgPack.From + "*");
-                                                        }
-                                                        textBox.AppendText(formattedMSG, msgColor);                         // Post actual msg
-                                                    }
-                                                });
-                        break;*/
-                        #endregion
-                    case "Public":
-                        formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
-                        tabSections.Invoke((MethodInvoker)delegate {
-                            if (tabSections.SelectedIndex != 1) {                                   // If not in focus change the Tab text
-                                tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
-                            }
-                        });
-                        txtLobby.AppendText(formattedMSG, msgColor);                                // Post actual msg
-                        break;
-                    case "Console":
-                        Console(msgPack.Msg);
-                        break;
-                    case "System":
-                        SystemMsg(msgPack.Msg);
-                        break;
-                    default:
-                        break;
+                default:
+                    break;
                 }
 
                 string json = JsonConvert.SerializeObject(msgPack) + "\n";                          // Format the Package 
@@ -727,14 +636,10 @@ namespace Server
         }
         private void ExportText(object sender, EventArgs e)                                         // Export to \exports\<tabname>.txts 
         {
-            MenuItem menuItem = sender as MenuItem;                                                 // Get the MenuItem that triggered the event
-            ContextMenu contextMenu = menuItem.Parent as ContextMenu;                               // Get the immediate parent of the MenuItem, which should be the ContextMenu
-            TabControl tabControl = contextMenu.SourceControl as TabControl;                        // Get the control on which the ContextMenu was displayed, which should be the TabControl
-            TabPage selectedTab = tabControl.SelectedTab;                                           // Get the selected TabPage
-            RichTextBox textBox = selectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();      // Get the textbox on the selected TabPage
+            RichTextBox textBox = ReturnFirstBoxFrom(sender);                                       // 
 
-            string fileName = selectedTab.Tag.ToString() ;
-            if (fileName == "PM"){ fileName = fileName + "_" + selectedTab.Text; }
+            string fileName = textBox.Parent.Tag.ToString();
+            if (fileName == "PM") { fileName = fileName + "_" + textBox.Parent.Text.ToString(); }
             string path = AppDomain.CurrentDomain.BaseDirectory + "\\exports\\" + fileName + ".txt";// Get the file path
 
             if (textBox != null) {
@@ -775,60 +680,61 @@ namespace Server
                     HistoryIndex = MSGHistory.Count;                                                // User has reached the end of the command history
                     txtMessage.Clear();                                                             // Clear the textbox
                 }
-                #endregion
+
             } else if (e.KeyCode == Keys.Enter) {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
-                string msg = txtMessage.Text;
 
-                MSGHistory.Add(msg);                                                                // CLH
+                MSGHistory.Add(txtMessage.Text);                                                    // CLH
                 HistoryIndex = MSGHistory.Count;
+                #endregion
 
-                if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {                    
-                    PostChat(MessagePack(txtMessage.Text.Trim(), txtName.Text.Trim(), "Lobby", "Public")  /*txtName.Text.Trim(), msg*/ );   // Post Public Message
+                string msg = txtMessage.Text;
+                if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
+                    PostChat(MessagePack(txtMessage.Text.Trim(), txtName.Text.Trim(), "Lobby", "Public"));   // Post Public Message
                 } else {
-                    if (msg.StartsWith("/msg")) {                                                   // MSG - get PM
+                    if (msg.StartsWith("/msg")) {
                         foreach (DataGridViewRow row in clientsDataGridView.Rows) {
                             if (msg.Contains(row.Cells[1].Value.ToString())) {                      // if name in grid
                                 int index = msg.IndexOf(row.Cells[1].Value.ToString());             // get start of name
                                 if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
                                 string hostPM = msg.Substring(index);                               // take text after length of name
 
-                                PostChat(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private"));
+                                PostChat(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private"));   // Post Private Message
                             }
                         }
 
-                    /*     foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                                if (msg.Contains(row.Cells[1].Value.ToString())) {                  // if name in grid
-                                    int index = msg.IndexOf(row.Cells[1].Value.ToString());         // get start of name
-                                    if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
-                                    string hostPM = msg.Substring(index);                           // take text after length of name
-                                    if (row.Index > 0) {
-                                        if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player                                            
-                                            JavaScriptSerializer json = new();
-                                            if (listening) {
-                                                HostSendPrivate(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")), players[row.Index]);     // PM - format string to  - Private Send
-                                            } else if (connected) {
-                                                Send(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")));     // PM - Client Send
+                        /*     foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                                    if (msg.Contains(row.Cells[1].Value.ToString())) {                  // if name in grid
+                                        int index = msg.IndexOf(row.Cells[1].Value.ToString());         // get start of name
+                                        if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
+                                        string hostPM = msg.Substring(index);                           // take text after length of name
+                                        if (row.Index > 0) {
+                                            if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player                                            
+                                                JavaScriptSerializer json = new();
+                                                if (listening) {
+                                                    HostSendPrivate(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")), players[row.Index]);     // PM - format string to  - Private Send
+                                                } else if (connected) {
+                                                    Send(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")));     // PM - Client Send
+                                                }
+                                                //HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);     // PM - format string to  - Private Send
+                                                Console(SystemMsg("Local PM Sent."));
                                             }
-                                            //HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);     // PM - format string to  - Private Send
-                                            Console(SystemMsg("Local PM Sent."));
+                                        } else {
+                                            PostChat(MessagePack(hostPM, txtName.Text.Trim(), txtName.Text.Trim(), "Private") *//*txtName.Text.Trim() + "to you", hostPM*//* );
                                         }
-                                    } else {
-                                        PostChat(MessagePack(hostPM, txtName.Text.Trim(), txtName.Text.Trim(), "Private") *//*txtName.Text.Trim() + "to you", hostPM*//* );
                                     }
-                                }
-                            }*/
+                                }*/
                     }
-                     
+
                     if (msg.StartsWith("/send")) {                                              // Drawing - Send the Image to Clients
                         if (listening) { SendDrawing(); }
-                    }                    
-                 
+                    }
+
                     if (msg.StartsWith("/picme")) {
                         if (connected) { FileReceive(); }                                        // Get Drawing from Server
                     }
-                    
+
                     if (msg.StartsWith("/save")) {
                         SaveDrawing();
                     }
@@ -842,10 +748,8 @@ namespace Server
         #endregion
 
         #region ClientsDataGrid Management
-        private void AddToGrid(long id, string name, Color color)                                   // Add Client details to the Grid
+        private void AddToGrid(long id, string name, Color color)                                   // Add Client details to the Grid 
         {
-            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;                 // convert COLOURS to string  - From Color to ARGB
-            string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
             clientsDataGridView.Invoke((MethodInvoker)delegate {
                 if (clientsDataGridView.RowCount > (int)id) {                                       // Update Row
                     DataGridViewCell cellID = clientsDataGridView.Rows[(int)id].Cells[0];
@@ -853,13 +757,13 @@ namespace Server
                     DataGridViewCell cellName = clientsDataGridView.Rows[(int)id].Cells[1];
                     cellName.Value = name.ToString();
                     DataGridViewCell cellCol = clientsDataGridView.Rows[(int)id].Cells[2];
-                    cellCol.Value = colorString;
+                    cellCol.Value = ColorToString(ref color);
                     DataGridViewCell cellLat = clientsDataGridView.Rows[(int)id].Cells[3];
                     cellLat.Value = "ms";
                 } else {
                     string dcText = "DC";
                     if (id == 0) { dcText = "All"; }                                                // Host button
-                    string[] row = new string[] { id.ToString(), name, colorString, "ms", dcText };
+                    string[] row = new string[] { id.ToString(), name, ColorToString(ref color), "ms", dcText };
                     clientsDataGridView.Rows.Add(row);                                              // Add row
                 }
             });
@@ -919,15 +823,13 @@ namespace Server
         #region Drawing
         private DrawPackage PrepareDrawPackage()                                                    // Draw Pakage Constructor
         {
-            int cA = btnColor.SelectedColor.A; int cB = btnColor.SelectedColor.B; int cR = btnColor.SelectedColor.R; int cG = btnColor.SelectedColor.G;
-            string pcString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);                     // convert Colours to string
-            int bA = btnFillColor.SelectedColor.A; int bB = btnFillColor.SelectedColor.B; int bR = btnFillColor.SelectedColor.R; int bG = btnFillColor.SelectedColor.G;
-            string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                     // convert Colours to string
+            Color color = btnColor.SelectedColor;
+            Color fillcolor = btnFillColor.SelectedColor;
 
             DrawPackage drawPack = new() {                                                          // Create the Draw Package
-                PenColor = pcString,
+                PenColor = ColorToString(ref color),
                 PenSize = (int)nudSize.Value,
-                BrushColor = bcString,
+                BrushColor = ColorToString(ref fillcolor),
                 DrawType = cbBType.Text,
                 Fill = cbFillDraw.Checked,
 
@@ -949,19 +851,9 @@ namespace Server
 
             mPath.Reset();
 
-
             return drawPack;                                                                        // Return Package to caller
         }
-        private Color ArgbColor(string wholeColor)                                                  // Converts String in "A,R,G,B" to Color 
-        {
-            string[] ColorParts = wholeColor.Split(',');                                            // Seperate colour string parts to
-            int ColA = Convert.ToInt32(ColorParts[0]);
-            int ColR = Convert.ToInt32(ColorParts[1]);
-            int ColG = Convert.ToInt32(ColorParts[2]);
-            int ColB = Convert.ToInt32(ColorParts[3]);
-            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);                               // recplicate as Colour
-            return argbColor;
-        }
+
         private void SetDraw_Click(object sender, EventArgs e)                                      // Toggles Settings and Drawings Group Boxes 
         {
             if (!gbSettings.Visible) {
@@ -989,7 +881,6 @@ namespace Server
             HostSendPublic("CMD:ClearDrawing");
         }
 
-
         private void Drawing_MouseDown(object sender, MouseEventArgs e)                             // Start Drawing points 
         {
             if (Drawing && e.Button == MouseButtons.Left) {
@@ -1003,20 +894,20 @@ namespace Server
             if (Drawing && e.Button == MouseButtons.Left) {
                 PT2 = e.Location;                                                                   // Update PT2 for Mouse up event                 
                 switch (cbBType.Text) {
-                    case "Circle":
-                    case "Fill Tool":
-                    case "Line":
-                    case "Rectangle":
-                    case "Triangle":
-                        break;
-                    default:
-                        mPath ??= new();                                                            // New Path if needed
-                        Point mP = new(e.Location.X, e.Location.Y);
-                        mPath.AddLines(new Point[] {                                               // Add points to Path
+                case "Circle":
+                case "Fill Tool":
+                case "Line":
+                case "Rectangle":
+                case "Triangle":
+                    break;
+                default:
+                    mPath ??= new();                                                            // New Path if needed
+                    Point mP = new(e.Location.X, e.Location.Y);
+                    mPath.AddLines(new Point[] {                                               // Add points to Path
                             mP
                         });
-                        PT1 = PT2;
-                        break;
+                    PT1 = PT2;
+                    break;
                 }
                 picDrawing.Refresh();
                 x = e.X;
@@ -1042,49 +933,49 @@ namespace Server
                 Pen pen = new(btnColor.SelectedColor, (int)nudSize.Value);
                 SolidBrush brush = new(btnFillColor.SelectedColor);
                 switch (cbBType.Text) {
-                    case "Circle":
-                        G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);                                 // Draw
-                        if (cbFillDraw.Checked) {
-                            G.FillEllipse(brush, PT1X, PT1Y, PT2X, PT2Y);                           // Fill
-                        }
-                        break;
-                    case "Fill Tool":
-                        break;
-                    case "Line":
-                        G.DrawLine(pen, PT1X, PT1Y, x, y);
-                        break;
-                    case "Rectangle":
-                        var rc = new Rectangle(
-                            Math.Min(PT1.X, PT2.X),
-                            Math.Min(PT1.Y, PT2.Y),
-                            Math.Abs(PT2.X - PT1.X),
-                            Math.Abs(PT2.Y - PT1.Y));
-                        G.DrawRectangle(pen, rc);                                                   // Draw
-                        if (cbFillDraw.Checked) {
-                            e.Graphics.FillRectangle(brush, rc);                                    // Fill
-                        }
-                        break;
-                    case "Triangle":
-                        double midX = (PT1.X + PT2.X) / 2;
-                        Point first = new(PT1.X, PT2.Y);
-                        Point mid = new((int)midX, PT1.Y);
-                        var tPath = new GraphicsPath();
-                        tPath.AddLines(new PointF[] {
+                case "Circle":
+                    G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);                                 // Draw
+                    if (cbFillDraw.Checked) {
+                        G.FillEllipse(brush, PT1X, PT1Y, PT2X, PT2Y);                           // Fill
+                    }
+                    break;
+                case "Fill Tool":
+                    break;
+                case "Line":
+                    G.DrawLine(pen, PT1X, PT1Y, x, y);
+                    break;
+                case "Rectangle":
+                    var rc = new Rectangle(
+                        Math.Min(PT1.X, PT2.X),
+                        Math.Min(PT1.Y, PT2.Y),
+                        Math.Abs(PT2.X - PT1.X),
+                        Math.Abs(PT2.Y - PT1.Y));
+                    G.DrawRectangle(pen, rc);                                                   // Draw
+                    if (cbFillDraw.Checked) {
+                        e.Graphics.FillRectangle(brush, rc);                                    // Fill
+                    }
+                    break;
+                case "Triangle":
+                    double midX = (PT1.X + PT2.X) / 2;
+                    Point first = new(PT1.X, PT2.Y);
+                    Point mid = new((int)midX, PT1.Y);
+                    var tPath = new GraphicsPath();
+                    tPath.AddLines(new PointF[] {
                             first, mid, PT2,
                         });
-                        tPath.CloseFigure();
-                        G.DrawPath(pen, tPath);                                                     // Draw
-                        if (cbFillDraw.Checked) {
-                            G.FillPath(brush, tPath);                                               // Fill
-                        }
-                        break;
-                    case "Pen w/ Close":
-                        G.DrawLine(pen, PT1X, PT1Y, x, y);
-                        goto default;
-                    default:
-                        mPath ??= new();
-                        G.DrawPath(pen, mPath);
-                        break;
+                    tPath.CloseFigure();
+                    G.DrawPath(pen, tPath);                                                     // Draw
+                    if (cbFillDraw.Checked) {
+                        G.FillPath(brush, tPath);                                               // Fill
+                    }
+                    break;
+                case "Pen w/ Close":
+                    G.DrawLine(pen, PT1X, PT1Y, x, y);
+                    goto default;
+                default:
+                    mPath ??= new();
+                    G.DrawPath(pen, mPath);
+                    break;
                 }
             }
         }
@@ -1092,19 +983,26 @@ namespace Server
         {
             UpdateCanvas();
         }
-
+        private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
+        {
+            Bitmap savedImage = (Bitmap)picDrawing.Image;                                           // Save the current image to a Bitmap object
+            Bitmap BM = new(picDrawing.Width, picDrawing.Height);                                   // Create a new Bitmap object with the resized dimensions
+            using (Graphics G = Graphics.FromImage(BM)) {                                           // Draw the saved image onto the resized Bitmap
+                G.DrawImage(savedImage, new Rectangle(0, 0, picDrawing.Width, picDrawing.Height));
+            }
+            picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
+            G = Graphics.FromImage(BM);                                                             // Set the canvas
+        }
 
         private void Drawing_MouseClick(object sender, MouseEventArgs e)                            // Fill Tool 
         {
             if (Drawing && cbBType.Text == "Fill Tool" && e.Button == MouseButtons.Left) {
+                Color fillcolor = btnFillColor.SelectedColor;
                 Point canvas = Set_Point(picDrawing, e.Location);                                   // Get location of canvas
-                FillTool(BM, canvas.X, canvas.Y, btnFillColor.SelectedColor);                       // Do the Fill
-            
-                int bA = btnFillColor.SelectedColor.A; int bB = btnFillColor.SelectedColor.B; int bR = btnFillColor.SelectedColor.R; int bG = btnFillColor.SelectedColor.G;
-                string bcString = string.Format("{0},{1},{2},{3}", bA, bR, bG, bB);                 // Convert colours to strings of their ARGB
-                
+                FillTool(BM, canvas.X, canvas.Y, fillcolor);                                        // Do the Fill
+
                 FillPackage fillPack = new() {                                                      // Details for Broadcast
-                    FillColor = bcString,
+                    FillColor = ColorToString(ref fillcolor),                                      // Convert colours to strings of their ARGB
                     X = canvas.X,
                     Y = canvas.Y
                 };
@@ -1118,7 +1016,7 @@ namespace Server
                 }
             }
         }
-        static Point Set_Point(PictureBox pb, Point pt)                                             // Calculare Fill Point on Canvas
+        static Point Set_Point(PictureBox pb, Point pt)                                             // Calculare Fill Point on Canvas 
         {
             float pX = 1f * pb.Image.Width / pb.Width;
             float pY = 1f * pb.Image.Height / pb.Height;
@@ -1128,7 +1026,7 @@ namespace Server
         {
             Color c1 = bm.GetPixel(x, y);                                                           // Get color of clicked pixel
             Stack<Point> pixel = new();
-            pixel.Push(new Point(x, y));                                                            
+            pixel.Push(new Point(x, y));
             bm.SetPixel(x, y, c2);                                                                  // Replaced clicked pixel color
             if (c1 == c2) return;
             while (pixel.Count > 0) {
@@ -1151,7 +1049,8 @@ namespace Server
                 }
             }
         }
-        public void ReplaceTargetColor(Bitmap BM,Color tCol,Color rCol)                             // Replace target pixel colour 
+
+        private void ReplaceTargetColor(Bitmap BM, Color tCol, Color rCol)                          // Replace target pixel colour 
         {
             if (tCol == Color.Empty) { tCol = Color.LightGoldenrodYellow; }                         // If Empty, replaces TrueTransP Key Color 
             if (rCol == Color.Empty) { rCol = Color.Transparent; }                                  // with Color.Transparancy
@@ -1163,6 +1062,24 @@ namespace Server
                     }
                 }
             }
+        }
+        private void BGColorChange(object sender, EventArgs e)                                      // Background - Uses Replace - This happens 3 Times and I'm not sure why 
+        {
+            //ReplaceTargetColor(BM, _preBC, ((ColorButton)sender).SelectedColor);                  // BUG - faster but only works the second time
+
+            for (int x = 0; x < BM.Width; x++) {                                                    // Iterate over the pixels in the bitmap
+                for (int y = 0; y < BM.Height; y++) {
+                    if (BM.GetPixel(x, y).A == _preBC.A
+                        && BM.GetPixel(x, y).R == _preBC.R
+                        && BM.GetPixel(x, y).G == _preBC.G
+                        && BM.GetPixel(x, y).B == _preBC.B) {    // Check if the current pixel has the original color                        
+                        BM.SetPixel(x, y, ((ColorButton)sender).SelectedColor);                                           // Replace the color of the current pixel with the replacement color
+                    }
+                }
+            }
+            _preBC = ((ColorButton)sender).SelectedColor;
+            picDrawing.Image = BM;
+            G = Graphics.FromImage(BM);
         }
 
         private void DeleteTemps(string filePath = "")                                              // Remove tmp image file 
@@ -1197,39 +1114,28 @@ namespace Server
                 string extension = Path.GetExtension(fileName);
                 ImageFormat imageFormat;
                 switch (extension.ToLower()) {                                                      // ImageFormat based on the file extension
-                    case ".jpg":
-                    case ".jpeg":
-                        imageFormat = ImageFormat.Jpeg;
-                        break;
-                    case ".png":
-                        imageFormat = ImageFormat.Png;
-                        break;
-                    case ".bmp":
-                        imageFormat = ImageFormat.Bmp;
-                        break;
-                    case ".gif":
-                        imageFormat = ImageFormat.Gif;
-                        break;
-                    default:
-                        Console(ErrorMsg("Invalid file format."));
-                        return;
+                case ".jpg":
+                case ".jpeg":
+                    imageFormat = ImageFormat.Jpeg;
+                    break;
+                case ".png":
+                    imageFormat = ImageFormat.Png;
+                    break;
+                case ".bmp":
+                    imageFormat = ImageFormat.Bmp;
+                    break;
+                case ".gif":
+                    imageFormat = ImageFormat.Gif;
+                    break;
+                default:
+                    Console(ErrorMsg("Invalid file format."));
+                    return;
                 }
                 Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
-                if (imageFormat == ImageFormat.Png) { ReplaceTargetColor(btm,Color.Empty,Color.Empty); }    // TrueTransP Key colour conversion
+                if (imageFormat == ImageFormat.Png) { ReplaceTargetColor(btm, Color.Empty, Color.Empty); }    // TrueTransP Key colour conversion
                 btm.Save(saveFileDialog.FileName, imageFormat);                                     // Save the image in the selected format                
                 Console("Image Saved: " + saveFileDialog.FileName);
             }
-        }
-
-        private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
-        {
-            Bitmap savedImage = (Bitmap)picDrawing.Image;                                           // Save the current image to a Bitmap object
-            Bitmap BM = new(picDrawing.Width, picDrawing.Height);                                   // Create a new Bitmap object with the resized dimensions
-            using (Graphics G = Graphics.FromImage(BM)) {                                           // Draw the saved image onto the resized Bitmap
-                G.DrawImage(savedImage, new Rectangle(0, 0, picDrawing.Width, picDrawing.Height));
-            }
-            picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
-            G = Graphics.FromImage(BM);                                                             // Set the canvas
         }
         private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
         {
@@ -1250,52 +1156,52 @@ namespace Server
                 }
 
                 switch (drawPackage.DrawType) {
-                    case "Fill Tool":
-                        break;
-                    case "Line":
-                        G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
-                        break;
-                    case "Circle":
-                        if (drawPackage.Fill) {
-                            G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                        }
-                        G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                        break;
-                    case "Rectangle":
-                        var rc = new Rectangle(
-                            Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
-                            Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
-                            Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
-                            Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
-                        if (drawPackage.Fill) {
-                            G.FillRectangle(brush, rc);                                             // Fill
-                        }
-                        G.DrawRectangle(pen, rc);                                                   // Draw
-                        break;
-                    case "Triangle":
-                        double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
-                        double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
-                        Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
-                        Point mid = new((int)midX, drawPackage.PT1.Y);
-                        var tPath = new GraphicsPath();
-                        tPath.AddLines(new PointF[] {
+                case "Fill Tool":
+                    break;
+                case "Line":
+                    G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
+                    break;
+                case "Circle":
+                    if (drawPackage.Fill) {
+                        G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                    }
+                    G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                    break;
+                case "Rectangle":
+                    var rc = new Rectangle(
+                        Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
+                        Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
+                        Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
+                        Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
+                    if (drawPackage.Fill) {
+                        G.FillRectangle(brush, rc);                                             // Fill
+                    }
+                    G.DrawRectangle(pen, rc);                                                   // Draw
+                    break;
+                case "Triangle":
+                    double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
+                    double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
+                    Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
+                    Point mid = new((int)midX, drawPackage.PT1.Y);
+                    var tPath = new GraphicsPath();
+                    tPath.AddLines(new PointF[] {
                             first, mid, drawPackage.PT2,
                         });
-                        tPath.CloseFigure();
-                        if (drawPackage.Fill) {
-                            G.FillPath(brush, tPath);                                               // Fill
-                        }
-                        G.DrawPath(pen, tPath);                                                     // Draw
-                        break;
-                    case "Pen w/ Close":
-                        if (drawPackage.Fill) {
-                            G.FillPath(brush, pPath);
-                        }
-                        G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
-                        goto default;
-                    default:
-                        G.DrawPath(pen, pPath);
-                        break;
+                    tPath.CloseFigure();
+                    if (drawPackage.Fill) {
+                        G.FillPath(brush, tPath);                                               // Fill
+                    }
+                    G.DrawPath(pen, tPath);                                                     // Draw
+                    break;
+                case "Pen w/ Close":
+                    if (drawPackage.Fill) {
+                        G.FillPath(brush, pPath);
+                    }
+                    G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
+                    goto default;
+                default:
+                    G.DrawPath(pen, pPath);
+                    break;
                 }
 
                 if (listening && !remoteDraw) {
@@ -1378,7 +1284,7 @@ namespace Server
         {
             if (disconnect == null || !disconnect.IsAlive) {
                 disconnect = new Thread(() => {                                                     // New Thread
-                    if (id > 0) {                                  
+                    if (id > 0) {
                         players.TryGetValue(id, out MyPlayers obj);                                 // Check for the Specified Connection
                         RemoveFromGrid(obj.id);                                                     // Remove from Grid
                         obj.client.Close();                                                         // Close the Connection
@@ -1773,6 +1679,10 @@ namespace Server
             SendFile(filePath);                                                                     // Send
             DeleteTemps(filePath);                                                                  // Clean
         }
+
+
+ 
+
         private void SendFile(string fn)                                                            // Send file - FileName 
         {
             try {
@@ -1938,7 +1848,7 @@ namespace Server
                 picDrawing.Refresh();
                 Console("Image Set.");
                 G = Graphics.FromImage(BM);                                                         // Prep Canvas for Drawing
-    
+
             });
             // End From File
 
@@ -1976,54 +1886,54 @@ namespace Server
                                 remoteMsg = true;
                                 MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(clientData);
                                 switch (remoteMP.MsgType) {
-                                    case "Private":
-                                        for (int p = 1; p <= players.Count; p++) {                  // Determine the PM Dest
-                                            if (remoteMP.To == players[p].username.ToString()) {    // Dest is a player   
-                                                HostSendPrivate(clientData, players[p]);            // Host - Send PM
-                                                Console(SystemMsg("PM Relayed."));
-                                                obj.data.Clear();
-                                                obj.handle.Set();
-                                                return;
-                                            } else if (remoteMP.To == txtName.Text.Trim()) {        // Dest is host
-                                                PostChat(remoteMP);                                 // Post Host PM
-                                                obj.data.Clear();
-                                                obj.handle.Set();
-                                                return;
-                                            }
+                                case "Private":
+                                    for (int p = 1; p <= players.Count; p++) {                  // Determine the PM Dest
+                                        if (remoteMP.To == players[p].username.ToString()) {    // Dest is a player   
+                                            HostSendPrivate(clientData, players[p]);            // Host - Send PM
+                                            Console(SystemMsg("PM Relayed."));
+                                            obj.data.Clear();
+                                            obj.handle.Set();
+                                            return;
+                                        } else if (remoteMP.To == txtName.Text.Trim()) {        // Dest is host
+                                            PostChat(remoteMP);                                 // Post Host PM
+                                            obj.data.Clear();
+                                            obj.handle.Set();
+                                            return;
                                         }
-                                        break;
-                                    case "Public":
-                                        PostChat(remoteMP);                                         // Host post
-                                        HostSendPublic(clientData, obj.id);                         // Host relay public message to other clients
-                                        obj.data.Clear();
-                                        obj.handle.Set();
-                                        break;
-                                    default:
-                                        break;
+                                    }
+                                    break;
+                                case "Public":
+                                    PostChat(remoteMP);                                         // Host post
+                                    HostSendPublic(clientData, obj.id);                         // Host relay public message to other clients
+                                    obj.data.Clear();
+                                    obj.handle.Set();
+                                    break;
+                                default:
+                                    break;
                                 }
                             }
 
-/*                            if (clientData.Contains("/msg")) {
-                                string[] pMSG = clientData.Split(':');
-                                for (int p = 1; p <= players.Count; p++) {                          // Determine the PM Dest
-                                    if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
-                                        HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);   // Host - Send PM
-                                        Console(SystemMsg("PM Sent."));
-                                        obj.data.Clear();
-                                        obj.handle.Set();
-                                        return;
-                                    } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
-                                        PostChat(obj.username.ToString() + "to you", pMSG[2]);      // Post Host PM
-                                        obj.data.Clear();
-                                        obj.handle.Set();
-                                        return;
-                                    }
-                                }
-                                Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2])));
-                                obj.data.Clear();
-                                obj.handle.Set();
-                                return;
-                            }*/
+                            /*                            if (clientData.Contains("/msg")) {
+                                                            string[] pMSG = clientData.Split(':');
+                                                            for (int p = 1; p <= players.Count; p++) {                          // Determine the PM Dest
+                                                                if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
+                                                                    HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);   // Host - Send PM
+                                                                    Console(SystemMsg("PM Sent."));
+                                                                    obj.data.Clear();
+                                                                    obj.handle.Set();
+                                                                    return;
+                                                                } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
+                                                                    PostChat(obj.username.ToString() + "to you", pMSG[2]);      // Post Host PM
+                                                                    obj.data.Clear();
+                                                                    obj.handle.Set();
+                                                                    return;
+                                                                }
+                                                            }
+                                                            Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2])));
+                                                            obj.data.Clear();
+                                                            obj.handle.Set();
+                                                            return;
+                                                        }*/
 
                             // Host receive - Drawing
                             if (clientData.StartsWith("{\"PenColor\"")) {
@@ -2046,11 +1956,11 @@ namespace Server
                                 return;
                             }
 
-/*                            // Host Receive - Public Message
-                            PostChat(obj.username.ToString(), clientData);                          // Host post
-                            HostSendPublic(string.Format("{0}:{1}", obj.username, clientData), obj.id);    // Host relay public message to other clients
-                            obj.data.Clear();
-                            obj.handle.Set();*/
+                            /*                            // Host Receive - Public Message
+                                                        PostChat(obj.username.ToString(), clientData);                          // Host post
+                                                        HostSendPublic(string.Format("{0}:{1}", obj.username, clientData), obj.id);    // Host relay public message to other clients
+                                                        obj.data.Clear();
+                                                        obj.handle.Set();*/
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
@@ -2131,16 +2041,16 @@ namespace Server
                             if (hostData.StartsWith("CMD:")) {                                      // Client Receive - Commands
                                 string[] cmdParts = hostData.Split(':');
                                 switch (cmdParts[1]) {
-                                    case "ClearDrawing":
-                                        Button sender = new();
-                                        EventArgs e = new();
-                                        CmdClear_Click(sender, e);
-                                        break;
-                                    case "ReceiveDrawing":
-                                        ListenForFile();                                            // Client open server to receive
-                                        break;
-                                    default:
-                                        break;
+                                case "ClearDrawing":
+                                    Button sender = new();
+                                    EventArgs e = new();
+                                    CmdClear_Click(sender, e);
+                                    break;
+                                case "ReceiveDrawing":
+                                    ListenForFile();                                            // Client open server to receive
+                                    break;
+                                default:
+                                    break;
                                 }
                                 clientObject.data.Clear();
                                 clientObject.handle.Set();
