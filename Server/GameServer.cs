@@ -26,29 +26,20 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace Server {
     public partial class GameServer : Form {
-
-        public class CustomGroupBox : System.Windows.Forms.GroupBox
-        {
-            protected override void OnPaint(PaintEventArgs e)
-            {
-                base.OnPaint(e);
-
-                // Create a new Pen with the desired border color
-                Color borderColor = Color.Red;
-                using (Pen pen = new Pen(borderColor, 2)) {
-                    // Draw a rectangle around the group box
-                    Rectangle rect = new Rectangle(0, 7, Width - 1, Height - 8);
-                    e.Graphics.DrawRectangle(pen, rect);
-                }
-            }
-        }
+        /* Used to enable Console
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool AllocConsole();
+*/
 
         #region Declarations
         #region Host Specific Declarations
         private bool listening = false;                                                             // Host / Client Mode Marker
         private Thread listener = null;                                                             // Host TCP Listener
         private Thread disconnect = null;                                                           // Manage Disconnects
+#pragma warning disable CS0649 // Field 'GameServer.drawingSocket' is never assigned to, and will always have its default value null
         private readonly TcpListener drawingSocket;                                                 // For sending image of the drawing
+#pragma warning restore CS0649 // Field 'GameServer.drawingSocket' is never assigned to, and will always have its default value null
         public class PlayerPackage                                                                  // To Broadcast to Clients 
         {
             public int Id { get; set; }
@@ -124,40 +115,53 @@ namespace Server {
         #endregion
 
         #region General Declarations
-        private class MessagePackage                                                                 // Details needed to Draw and Broadcast 
+        private class CustomizationSettings                                                         // Details save to and loaded from File 
+        {
+            public string UserName { get; set; }
+            public string UserColor { get; set; }
+            public string RoomKey { get; set; }
+            public string Address { get; set; }
+            public string Port { get; set; }
+            public string ThemeName { get; set; }
+            public bool IsDarkModeEnabled { get; set; }
+            public DateTime LastLogin { get; set; }
+        }
+
+        #region Theme Settings
+        private bool DarkMode { get; set; }
+        private static string Theme { get; set; }
+        enum ThemeColor {
+            Primary,
+            Secondary,
+            Tertiary,
+            Quaternary
+        }
+        Dictionary<ThemeColor, Color> Nature = new();
+        #endregion
+
+        #region Message Settings
+        private class MessagePackage                                                                // Details needed to Draw and Broadcast 
         {
             public string Msg { get; set; }
             public string From { get; set; }
             public string To { get; set; }
             public string MsgType { get; set; }
         }
-        private class ClientSaveSettings {
-            public string UserName { get; set; }
-            public string UserColor { get; set; }
-            public string RoomKey { get; set; }
-            public string Address { get; set; }
-            public string Port { get; set; }
-
-            public DateTime LastLogin { get; set; }
-            public bool IsDarkModeEnabled { get; set; }
-        }
-        private bool DarkMode { get; set; }
         private bool remoteMsg = false;
         private TabPage pmTab;
-        private Task send = null;
-        private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";                    // AES Key
-
         private readonly List<string> MSGHistory = new();                                           // CLI History
         private int HistoryIndex = -1;
-        /* Used to enable Console
-                [DllImport("kernel32.dll", SetLastError = true)]
-                [return: MarshalAs(UnmanagedType.Bool)]
-                static extern bool AllocConsole();
-        */
         #endregion
+
+        #region Network Settings
+        private Task send = null;
+        private static readonly string AeS = "bbroygbvgw202333bbce2ea2315a1916";                    // AES Key
         #endregion
 
 
+        #endregion
+        #endregion
+        private readonly Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new Dictionary<string, Dictionary<ThemeColor, Color>>();
 
         #region Form
         public GameServer(/*string PlayerName*/)                                                    // Main 
@@ -165,7 +169,6 @@ namespace Server {
             InitializeComponent();
             //AllocConsole();
             txtName.Text = Environment.UserName;
-
 
             /* // Opens multiple forms
                         txtName.Text = PlayerName;
@@ -197,14 +200,43 @@ namespace Server {
         private void GameServer_Load(object sender, EventArgs e)                                    // On Open 
         {
             LoadSettings();
+
+            Themes.Add("Nature", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.Green },
+                { ThemeColor.Secondary, Color.Brown },
+                { ThemeColor.Tertiary, Color.YellowGreen },
+                { ThemeColor.Quaternary, Color.DarkSeaGreen }
+            });
+            Themes.Add("Ocean", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.Blue },
+                { ThemeColor.Secondary, Color.White },
+                { ThemeColor.Tertiary, Color.Turquoise },
+                { ThemeColor.Quaternary, Color.DarkSeaGreen }
+            });
+            Themes.Add("Greens", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.Green },
+                { ThemeColor.Secondary, Color.YellowGreen },
+                { ThemeColor.Tertiary, Color.ForestGreen },
+                { ThemeColor.Quaternary, Color.DarkSeaGreen }
+            });
+            Themes.Add("Reds", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.Red },
+                { ThemeColor.Secondary, Color.RosyBrown },
+                { ThemeColor.Tertiary, Color.OrangeRed },
+                { ThemeColor.Quaternary, Color.DarkRed }
+            });
             Darkmode(DarkMode);
 
             ContextMenu tabCM = new();
             tabCM.MenuItems.Add("BG Color");
             tabCM.MenuItems.Add("Clear");
             tabCM.MenuItems.Add("Export");
-            tabCM.MenuItems[0].Click += new EventHandler(BGC_Click);
-            tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
+            tabCM.MenuItems[0].Click += new EventHandler(ChangeTXTBackColor);
+            tabCM.MenuItems[1].Click += new EventHandler(ClearTXT);
             tabCM.MenuItems[2].Click += new EventHandler(ExportText);
             tabSections.ContextMenu = tabCM;
             pmTab = tabSections.TabPages[2];                                                            // Save the PM Tab
@@ -218,21 +250,230 @@ namespace Server {
         }
         private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit - Clean up - Save Settings 
         {
+            if (connected) {
+                Disconnect();
+                listening = false;
+            }
+            if (connected) {
+                clientObject.client.Close();
+                connected = false;
+            }
+
             picDrawing.Dispose();
             BM.Dispose();
             G.Dispose();
-            DeleteTemps();
 
-            listening = false;
-            if (connected) {
-                clientObject.client.Close();
-            }
-            Disconnect();
+            DeleteTemps();
             SaveSettings();
         }
         #endregion
 
         #region Routines
+        private void CommandHandler(object sender, KeyEventArgs e, string msg)                      // Handles "/" CLI commands 
+{
+            if (msg.StartsWith("/msg")) {                                                           // Client Send PM
+                foreach (DataGridViewRow row in clientsDataGridView.Rows) {
+                    if (msg.Contains(row.Cells[1].Value.ToString())) {                              // if name in grid
+                        int index = msg.IndexOf(row.Cells[1].Value.ToString());                     // get start of name
+                        if (index != -1) { index += row.Cells[1].Value.ToString().Length; }         // get end of name
+                        string hostPM = msg.Substring(index);                                       // take text after length of name
+
+                        PostChat(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private"));   // Post Private Message
+                    }
+                }
+            }
+
+            if (msg.StartsWith("/darkmode")) {                                                      // UI - Toggles Theme/DarMode
+                if (msg.IndexOf("on", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("1")) {
+                    DarkMode = true;
+                } else if (msg.IndexOf("off", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("0")) {
+                    DarkMode = false;
+                } else { DarkMode = !DarkMode; }
+                Darkmode(DarkMode);
+            }
+
+            if (msg.StartsWith("/export")) {                                                        // Export Tab related Text
+                ExportText(sender, e);
+            }
+
+            if (msg.StartsWith("/picme")) {                                                         // Drawing - Get Drawing from Server
+                if (connected) { FileReceive(); }
+            }
+
+            if (msg.StartsWith("/save")) {                                                          // Drawing - Saves the Image to File
+                SaveDrawing();
+            }
+
+            if (msg.StartsWith("/send")) {                                                          // Drawing - Send the Image to Clients
+                if (listening) { SendDrawing(); }
+            }
+
+            if (msg.StartsWith("/theme")) {                                                         // UI - Sets Theme
+                Theme = msg.Substring(7).Trim();
+                Darkmode(false);
+            }
+        }
+        private void HostDataHandler(MyPlayers obj, string clientData)                              // Handles incoming Data from Client  
+        {
+
+            if (clientData.StartsWith("{\"Msg\"")) {                                                // Host Receive - Message Package           
+                remoteMsg = true;
+                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(clientData);
+                switch (remoteMP.MsgType) {
+                case "Private":                                                                     // Private Message
+                    for (int p = 1; p <= players.Count; p++) {                                      // Determine the PM Dest
+                        if (remoteMP.To == players[p].username.ToString()) {                        // Dest is a player   
+                            HostSendPrivate(clientData, players[p]);                                // Host - Send PM
+                            Console(SystemMsg("PM Relayed."));
+                            obj.data.Clear();
+                            obj.handle.Set();
+                            //return;
+                            break;
+                        } else if (remoteMP.To == txtName.Text.Trim()) {                            // Dest is host
+                            PostChat(remoteMP);                                                     // Post Host PM
+                            obj.data.Clear();
+                            obj.handle.Set();
+                            //return;
+                            break;
+                        }
+                    }
+                    break;
+
+                case "Public":                                                                      // Public Message
+                    PostChat(remoteMP);
+                    HostSendPublic(clientData, obj.id);                                             // Host relay public message to other clients
+                    obj.data.Clear();
+                    obj.handle.Set();
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            /*                            if (clientData.Contains("/msg")) {
+                                            string[] pMSG = clientData.Split(':');
+                                            for (int p = 1; p <= players.Count; p++) {                          // Determine the PM Dest
+                                                if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
+                                                    HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);   // Host - Send PM
+                                                    Console(SystemMsg("PM Sent."));
+                                                    obj.data.Clear();
+                                                    obj.handle.Set();
+                                                    return;
+                                                } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
+                                                    PostChat(obj.username.ToString() + "to you", pMSG[2]);      // Post Host PM
+                                                    obj.data.Clear();
+                                                    obj.handle.Set();
+                                                    return;
+                                                }
+                                            }
+                                            Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2])));
+                                            obj.data.Clear();
+                                            obj.handle.Set();
+                                            return;
+                                        }*/
+
+            // Host receive - Drawing
+            if (clientData.StartsWith("{\"PenColor\"")) {
+                remoteDraw = true;
+                DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(clientData);
+                DrawShape(remoteDP);
+                HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
+                obj.data.Clear();
+                obj.handle.Set();
+                return;
+            }
+
+            // Host receive - FillTool
+            if (clientData.StartsWith("{\"FillColor\"")) {
+                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(clientData);
+                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
+                HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
+                obj.data.Clear();
+                obj.handle.Set();
+                return;
+            }
+
+            /*                            // Host Receive - Public Message
+                                        PostChat(obj.username.ToString(), clientData);                          // Host post
+                                        HostSendPublic(string.Format("{0}:{1}", obj.username, clientData), obj.id);    // Host relay public message to other clients
+                                        obj.data.Clear();
+                                        obj.handle.Set();*/
+        }
+        private void ClientDataHandler(string hostData)                                             // Handles incoming Data from Host  
+        {
+            if (hostData.StartsWith("{\"Id\"")) {                                                   // Grid update
+                ClearDataGrid();                                                                    // Clear DataGrid 
+                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string message in messages) {
+                    PlayerPackage player = JsonConvert.DeserializeObject<PlayerPackage>(message);
+                    Color argbColor = Color.FromArgb(player.Color[0], player.Color[1], player.Color[2], player.Color[3]);
+                    AddToGrid(player.Id, player.Name, argbColor);
+                }
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                //return;
+            }
+            if (hostData.StartsWith("{\"Msg\"")) {                                                  // Client Receive - Message
+                remoteMsg = true;
+                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(hostData);
+                PostChat(remoteMP);
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                //return;
+            }
+            if (hostData.StartsWith("SYSTEM:")) {                                                   // Client Receive - System Message
+                string[] sysParts = hostData.Split(':');
+                Console(sysParts[2]);
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                //return;
+            }
+
+            if (hostData.StartsWith("{\"PenColor\"")) {                                             // Client Receive - Drawing
+                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string message in messages) {
+                    DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
+                    remoteDraw = true;
+                    DrawShape(remoteDP);
+                }
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                //return;
+            }
+
+            if (hostData.StartsWith("{\"FillColor\"")) {                                            // Client Receive - FillTool
+                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(hostData);
+                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                //return;
+            }
+
+            if (hostData.StartsWith("CMD:")) {                                                      // Client Receive - Commands from Host
+                string[] cmdParts = hostData.Split(':');
+                switch (cmdParts[1]) {
+                case "ClearDrawing":
+                    Button sender = new();
+                    EventArgs e = new();
+                    CmdClear_Click(sender, e);
+                    break;
+                case "ReceiveDrawing":
+                    ListenForFile();                                                                // Client open server to receive
+                    break;
+                default:
+                    break;
+                }
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                //return;
+            }
+
+            string[] dataParts = hostData.Split(':');
+            Console("Unrecognized: " + hostData);                                                   // Client Receive - Unformated Text
+            clientObject.data.Clear();
+            clientObject.handle.Set();
+        }
+
         private void LoadSettings()                                                                 // Load settings from File 
         {
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);// Retrieve the application data folder path
@@ -240,7 +481,7 @@ namespace Server {
             string settingsFilePath = Path.Combine(appFolder, $"config.txt");                       // File in the application folder
 
             if (File.Exists(settingsFilePath)) {                                                    // Check if the loadSettings file exists
-                ClientSaveSettings loadSettings = new();                                            // Create a new loadSettings object
+                CustomizationSettings loadSettings = new();                                            // Create a new loadSettings object
                 using StreamReader reader = new(settingsFilePath);                                // Read the loadSettings from the loadSettings file
                 string line;
                 while ((line = reader.ReadLine()) != null) {
@@ -259,8 +500,12 @@ namespace Server {
                         case "IsDarkModeEnabled":
                             loadSettings.IsDarkModeEnabled = bool.Parse(value);
                             DarkMode = loadSettings.IsDarkModeEnabled;
-                            break;
-                        case "UserColor":
+                            break;                        
+                        case "ThemeName":
+                            loadSettings.ThemeName = value;
+                            Theme = loadSettings.ThemeName;
+                        break;
+                    case "UserColor":
                             loadSettings.UserColor = value;
                             cmdColor.SelectedColor = ArgbColor(loadSettings.UserColor);
                             break;
@@ -278,8 +523,7 @@ namespace Server {
                             break;
 
                     }
-                }
-                // Apply the loaded Settings             
+                }             
             } else {
                 Console("Settings file not found - loading defaults.");                             // Output load fail
             }
@@ -294,36 +538,54 @@ namespace Server {
             string settingsFilePath = Path.Combine(appFolder, $"config.txt");                       // File in the application folder
             
             Color pCol = cmdColor.SelectedColor;
-            ClientSaveSettings saveSettings = new() {
+            CustomizationSettings saveSettings = new() {
                 UserName = txtName.Text.Trim(),
                 UserColor = ColorToString(ref pCol),
                 RoomKey = txtRoomKey.Text,
                 Address = txtAddress.Text,
                 Port = txtPort.Text,
                 IsDarkModeEnabled = DarkMode,
+                ThemeName = Theme,
                 LastLogin = DateTime.Now
             };                                                // Settings to Save
 
             using StreamWriter writer = new(settingsFilePath);                                    // Save settings
-            foreach (var prop in typeof(ClientSaveSettings).GetProperties()) {
+            foreach (var prop in typeof(CustomizationSettings).GetProperties()) {
                 string key = prop.Name;
                 string value = prop.GetValue(saveSettings).ToString();
                 writer.WriteLine(key + "=" + value);
             }
         }
 
-
-        private void Darkmode(bool status)                                                          // OG Darkmode 
+        private void Darkmode(bool status)                                                          // Darkmode 
         {
             DarkMode = status;
             if (DarkMode) {
                 ChangeControlColors(this, Color.Black, SystemColors.ControlDark, SystemColors.ControlText, SystemColors.ControlDarkDark);
             } else {
-                ChangeControlColors(this, SystemColors.WindowText, SystemColors.Window, SystemColors.WindowText, SystemColors.ScrollBar);
-            }
+                if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {
+                    // If a matching dictionary was found, access its values
+                    Color primaryColor = matchingDictionary[ThemeColor.Primary];
+                    Color secondaryColor = matchingDictionary[ThemeColor.Secondary];
+                    Color tertiaryColor = matchingDictionary[ThemeColor.Tertiary];
+                    Color quaternaryColor = matchingDictionary[ThemeColor.Quaternary];
 
-        }
-        private void ChangeControlColors(Control control, Color primaryCol, Color secondaryCol, Color tertiaryCol, Color quaternary)
+                    ChangeControlColors(this, primaryColor, secondaryColor, tertiaryColor, quaternaryColor);
+                    // Do something with the colors...
+                }  
+
+                /*
+                switch (Theme) {
+                    case "Nature":
+                        ChangeControlColors(this, Nature[ThemeColor.Primary], Nature[ThemeColor.Secondary], Nature[ThemeColor.Tertiary], Nature[ThemeColor.Quaternary]);
+                        break;
+                    default:
+                        ChangeControlColors(this, SystemColors.WindowText, SystemColors.Window, SystemColors.WindowText, SystemColors.ScrollBar);
+                        break;
+                */
+            }
+        }        
+        private void ChangeControlColors(Control control, Color primaryCol, Color secondaryCol, Color tertiaryCol, Color quaternary) 
         {
             foreach (Control childControl in control.Controls) {
                 Console(childControl.GetType().Name + " " + childControl.Name);
@@ -362,8 +624,79 @@ namespace Server {
             }
         }
 
+        private string ColorToString(ref Color color)                                               // Converts Color to "A,R,G,B" 
+        {
+            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;
+            string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
+            return colorString;
+        }
+        private Color ArgbColor(string argb)                                                        // Converts "A,R,G,B" to Color 
+        {
+            string[] ColorParts = argb.Split(',');                                                  // Seperate colour parts
+            int ColA = Convert.ToInt32(ColorParts[0]);
+            int ColR = Convert.ToInt32(ColorParts[1]);
+            int ColG = Convert.ToInt32(ColorParts[2]);
+            int ColB = Convert.ToInt32(ColorParts[3]);
+            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);                               // Colour from ARGB
+            return argbColor;
+        }
+        #endregion
+
+
+        #region Controls
+        private class CustomGroupBox                                                                /* Group Box Color Borders */ : System.Windows.Forms.GroupBox
+        {
+            Color borderColor;
+            protected override void OnPaint(PaintEventArgs e) {
+                base.OnPaint(e);
+                if (Theme != null) {
+                    Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new ();
+
+                    if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {  // If a matching dictionary was found, access its values
+                        Color primaryColor = matchingDictionary[ThemeColor.Primary];
+                        borderColor = primaryColor;
+                    }                    
+                } else { borderColor = Color.Transparent; }
+
+                using Pen pen = new(borderColor, 2);                                                // Create a new Pen with the desired border color
+                Rectangle rect = new(1, 7, Width - 2, Height - 8);                                  // Draw a rectangle around the group box
+                e.Graphics.DrawRectangle(pen, rect);
+            }
+        }
+        private void ChangeTXTBackColor(object sender, EventArgs e)                                 // Set the background color of respective TextBox 
+        {
+            if (sender is System.Windows.Forms.MenuItem) {
+                RichTextBox textBox = ReturnFirstBoxFrom(sender);
+
+                ColorDialog MyDialog = new() {
+                    AllowFullOpen = true,
+                    ShowHelp = true,
+                    CustomColors = new int[] { textBox.BackColor.ToArgb(), 0xFFFF00, 0x00FFFF },
+                };
+
+                if (MyDialog.ShowDialog() == DialogResult.OK) {
+                    textBox.BackColor = MyDialog.Color;                                         // Update the text box color if the user clicks OK
+                }
+            }
+        }
+        private void ClearTXT(object sender, EventArgs e)                                           // Clear the respective Textbox 
+        {
+            if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
+            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(MessagePack("", "", "", "")); }
+            if (tabSections.SelectedTab.Tag.ToString() == "PM") { ReturnFirstBoxFrom(sender).Text = ""; }
+        }
+        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)                   // Remove the *unread8 indicators 
+{
+            TabControl tabControl = (TabControl)sender;
+            TabPage selectedTabPage = tabControl.SelectedTab;
+
+            if (selectedTabPage.Text.Contains("*")) {
+                selectedTabPage.Text = selectedTabPage.Text.Replace("*", "");
+            }
+        }
+
         private RichTextBox ReturnFirstBoxFrom(object sender)                                       // Get RTB from Sender(Menu) 
-        {                              
+{
             MenuItem menuItem = sender as MenuItem;                                                 // Get the MenuItem that triggered the event
             ContextMenu contextMenu = menuItem.Parent as ContextMenu;                               // Get the immediate parent of the MenuItem, which should be the ContextMenu
             TabControl tabControl = contextMenu.SourceControl as TabControl;                        // Get the control on which the ContextMenu was displayed, which should be the TabControl
@@ -383,59 +716,6 @@ namespace Server {
 
             tPing.Enabled = !tPing.Enabled;
         }
-        private string ColorToString(ref Color color)                                               // Converts Color to "A,R,G,B" 
-        {
-            int cA = color.A; int cB = color.B; int cR = color.R; int cG = color.G;
-            string colorString = string.Format("{0},{1},{2},{3}", cA, cR, cG, cB);
-            return colorString;
-        }
-        private Color ArgbColor(string argb)                                                        // Converts "A,R,G,B" to Color 
-        {
-            string[] ColorParts = argb.Split(',');                                                  // Seperate colour parts
-            int ColA = Convert.ToInt32(ColorParts[0]);
-            int ColR = Convert.ToInt32(ColorParts[1]);
-            int ColG = Convert.ToInt32(ColorParts[2]);
-            int ColB = Convert.ToInt32(ColorParts[3]);
-            Color argbColor = Color.FromArgb(ColA, ColR, ColG, ColB);                               // Colour from ARGB
-            return argbColor;
-        }
-        #endregion
-
-        #region Controls
-        private void BGC_Click(object sender, EventArgs e)                                          // Set the background color of respective TextBox 
-{
-            if (sender is System.Windows.Forms.MenuItem) {
-                RichTextBox textBox = ReturnFirstBoxFrom(sender);
-
-                ColorDialog MyDialog = new() {
-                    AllowFullOpen = true,
-                    ShowHelp = true,
-                    CustomColors = new int[] { textBox.BackColor.ToArgb(), 0xFFFF00, 0x00FFFF },
-                };
-
-                if (MyDialog.ShowDialog() == DialogResult.OK) {
-                    textBox.BackColor = MyDialog.Color;                                         // Update the text box color if the user clicks OK
-
-                }
-            }
-        }
-        private void Clear_Click(object sender, EventArgs e)                                        // Clear the respective Textbox 
-        {
-            if (tabSections.SelectedTab.Name == "tConsole") { Console(); }
-            if (tabSections.SelectedTab.Name == "tLobby") { PostChat(MessagePack("", "", "", "")); }
-            if (tabSections.SelectedTab.Tag.ToString() == "PM") { ReturnFirstBoxFrom(sender).Text = ""; }
-        }
-        private void TabSections_SelectedIndexChanged(object sender, EventArgs e)                   // Remove the *unread8 indicators 
-{
-            TabControl tabControl = (TabControl)sender;
-            TabPage selectedTabPage = tabControl.SelectedTab;
-
-            if (selectedTabPage.Text.Contains("*")) {
-                selectedTabPage.Text = selectedTabPage.Text.Replace("*", "");
-            }
-        }
-
-
 
         private void FillToggle_CheckedChanged(object sender, EventArgs e)                          // Change to /w Close if on Pen or start 
         {
@@ -590,8 +870,8 @@ namespace Server {
                 txtMessage.SelectionStart = txtMessage.Text.Length;
             }
         }
-
         #endregion
+
 
         #region Console & Chats & Message formatters
         private string StackTrace()                                                                 // Better Debug Info 
@@ -847,80 +1127,25 @@ namespace Server {
                     HistoryIndex = MSGHistory.Count;                                                // User has reached the end of the command history
                     txtMessage.Clear();                                                             // Clear the textbox
                 }
-
+                #endregion
             } else if (e.KeyCode == Keys.Enter) {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
 
-                MSGHistory.Add(txtMessage.Text);                                                    // CLH
+                MSGHistory.Add(txtMessage.Text);                                                    // CLI History
                 HistoryIndex = MSGHistory.Count;
-                #endregion
 
                 string msg = txtMessage.Text;
                 if (txtMessage.Text.Length > 0 && !txtMessage.Text.StartsWith("/")) {
-                    PostChat(MessagePack(txtMessage.Text.Trim(), txtName.Text.Trim(), "Lobby", "Public"));   // Post Public Message
+                    PostChat(MessagePack(txtMessage.Text.Trim(), txtName.Text.Trim(), "Lobby", "Public"));   // Client - Post Public Message
                 } else {
-                    if (msg.StartsWith("/msg")) {
-                        foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                            if (msg.Contains(row.Cells[1].Value.ToString())) {                      // if name in grid
-                                int index = msg.IndexOf(row.Cells[1].Value.ToString());             // get start of name
-                                if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
-                                string hostPM = msg.Substring(index);                               // take text after length of name
-
-                                PostChat(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private"));   // Post Private Message
-                            }
-                        }
-
-                        /*     foreach (DataGridViewRow row in clientsDataGridView.Rows) {
-                                    if (msg.Contains(row.Cells[1].Value.ToString())) {                  // if name in grid
-                                        int index = msg.IndexOf(row.Cells[1].Value.ToString());         // get start of name
-                                        if (index != -1) { index += row.Cells[1].Value.ToString().Length; } // get end of name
-                                        string hostPM = msg.Substring(index);                           // take text after length of name
-                                        if (row.Index > 0) {
-                                            if (players[row.Index].username.ToString() == row.Cells[1].Value.ToString()) {            // if dest is a player                                            
-                                                JavaScriptSerializer json = new();
-                                                if (listening) {
-                                                    HostSendPrivate(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")), players[row.Index]);     // PM - format string to  - Private Send
-                                                } else if (connected) {
-                                                    Send(json.Serialize(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private")));     // PM - Client Send
-                                                }
-                                                //HostSendPrivate(string.Format("{0} to you: {1}", txtName.Text.Trim(), hostPM), players[row.Index]);     // PM - format string to  - Private Send
-                                                Console(SystemMsg("Local PM Sent."));
-                                            }
-                                        } else {
-                                            PostChat(MessagePack(hostPM, txtName.Text.Trim(), txtName.Text.Trim(), "Private") *//*txtName.Text.Trim() + "to you", hostPM*//* );
-                                        }
-                                    }
-                                }*/
-                    }
-                    if (msg.StartsWith("/darkmode")) {
-                        if (msg.IndexOf("on", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("1")) {
-                            DarkMode = true;
-                        } else if (msg.IndexOf("off", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("0")) {
-                            DarkMode = false;
-                        } else { DarkMode = !DarkMode; }
-                        Darkmode(DarkMode);
-                    }
-
-                    if (msg.StartsWith("/send")) {                                              // Drawing - Send the Image to Clients
-                        if (listening) { SendDrawing(); }
-                    }
-
-                    if (msg.StartsWith("/picme")) {
-                        if (connected) { FileReceive(); }                                        // Get Drawing from Server
-                    }
-
-                    if (msg.StartsWith("/save")) {
-                        SaveDrawing();
-                    }
-                    if (msg.StartsWith("/export")) {
-                        ExportText(sender, e);
-                    }
+                    CommandHandler(sender, e, msg);
                 }
                 txtMessage.Clear();
             }
         }
         #endregion
+
 
         #region ClientsDataGrid Management
         private void AddToGrid(long id, string name, Color color)                                   // Add Client details to the Grid 
@@ -995,8 +1220,9 @@ namespace Server {
         }
         #endregion
 
+
         #region Drawing
-        private DrawPackage PrepareDrawPackage()                                                    // Draw Pakage Constructor
+        private DrawPackage PrepareDrawPackage()                                                    // Draw Pakage Constructor 
         {
             Color color = btnColor.SelectedColor;
             Color fillcolor = btnFillColor.SelectedColor;
@@ -1242,13 +1468,13 @@ namespace Server {
         {
             //ReplaceTargetColor(BM, _preBC, ((ColorButton)sender).SelectedColor);                  // BUG - faster but only works the second time
 
-            for (int x = 0; x < BM.Width; x++) {                                                    // Iterate over the pixels in the bitmap
+            for (int x = 0; x < BM.Width; x++) {                                                    // BUG Slow - Iterate over the pixels in the bitmap
                 for (int y = 0; y < BM.Height; y++) {
                     if (BM.GetPixel(x, y).A == _preBC.A
                         && BM.GetPixel(x, y).R == _preBC.R
                         && BM.GetPixel(x, y).G == _preBC.G
-                        && BM.GetPixel(x, y).B == _preBC.B) {    // Check if the current pixel has the original color                        
-                        BM.SetPixel(x, y, ((ColorButton)sender).SelectedColor);                                           // Replace the color of the current pixel with the replacement color
+                        && BM.GetPixel(x, y).B == _preBC.B) {                                       // Check if the current pixel has the original color                        
+                        BM.SetPixel(x, y, ((ColorButton)sender).SelectedColor);                     // Replace the color of the current pixel with the replacement color
                     }
                 }
             }
@@ -1395,6 +1621,7 @@ namespace Server {
         }
         #endregion
 
+
         #region Network
         // Host, Join, and DC
         private void Connected(bool status)                                                         // Client - Mode Tasks 
@@ -1455,7 +1682,7 @@ namespace Server {
                 }
             });
         }
-        private void Disconnect(long id = -1)                                                       // Disconnect ID / All if empty 
+        private void Disconnect(long id = -1)                                                       // Host - Disconnect ID / All if empty 
         {
             if (disconnect == null || !disconnect.IsAlive) {
                 disconnect = new Thread(() => {                                                     // New Thread
@@ -1528,44 +1755,6 @@ namespace Server {
                 HostSendPublic(SystemMsg(msg), tmp.id);                                             // Broadcast the DC
             } else { obj.client.Close(); }
         }
-        private void Listener(IPAddress ip, int port)                                               // H - Multi TCP to clients 
-        {
-            TcpListener listener = null;
-            try {
-                listener = new TcpListener(ip, port);
-                listener.Start();
-                Listening(true);
-                while (listening) {
-                    if (listener.Pending()) {
-                        try {
-                            MyPlayers obj = new() {
-                                id = GetLowestFreeID(clientsDataGridView),                          // find < available number from grid
-                                username = new StringBuilder(),
-                                client = listener.AcceptTcpClient(),
-                                color = new Color()
-                            };
-                            obj.stream = obj.client.GetStream();
-                            obj.buffer = new byte[obj.client.ReceiveBufferSize];
-                            obj.data = new StringBuilder();
-                            obj.handle = new EventWaitHandle(false, EventResetMode.AutoReset);
-                            Thread th = new(() => Connection(obj)) {
-                                IsBackground = true
-                            };
-                            th.Start();
-                        } catch (Exception ex) {
-                            Console(ErrorMsg("HL1: " + ex.Message));
-                        }
-                    } else {
-                        Thread.Sleep(500);
-                    }
-                }
-                Listening(false);
-            } catch (Exception ex) {
-                Console(ErrorMsg("HL2: " + ex.Message));
-            } finally {
-                listener?.Server.Close();
-            }
-        }
         private int GetLowestFreeID(DataGridView DGV)                                               // Lowest Free ID for clients from DGV 
         {
             int lowestFreeID = 1;               // Start with 1
@@ -1623,7 +1812,7 @@ namespace Server {
         }
 
         // Client Send
-        private void Send(string msg)                                                               // Client version 
+        private void Send(string msg)                                                               // Client Send 
         {
             if (!listening) {
                 var encryptedString = AesOperation.EncryptString(AeS, msg);
@@ -1634,7 +1823,7 @@ namespace Server {
                 }
             }
         }
-        private void BeginWrite(string msg)                                                         // Client version 
+        private void BeginWrite(string msg)                                                         // Client Begin 
         {
             byte[] buffer = Encoding.UTF8.GetBytes(msg);
             if (clientObject.client.Connected) {
@@ -1645,7 +1834,7 @@ namespace Server {
                 }
             }
         }
-        private void Write(IAsyncResult result)                                                     // Client write 
+        private void Write(IAsyncResult result)                                                     // Client Write 
         {
             if (clientObject.client.Connected) {
                 try {
@@ -1657,7 +1846,7 @@ namespace Server {
         }
 
         // Host Send
-        private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host prepare to send Private message 
+        private void HostSendPrivate(string msg, MyPlayers obj)                                     // Host - send Private message 
         {
             var encryptedString = AesOperation.EncryptString(AeS, msg);
             if (send == null || send.IsCompleted) {
@@ -1666,7 +1855,7 @@ namespace Server {
                 send.ContinueWith(antecendent => HostBeginPrivate(encryptedString, obj));
             }
         }
-        private void HostSendPublic(string msg, long id = -1)                                       // Host prepare to send Public message 
+        private void HostSendPublic(string msg, long id = -1)                                       // Host - send Public message 
         {
             var encryptedString = AesOperation.EncryptString(AeS, msg);
             if (send == null || send.IsCompleted) {
@@ -1675,7 +1864,7 @@ namespace Server {
                 send.ContinueWith(antecendent => HostBeginPublic(encryptedString, id));
             }
         }
-        private void HostBeginPrivate(string msg, MyPlayers obj)                                    // Host BeginWrite Private message to stream 
+        private void HostBeginPrivate(string msg, MyPlayers obj)                                    // Host - BeginWrite Private message to stream 
         {
             byte[] buffer = Encoding.UTF8.GetBytes(msg);
             if (obj.client.Connected) {
@@ -1686,7 +1875,7 @@ namespace Server {
                 }
             }
         }
-        private void HostBeginPublic(string msg, long id = -1)                                      // Host BeginWrite Public -- set ID to lesser than zero to send to everyone 
+        private void HostBeginPublic(string msg, long id = -1)                                      // Host - BeginWrite Public -- set ID to lesser than zero to send to everyone 
         {
             byte[] buffer = Encoding.UTF8.GetBytes(msg);
             foreach (KeyValuePair<long, MyPlayers> obj in players) {
@@ -1699,7 +1888,7 @@ namespace Server {
                 }
             }
         }
-        private void HostEndWrite(IAsyncResult result)                                              // Host EndWrite 
+        private void HostEndWrite(IAsyncResult result)                                              // Host - EndWrite 
         {
             MyPlayers obj = (MyPlayers)result.AsyncState;
             if (obj.client.Connected) {
@@ -1712,7 +1901,7 @@ namespace Server {
         }
 
         // Handshake
-        private bool Authorize()                                                                    // Client Handshake 
+        private bool Authorize()                                                                    // Client - Handshake 
         {
             bool success = false;
             Dictionary<string, string> handShake = new() {                                          // Collect info to send as object Handshake
@@ -1740,7 +1929,7 @@ namespace Server {
             }
             return success;
         }
-        private bool Authorize(MyPlayers obj)                                                       // Host Handshake checks 
+        private bool Authorize(MyPlayers obj)                                                       // Host - Handshake 
         {
             bool success = false;
             while (obj.client.Connected) {
@@ -1759,7 +1948,7 @@ namespace Server {
             }
             return success;
         }
-        private void ReadAuth(IAsyncResult result)                                                  // H+C - Handshake 
+        private void ReadAuth(IAsyncResult result)                                                  // Handshake Readers 
         {
             if (listening) {                                                                        // Host read
                 MyPlayers obj = (MyPlayers)result.AsyncState;
@@ -1842,7 +2031,7 @@ namespace Server {
 
         #region Backwards Client Drawing Server
         // Client Server - Drawing File Transfer
-        private void SendDrawing()                                                                  // Drawing Send Routine 
+        private void SendDrawing()                                                                  // BW - Drawing Send Routine 
         {
             HostSendPublic("CMD:ReceiveDrawing");                                                   // CMD to make Client begin File server
 
@@ -1853,12 +2042,8 @@ namespace Server {
 
             SendFile(filePath);                                                                     // Send
             DeleteTemps(filePath);                                                                  // Clean
-        }
-
-
- 
-
-        private void SendFile(string fn)                                                            // Send file - FileName 
+        } 
+        private void SendFile(string fn)                                                            // BW - Send file - FileName 
         {
             try {
                 IPEndPoint ipEnd = new(IPAddress.Parse(txtAddress.Text), Convert.ToInt16(txtPort.Text) + 2);    // EG: 9002
@@ -1883,7 +2068,7 @@ namespace Server {
                 Console(ErrorMsg("SF: " + ex.Message));
             }
         }
-        private void ReceiveFile(Socket clientSocket, string n)                                     // Receive / Save / Show 
+        private void ReceiveFile(Socket clientSocket, string n)                                     // BW - Receive / Save / Show 
         {
             Console("Incoming file....");
             byte[] clientData = new byte[1024 * 5000];
@@ -1907,7 +2092,7 @@ namespace Server {
             G = Graphics.FromImage(BM);
 
         }
-        private void ListenForFile()                                                                // Client side Server for Drawing files 
+        private void ListenForFile()                                                                // BW - Client - Server for image files 
         {
             IPEndPoint ipEnd = new(IPAddress.Parse(txtAddress.Text), Convert.ToInt16(txtPort.Text) + 2);    // EG: 9002
             Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP); ;
@@ -1933,8 +2118,47 @@ namespace Server {
         }
         #endregion
 
+        // Host Server
+        private void Listener(IPAddress ip, int port)                                               // Host - TCP Listener 
+        {
+            TcpListener listener = null;
+            try {
+                listener = new TcpListener(ip, port);
+                listener.Start();
+                Listening(true);
+                while (listening) {
+                    if (listener.Pending()) {
+                        try {
+                            MyPlayers obj = new() {
+                                id = GetLowestFreeID(clientsDataGridView),                          // find < available number from grid
+                                username = new StringBuilder(),
+                                client = listener.AcceptTcpClient(),
+                                color = new Color()
+                            };
+                            obj.stream = obj.client.GetStream();
+                            obj.buffer = new byte[obj.client.ReceiveBufferSize];
+                            obj.data = new StringBuilder();
+                            obj.handle = new EventWaitHandle(false, EventResetMode.AutoReset);
+                            Thread th = new(() => Connection(obj)) {
+                                IsBackground = true
+                            };
+                            th.Start();
+                        } catch (Exception ex) {
+                            Console(ErrorMsg("HL1: " + ex.Message));
+                        }
+                    } else {
+                        Thread.Sleep(500);
+                    }
+                }
+                Listening(false);
+            } catch (Exception ex) {
+                Console(ErrorMsg("HL2: " + ex.Message));
+            } finally {
+                listener?.Server.Close();
+            }
+        }
         // Host Server - Drawing File Transfer
-        private void FileServe()                                                                    // Host File Server 
+        private void FileServe()                                                                    // Host - File Server 
         {
             try {
                 Thread.Sleep(100);                                                                  // Prep Server
@@ -1978,7 +2202,7 @@ namespace Server {
                 MessageBox.Show("FS: Connection error: " + w.ToString());
             }
         }
-        private void FileReceive()                                                                  // Client File Receiver 
+        private void FileReceive()                                                                  // Client - File Receiver 
         {
             Console("Connecting..");
             var client = new TcpClient(txtAddress.Text, Convert.ToInt16(txtPort.Text) + 1);         // Connect
@@ -2033,9 +2257,7 @@ namespace Server {
         }
 
         // Host and Client Read
-        //
-        //
-        private void Read(IAsyncResult result)                                                      // / *** READ ***/ 
+        private void Read(IAsyncResult result)                                                      // Read Routine 
         {
             if (listening) {                                                                        // Host stream reader
                 MyPlayers obj = (MyPlayers)result.AsyncState;
@@ -2051,91 +2273,10 @@ namespace Server {
                     obj.data.AppendFormat("{0}", Encoding.UTF8.GetString(obj.buffer, 0, bytes));
                     try {
                         if (obj.stream.DataAvailable) {
-                            obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);
-                        } else {
-                            // Host Receive
-                            string clientData = AesOperation.DecryptString(AeS, obj.data.ToString()); // Decrypt
-
-                            // Host Receive - PM
-                            if (clientData.StartsWith("{\"Msg\"")) {
-                                remoteMsg = true;
-                                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(clientData);
-                                switch (remoteMP.MsgType) {
-                                case "Private":
-                                    for (int p = 1; p <= players.Count; p++) {                  // Determine the PM Dest
-                                        if (remoteMP.To == players[p].username.ToString()) {    // Dest is a player   
-                                            HostSendPrivate(clientData, players[p]);            // Host - Send PM
-                                            Console(SystemMsg("PM Relayed."));
-                                            obj.data.Clear();
-                                            obj.handle.Set();
-                                            return;
-                                        } else if (remoteMP.To == txtName.Text.Trim()) {        // Dest is host
-                                            PostChat(remoteMP);                                 // Post Host PM
-                                            obj.data.Clear();
-                                            obj.handle.Set();
-                                            return;
-                                        }
-                                    }
-                                    break;
-                                case "Public":
-                                    PostChat(remoteMP);                                         // Host post
-                                    HostSendPublic(clientData, obj.id);                         // Host relay public message to other clients
-                                    obj.data.Clear();
-                                    obj.handle.Set();
-                                    break;
-                                default:
-                                    break;
-                                }
-                            }
-
-                            /*                            if (clientData.Contains("/msg")) {
-                                                            string[] pMSG = clientData.Split(':');
-                                                            for (int p = 1; p <= players.Count; p++) {                          // Determine the PM Dest
-                                                                if (pMSG[1] == players[p].username.ToString()) {                // Dest is a player        
-                                                                    HostSendPrivate(string.Format("{0} to you: {1}", obj.username, pMSG[2]), players[p]);   // Host - Send PM
-                                                                    Console(SystemMsg("PM Sent."));
-                                                                    obj.data.Clear();
-                                                                    obj.handle.Set();
-                                                                    return;
-                                                                } else if (pMSG[1] == txtName.Text.Trim()) {                    // Dest is host
-                                                                    PostChat(obj.username.ToString() + "to you", pMSG[2]);      // Post Host PM
-                                                                    obj.data.Clear();
-                                                                    obj.handle.Set();
-                                                                    return;
-                                                                }
-                                                            }
-                                                            Console(SystemMsg(string.Format("PM Not Sent. From: {0}  To: {1} -- {2} --", obj.username, pMSG[1], pMSG[2])));
-                                                            obj.data.Clear();
-                                                            obj.handle.Set();
-                                                            return;
-                                                        }*/
-
-                            // Host receive - Drawing
-                            if (clientData.StartsWith("{\"PenColor\"")) {
-                                remoteDraw = true;
-                                DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(clientData);
-                                DrawShape(remoteDP);
-                                HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
-                                obj.data.Clear();
-                                obj.handle.Set();
-                                return;
-                            }
-
-                            // Host receive - FillTool
-                            if (clientData.StartsWith("{\"FillColor\"")) {
-                                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(clientData);
-                                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
-                                HostSendPublic(clientData, obj.id);                                  // Host relay client drawing to other clients
-                                obj.data.Clear();
-                                obj.handle.Set();
-                                return;
-                            }
-
-                            /*                            // Host Receive - Public Message
-                                                        PostChat(obj.username.ToString(), clientData);                          // Host post
-                                                        HostSendPublic(string.Format("{0}:{1}", obj.username, clientData), obj.id);    // Host relay public message to other clients
-                                                        obj.data.Clear();
-                                                        obj.handle.Set();*/
+                            obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);   // Host Receive
+                        } else {                            
+                            string clientData = AesOperation.DecryptString(AeS, obj.data.ToString());   // Decrypt
+                            HostDataHandler(obj, clientData);                                       // Host Data Handler
                         }
                     } catch (Exception ex) {
                         obj.data.Clear();
@@ -2146,7 +2287,7 @@ namespace Server {
                     obj.client.Close();
                     obj.handle.Set();
                 }
-            }                                                                                // Client stream reader
+            }                                                                           // End of Host stream reader
             else {
                 if (clientObject == null) { return; }
                 int bytes = 0;
@@ -2164,78 +2305,7 @@ namespace Server {
                             clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(Read), null);
                         } else {
                             string hostData = AesOperation.DecryptString(AeS, clientObject.data.ToString()); // Decrypt
-
-                            if (hostData.StartsWith("{\"Id\"")) {                                   // Client Receive - grid update
-                                ClearDataGrid();                                                    // Clear DataGrid 
-                                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                                foreach (string message in messages) {
-                                    PlayerPackage player = JsonConvert.DeserializeObject<PlayerPackage>(message);
-                                    Color argbColor = Color.FromArgb(player.Color[0], player.Color[1], player.Color[2], player.Color[3]);
-                                    AddToGrid(player.Id, player.Name, argbColor);
-                                }
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
-                            }
-                            if (hostData.StartsWith("{\"Msg\"")) {                                  // Client Receive - Message
-                                remoteMsg = true;
-                                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(hostData);
-                                PostChat(remoteMP);
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
-                            }
-                            if (hostData.StartsWith("SYSTEM:")) {                                   // Client Receive - System Message
-                                string[] sysParts = hostData.Split(':');
-                                Console(sysParts[2]);
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
-                            }
-
-                            if (hostData.StartsWith("{\"PenColor\"")) {                              // Client Receive - Drawing
-                                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                                foreach (string message in messages) {
-                                    DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
-                                    remoteDraw = true;
-                                    DrawShape(remoteDP);
-                                }
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
-                            }
-
-                            if (hostData.StartsWith("{\"FillColor\"")) {                            // Client Receive - FillTool
-                                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(hostData);
-                                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
-                            }
-
-                            if (hostData.StartsWith("CMD:")) {                                      // Client Receive - Commands
-                                string[] cmdParts = hostData.Split(':');
-                                switch (cmdParts[1]) {
-                                case "ClearDrawing":
-                                    Button sender = new();
-                                    EventArgs e = new();
-                                    CmdClear_Click(sender, e);
-                                    break;
-                                case "ReceiveDrawing":
-                                    ListenForFile();                                            // Client open server to receive
-                                    break;
-                                default:
-                                    break;
-                                }
-                                clientObject.data.Clear();
-                                clientObject.handle.Set();
-                                return;
-                            }
-
-                            string[] dataParts = hostData.Split(':');
-                            Console("Unrecognized: " + hostData);                                 // Client Receive - Unformated Text
-                            clientObject.data.Clear();
-                            clientObject.handle.Set();
+                            ClientDataHandler(hostData);                                            // Client Data Handler
                         }
                     } catch (Exception ex) {
                         clientObject.data.Clear();
@@ -2246,11 +2316,8 @@ namespace Server {
                     clientObject.client.Close();
                     clientObject.handle.Set();
                 }
-            }
+            }                                                                                   // End of CLient stream Reader
         }
-        //
-        //
-        // / *** READ ***/ 
         #endregion
     }
 }
