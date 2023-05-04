@@ -1,11 +1,14 @@
 ﻿using Newtonsoft.Json;
+using Server.Properties;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -19,9 +22,27 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Unclassified.UI;
 using static Server.Encryption;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
 namespace Server {
     public partial class GameServer : Form {
+
+        public class CustomGroupBox : System.Windows.Forms.GroupBox
+        {
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+
+                // Create a new Pen with the desired border color
+                Color borderColor = Color.Red;
+                using (Pen pen = new Pen(borderColor, 2)) {
+                    // Draw a rectangle around the group box
+                    Rectangle rect = new Rectangle(0, 7, Width - 1, Height - 8);
+                    e.Graphics.DrawRectangle(pen, rect);
+                }
+            }
+        }
+
         #region Declarations
         #region Host Specific Declarations
         private bool listening = false;                                                             // Host / Client Mode Marker
@@ -103,13 +124,24 @@ namespace Server {
         #endregion
 
         #region General Declarations
-        public class MessagePackage                                                                 // Details needed to Draw and Broadcast 
+        private class MessagePackage                                                                 // Details needed to Draw and Broadcast 
         {
             public string Msg { get; set; }
             public string From { get; set; }
             public string To { get; set; }
             public string MsgType { get; set; }
         }
+        private class ClientSaveSettings {
+            public string UserName { get; set; }
+            public string UserColor { get; set; }
+            public string RoomKey { get; set; }
+            public string Address { get; set; }
+            public string Port { get; set; }
+
+            public DateTime LastLogin { get; set; }
+            public bool IsDarkModeEnabled { get; set; }
+        }
+        private bool DarkMode { get; set; }
         private bool remoteMsg = false;
         private TabPage pmTab;
         private Task send = null;
@@ -126,12 +158,14 @@ namespace Server {
         #endregion
 
 
+
         #region Form
         public GameServer(/*string PlayerName*/)                                                    // Main 
         {
             InitializeComponent();
             //AllocConsole();
             txtName.Text = Environment.UserName;
+
 
             /* // Opens multiple forms
                         txtName.Text = PlayerName;
@@ -153,14 +187,18 @@ namespace Server {
                         }
             */
 
-            /* Drawing */
+            #region Drawing 
             BM = new(picDrawing.Width, picDrawing.Height);
             picDrawing.Image = BM;
             G = Graphics.FromImage(BM);
             G.Clear(Color.Transparent);
+            #endregion
         }
         private void GameServer_Load(object sender, EventArgs e)                                    // On Open 
         {
+            LoadSettings();
+            Darkmode(DarkMode);
+
             ContextMenu tabCM = new();
             tabCM.MenuItems.Add("BG Color");
             tabCM.MenuItems.Add("Clear");
@@ -169,7 +207,6 @@ namespace Server {
             tabCM.MenuItems[1].Click += new EventHandler(Clear_Click);
             tabCM.MenuItems[2].Click += new EventHandler(ExportText);
             tabSections.ContextMenu = tabCM;
-
             pmTab = tabSections.TabPages[2];                                                            // Save the PM Tab
             tabSections.TabPages.Remove(pmTab);                                                         // "hIdE tHe tAB"
 
@@ -179,7 +216,7 @@ namespace Server {
                 clientsDataGridView.Rows.Add(row);
             }*/
         }
-        private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit - Clean up 
+        private void GameServer_FormClosing(object sender, FormClosingEventArgs e)                  // On Exit - Clean up - Save Settings 
         {
             picDrawing.Dispose();
             BM.Dispose();
@@ -191,10 +228,140 @@ namespace Server {
                 clientObject.client.Close();
             }
             Disconnect();
+            SaveSettings();
         }
         #endregion
 
         #region Routines
+        private void LoadSettings()                                                                 // Load settings from File 
+        {
+            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);// Retrieve the application data folder path
+            string appFolder = Path.Combine(appDataFolder, "DoolittleInc\\GSDEV");                  // Create a directory for your application if it doesn't exist yet
+            string settingsFilePath = Path.Combine(appFolder, $"config.txt");                       // File in the application folder
+
+            if (File.Exists(settingsFilePath)) {                                                    // Check if the loadSettings file exists
+                ClientSaveSettings loadSettings = new();                                            // Create a new loadSettings object
+                using StreamReader reader = new(settingsFilePath);                                // Read the loadSettings from the loadSettings file
+                string line;
+                while ((line = reader.ReadLine()) != null) {
+                    string[] parts = line.Split('=');
+                    string key = parts[0];
+                    string value = parts[1];
+
+                    switch (key) {
+                        case "UserName":
+                            loadSettings.UserName = value;
+                            txtName.Text = loadSettings.UserName;
+                            break;
+                        case "LastLogin":
+                            loadSettings.LastLogin = DateTime.Parse(value);
+                            break;
+                        case "IsDarkModeEnabled":
+                            loadSettings.IsDarkModeEnabled = bool.Parse(value);
+                            DarkMode = loadSettings.IsDarkModeEnabled;
+                            break;
+                        case "UserColor":
+                            loadSettings.UserColor = value;
+                            cmdColor.SelectedColor = ArgbColor(loadSettings.UserColor);
+                            break;
+                        case "RoomKey":
+                            loadSettings.RoomKey = value;
+                            txtRoomKey.Text = loadSettings.RoomKey;
+                            break;
+                        case "Address":
+                            loadSettings.Address = value;
+                            txtAddress.Text = loadSettings.Address;
+                            break;
+                        case "Port":
+                            loadSettings.Port = value;
+                            txtPort.Text = loadSettings.Port;
+                            break;
+
+                    }
+                }
+                // Apply the loaded Settings             
+            } else {
+                Console("Settings file not found - loading defaults.");                             // Output load fail
+            }
+        }    
+        private void SaveSettings()                                                                 // Save settings to File 
+        {            
+            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);// Retrieve the application data folder path            
+            string appFolder = Path.Combine(appDataFolder, "DoolittleInc\\GSDEV");                  // Create a directory for your application if it doesn't exist yet
+            if (!Directory.Exists(appFolder)) {
+                Directory.CreateDirectory(appFolder);
+            }
+            string settingsFilePath = Path.Combine(appFolder, $"config.txt");                       // File in the application folder
+            
+            Color pCol = cmdColor.SelectedColor;
+            ClientSaveSettings saveSettings = new() {
+                UserName = txtName.Text.Trim(),
+                UserColor = ColorToString(ref pCol),
+                RoomKey = txtRoomKey.Text,
+                Address = txtAddress.Text,
+                Port = txtPort.Text,
+                IsDarkModeEnabled = DarkMode,
+                LastLogin = DateTime.Now
+            };                                                // Settings to Save
+
+            using StreamWriter writer = new(settingsFilePath);                                    // Save settings
+            foreach (var prop in typeof(ClientSaveSettings).GetProperties()) {
+                string key = prop.Name;
+                string value = prop.GetValue(saveSettings).ToString();
+                writer.WriteLine(key + "=" + value);
+            }
+        }
+
+
+        private void Darkmode(bool status)                                                          // OG Darkmode 
+        {
+            DarkMode = status;
+            if (DarkMode) {
+                ChangeControlColors(this, Color.Black, SystemColors.ControlDark, SystemColors.ControlText, SystemColors.ControlDarkDark);
+            } else {
+                ChangeControlColors(this, SystemColors.WindowText, SystemColors.Window, SystemColors.WindowText, SystemColors.ScrollBar);
+            }
+
+        }
+        private void ChangeControlColors(Control control, Color primaryCol, Color secondaryCol, Color tertiaryCol, Color quaternary)
+        {
+            foreach (Control childControl in control.Controls) {
+                Console(childControl.GetType().Name + " " + childControl.Name);
+                switch (childControl.GetType().Name) {
+                    case "TextBox":
+                    case "RichTextBox":
+                    case "Button":
+                        childControl.ForeColor = primaryCol;
+                        childControl.BackColor = secondaryCol;
+                        break;
+                    case "SplitContainer":
+                        childControl.ForeColor = tertiaryCol;
+                        childControl.BackColor = quaternary;
+                        break;
+                    case "SplitterPanel":
+                    case "FlowLayoutPanel":
+                        foreach (Panel panel in control.Controls) {
+                            panel.ForeColor = tertiaryCol;
+                            panel.BackColor = quaternary;
+                        }
+                        break;
+                    case "TabControl":
+                        foreach (TabPage page in childControl.Controls) {
+                            page.ForeColor = tertiaryCol;
+                            page.BackColor = quaternary;
+                        }
+                        break;
+                    case "DataGridView":
+                        ((System.Windows.Forms.DataGridView)childControl).BackgroundColor = quaternary;
+                        break;
+                }
+
+                if (childControl.HasChildren) {
+                    ChangeControlColors(childControl, primaryCol, secondaryCol, tertiaryCol, quaternary);                    // if childControl has child controls, call this method recursively
+                }
+            }
+        }
+
         private RichTextBox ReturnFirstBoxFrom(object sender)                                       // Get RTB from Sender(Menu) 
         {                              
             MenuItem menuItem = sender as MenuItem;                                                 // Get the MenuItem that triggered the event
@@ -725,6 +892,14 @@ namespace Server {
                                         }
                                     }
                                 }*/
+                    }
+                    if (msg.StartsWith("/darkmode")) {
+                        if (msg.IndexOf("on", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("1")) {
+                            DarkMode = true;
+                        } else if (msg.IndexOf("off", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("0")) {
+                            DarkMode = false;
+                        } else { DarkMode = !DarkMode; }
+                        Darkmode(DarkMode);
                     }
 
                     if (msg.StartsWith("/send")) {                                              // Drawing - Send the Image to Clients

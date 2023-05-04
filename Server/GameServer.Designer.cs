@@ -32,8 +32,8 @@ namespace Server
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tabSections = new System.Windows.Forms.TabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
             this.txtConsole = new System.Windows.Forms.RichTextBox();
@@ -62,30 +62,30 @@ namespace Server
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.gbSettings = new System.Windows.Forms.GroupBox();
+            this.gbSettings = new CustomGroupBox();
             this.lblColor = new System.Windows.Forms.Label();
-            this.cmdColor = new Unclassified.UI.ColorButton();
             this.gbDrawings = new System.Windows.Forms.GroupBox();
             this.gbBG = new System.Windows.Forms.GroupBox();
             this.cbTrans = new System.Windows.Forms.CheckBox();
             this.btnClearAll = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.btnClear = new System.Windows.Forms.Button();
-            this.btnBGColor = new Unclassified.UI.ColorButton();
             this.gbBrush = new System.Windows.Forms.GroupBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.btnFillColor = new Unclassified.UI.ColorButton();
             this.cbFillDraw = new System.Windows.Forms.CheckBox();
             this.cbBType = new System.Windows.Forms.ComboBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.btnColor = new Unclassified.UI.ColorButton();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
             this.btnSetDraw = new System.Windows.Forms.Button();
             this.picDrawing = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
+            this.cmdColor = new Unclassified.UI.ColorButton();
+            this.btnBGColor = new Unclassified.UI.ColorButton();
+            this.btnFillColor = new Unclassified.UI.ColorButton();
+            this.btnColor = new Unclassified.UI.ColorButton();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -379,9 +379,9 @@ namespace Server
             // identifier
             // 
             this.identifier.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.Color.Black;
-            this.identifier.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.Transparent;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.Color.Black;
+            this.identifier.DefaultCellStyle = dataGridViewCellStyle1;
             this.identifier.HeaderText = "#";
             this.identifier.MinimumWidth = 28;
             this.identifier.Name = "identifier";
@@ -392,9 +392,9 @@ namespace Server
             // name
             // 
             this.name.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.Transparent;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.Color.Black;
-            this.name.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.Transparent;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.Black;
+            this.name.DefaultCellStyle = dataGridViewCellStyle2;
             this.name.HeaderText = "Name";
             this.name.MaxInputLength = 20;
             this.name.MinimumWidth = 50;
@@ -537,18 +537,6 @@ namespace Server
             this.lblColor.Text = "Color:";
             this.lblColor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // cmdColor
-            // 
-            this.cmdColor.BackColor = System.Drawing.Color.Yellow;
-            this.cmdColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cmdColor.Location = new System.Drawing.Point(110, 25);
-            this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
-            this.cmdColor.Name = "cmdColor";
-            this.cmdColor.SelectedColor = System.Drawing.Color.Yellow;
-            this.cmdColor.Size = new System.Drawing.Size(25, 20);
-            this.cmdColor.TabIndex = 56;
-            this.cmdColor.UseVisualStyleBackColor = false;
-            // 
             // gbDrawings
             // 
             this.gbDrawings.Controls.Add(this.gbBG);
@@ -620,19 +608,6 @@ namespace Server
             this.btnClear.UseVisualStyleBackColor = true;
             this.btnClear.Click += new System.EventHandler(this.CmdClear_Click);
             // 
-            // btnBGColor
-            // 
-            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
-            this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBGColor.Location = new System.Drawing.Point(5, 16);
-            this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
-            this.btnBGColor.Name = "btnBGColor";
-            this.btnBGColor.SelectedColor = System.Drawing.Color.Linen;
-            this.btnBGColor.Size = new System.Drawing.Size(42, 20);
-            this.btnBGColor.TabIndex = 0;
-            this.btnBGColor.UseVisualStyleBackColor = false;
-            this.btnBGColor.SelectedColorChanged += new System.EventHandler(this.BGColorChange);
-            // 
             // gbBrush
             // 
             this.gbBrush.Controls.Add(this.label3);
@@ -659,18 +634,6 @@ namespace Server
             this.label3.Size = new System.Drawing.Size(52, 13);
             this.label3.TabIndex = 7;
             this.label3.Text = "Fill Colour";
-            // 
-            // btnFillColor
-            // 
-            this.btnFillColor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
-            this.btnFillColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnFillColor.Location = new System.Drawing.Point(58, 72);
-            this.btnFillColor.Margin = new System.Windows.Forms.Padding(0);
-            this.btnFillColor.Name = "btnFillColor";
-            this.btnFillColor.SelectedColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
-            this.btnFillColor.Size = new System.Drawing.Size(28, 20);
-            this.btnFillColor.TabIndex = 6;
-            this.btnFillColor.UseVisualStyleBackColor = false;
             // 
             // cbFillDraw
             // 
@@ -717,18 +680,6 @@ namespace Server
             this.label1.Size = new System.Drawing.Size(37, 13);
             this.label1.TabIndex = 2;
             this.label1.Text = "Colour";
-            // 
-            // btnColor
-            // 
-            this.btnColor.BackColor = System.Drawing.Color.Green;
-            this.btnColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnColor.Location = new System.Drawing.Point(5, 15);
-            this.btnColor.Margin = new System.Windows.Forms.Padding(0);
-            this.btnColor.Name = "btnColor";
-            this.btnColor.SelectedColor = System.Drawing.Color.Green;
-            this.btnColor.Size = new System.Drawing.Size(28, 20);
-            this.btnColor.TabIndex = 0;
-            this.btnColor.UseVisualStyleBackColor = false;
             // 
             // nudSize
             // 
@@ -813,6 +764,55 @@ namespace Server
             this.tPing.Interval = 5000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
             // 
+            // cmdColor
+            // 
+            this.cmdColor.BackColor = System.Drawing.Color.Yellow;
+            this.cmdColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cmdColor.Location = new System.Drawing.Point(110, 25);
+            this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
+            this.cmdColor.Name = "cmdColor";
+            this.cmdColor.SelectedColor = System.Drawing.Color.Yellow;
+            this.cmdColor.Size = new System.Drawing.Size(25, 20);
+            this.cmdColor.TabIndex = 56;
+            this.cmdColor.UseVisualStyleBackColor = false;
+            // 
+            // btnBGColor
+            // 
+            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
+            this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBGColor.Location = new System.Drawing.Point(5, 16);
+            this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnBGColor.Name = "btnBGColor";
+            this.btnBGColor.SelectedColor = System.Drawing.Color.Linen;
+            this.btnBGColor.Size = new System.Drawing.Size(42, 20);
+            this.btnBGColor.TabIndex = 0;
+            this.btnBGColor.UseVisualStyleBackColor = false;
+            this.btnBGColor.SelectedColorChanged += new System.EventHandler(this.BGColorChange);
+            // 
+            // btnFillColor
+            // 
+            this.btnFillColor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnFillColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnFillColor.Location = new System.Drawing.Point(58, 72);
+            this.btnFillColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnFillColor.Name = "btnFillColor";
+            this.btnFillColor.SelectedColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnFillColor.Size = new System.Drawing.Size(28, 20);
+            this.btnFillColor.TabIndex = 6;
+            this.btnFillColor.UseVisualStyleBackColor = false;
+            // 
+            // btnColor
+            // 
+            this.btnColor.BackColor = System.Drawing.Color.Green;
+            this.btnColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnColor.Location = new System.Drawing.Point(5, 15);
+            this.btnColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnColor.Name = "btnColor";
+            this.btnColor.SelectedColor = System.Drawing.Color.Green;
+            this.btnColor.Size = new System.Drawing.Size(28, 20);
+            this.btnColor.TabIndex = 0;
+            this.btnColor.UseVisualStyleBackColor = false;
+            // 
             // GameServer
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
@@ -880,7 +880,7 @@ namespace Server
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.GroupBox gbSettings;
+        private CustomGroupBox gbSettings;
         private System.Windows.Forms.GroupBox gbDrawings;
         private System.Windows.Forms.RichTextBox txtLobby;
         private System.Windows.Forms.Timer tPing;
