@@ -201,6 +201,7 @@ namespace Server {
         {
             LoadSettings();
 
+            #region Themes
             Themes.Add("Nature", new Dictionary<ThemeColor, Color>
             {
                 { ThemeColor.Primary, Color.Green },
@@ -229,6 +230,8 @@ namespace Server {
                 { ThemeColor.Tertiary, Color.OrangeRed },
                 { ThemeColor.Quaternary, Color.DarkRed }
             });
+            #endregion
+
             Darkmode(DarkMode);
 
             ContextMenu tabCM = new();
@@ -239,8 +242,8 @@ namespace Server {
             tabCM.MenuItems[1].Click += new EventHandler(ClearTXT);
             tabCM.MenuItems[2].Click += new EventHandler(ExportText);
             tabSections.ContextMenu = tabCM;
-            pmTab = tabSections.TabPages[2];                                                            // Save the PM Tab
-            tabSections.TabPages.Remove(pmTab);                                                         // "hIdE tHe tAB"
+            pmTab = tabSections.TabPages[2];                                                        // Save the PM Tab
+            tabSections.TabPages.Remove(pmTab);                                                     // "hIdE tHe tAB"
 
             /* // Fills the Grid            
             for (int i = 0; i <= 3;i++){
@@ -557,21 +560,19 @@ namespace Server {
             }
         }
 
-        private void Darkmode(bool status)                                                          // Darkmode 
+        private void Darkmode(bool status)                                                          // Toggles Darkmode vs Theme 
         {
             DarkMode = status;
             if (DarkMode) {
                 ChangeControlColors(this, Color.Black, SystemColors.ControlDark, SystemColors.ControlText, SystemColors.ControlDarkDark);
             } else {
-                if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {
-                    // If a matching dictionary was found, access its values
+                if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {  // Find the dictionary
                     Color primaryColor = matchingDictionary[ThemeColor.Primary];
                     Color secondaryColor = matchingDictionary[ThemeColor.Secondary];
                     Color tertiaryColor = matchingDictionary[ThemeColor.Tertiary];
                     Color quaternaryColor = matchingDictionary[ThemeColor.Quaternary];
 
-                    ChangeControlColors(this, primaryColor, secondaryColor, tertiaryColor, quaternaryColor);
-                    // Do something with the colors...
+                    ChangeControlColors(this, primaryColor, secondaryColor, tertiaryColor, quaternaryColor); // Set the Theme
                 }  
 
                 /*
