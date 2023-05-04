@@ -10,7 +10,7 @@ Client / Server application with public broadcast and private send methods. : [G
 * Key/Password and Unique-name Authorizations
 * Multiplayer Drawing / Whiteboard
 * Public and Private Chats w/ Colour (Color Controls by: [Copyright (c) 2012, Yves Goergen](http://unclassified.software/) )
-* Client list (click to add '/msg clientname' for PM)
+* Client list & ChatTab can be clicked to add '/msg clientname' for PMs
 * Command Line History (up/down arrows)
 * Save/Load application settings to file
 * Exportable Console and Message logs
