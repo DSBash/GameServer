@@ -23,6 +23,7 @@ Features or Routines can be activated by typing them into the 'Send Message Box'
 >*  /save = Saves the current Drawing to file
 >*  /export = Saves the current tabs Text box contents to file
 >*  /darkmode <on|off|null> = Toggles between Darkmode and System colours
+>*  /debug <0|1|2> = Sets Debug console output level
 >*  /theme <name = sets the theme to theme by name | null = prints Dictionary of Theme's to Console>
 #### Host only
 >*  /send = Test feature to have clients become file server to receive current Host Drawing
