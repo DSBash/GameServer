@@ -46,5 +46,4 @@ Transparancy and True-Transparancy to see items below.
 ### To Do:
 - add imagetext to drawings
 - flood control
-- debug mode(s)
 - incorporate with : [GridGame](https://github.com/DSBash/GridGame)
