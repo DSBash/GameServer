@@ -19,10 +19,11 @@ Client / Server application with public broadcast and private send methods. : [G
 Public and Private messages that use colour, and conversations in Tabs for easy reading. Messages have Date and Time pre-fix for refrence.
 Features or Routines can be activated by typing them into the 'Send Message Box' such as:
 #### Shared
->*  /msg UserName Message
+>*  /msg < <UserName> > < <Message> >
 >*  /save = Saves the current Drawing to file
 >*  /export = Saves the current tabs Text box contents to file
 >*  /darkmode <on|off|null> = Toggles between Darkmode and System colours
+>*  /theme <name = sets the theme to theme by name | null = prints Dictionary of Theme's to Console>
 #### Host only
 >*  /send = Test feature to have clients become file server to receive current Host Drawing
 #### Client only
