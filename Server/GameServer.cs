@@ -37,9 +37,6 @@ namespace Server {
         private bool listening = false;                                                             // Host / Client Mode Marker
         private Thread listener = null;                                                             // Host TCP Listener
         private Thread disconnect = null;                                                           // Manage Disconnects
-#pragma warning disable CS0649 // Field 'GameServer.drawingSocket' is never assigned to, and will always have its default value null
-        private readonly TcpListener drawingSocket;                                                 // For sending image of the drawing
-#pragma warning restore CS0649 // Field 'GameServer.drawingSocket' is never assigned to, and will always have its default value null
         public class PlayerPackage                                                                  // To Broadcast to Clients 
         {
             public int Id { get; set; }
@@ -115,6 +112,7 @@ namespace Server {
         #endregion
 
         #region General Declarations
+        private int DebugLVL = 1;                                                                   // <0|1|2> = Sets Debug console output level used in Stacktrace
         private class CustomizationSettings                                                         // Details save to and loaded from File 
         {
             public string UserName { get; set; }
@@ -136,7 +134,8 @@ namespace Server {
             Tertiary,
             Quaternary
         }
-        Dictionary<ThemeColor, Color> Nature = new();
+        private static readonly Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new(StringComparer.OrdinalIgnoreCase);
+       // Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new();
         #endregion
 
         #region Message Settings
@@ -161,7 +160,7 @@ namespace Server {
 
         #endregion
         #endregion
-        private readonly Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new Dictionary<string, Dictionary<ThemeColor, Color>>();
+
 
         #region Form
         public GameServer(/*string PlayerName*/)                                                    // Main 
@@ -209,26 +208,82 @@ namespace Server {
                 { ThemeColor.Tertiary, Color.YellowGreen },
                 { ThemeColor.Quaternary, Color.DarkSeaGreen }
             });
-            Themes.Add("Ocean", new Dictionary<ThemeColor, Color>
+            Themes.Add("Aqua", new Dictionary<ThemeColor, Color>
             {
                 { ThemeColor.Primary, Color.Blue },
-                { ThemeColor.Secondary, Color.White },
-                { ThemeColor.Tertiary, Color.Turquoise },
-                { ThemeColor.Quaternary, Color.DarkSeaGreen }
+                { ThemeColor.Secondary, Color.Aquamarine },
+                { ThemeColor.Tertiary, Color.DarkSeaGreen },
+                { ThemeColor.Quaternary, Color.Turquoise }
             });
             Themes.Add("Greens", new Dictionary<ThemeColor, Color>
             {
-                { ThemeColor.Primary, Color.Green },
-                { ThemeColor.Secondary, Color.YellowGreen },
-                { ThemeColor.Tertiary, Color.ForestGreen },
-                { ThemeColor.Quaternary, Color.DarkSeaGreen }
+                { ThemeColor.Primary, Color.LimeGreen },
+                { ThemeColor.Secondary, Color.DarkGreen },
+                { ThemeColor.Tertiary, Color.YellowGreen },
+                { ThemeColor.Quaternary, Color.ForestGreen }
             });
-            Themes.Add("Reds", new Dictionary<ThemeColor, Color>
+            Themes.Add("Rose", new Dictionary<ThemeColor, Color>
             {
-                { ThemeColor.Primary, Color.Red },
-                { ThemeColor.Secondary, Color.RosyBrown },
-                { ThemeColor.Tertiary, Color.OrangeRed },
-                { ThemeColor.Quaternary, Color.DarkRed }
+                { ThemeColor.Primary, Color.DarkRed },
+                { ThemeColor.Secondary, Color.MistyRose },
+                { ThemeColor.Tertiary, Color.Red },
+                { ThemeColor.Quaternary, Color.RosyBrown }
+            });
+            Themes.Add("Yellows", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.DarkKhaki },
+                { ThemeColor.Secondary, Color.Gold },
+                { ThemeColor.Tertiary, Color.Yellow },
+                { ThemeColor.Quaternary, Color.LightYellow }
+            });
+            Themes.Add("Blues", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.Blue },
+                { ThemeColor.Secondary, Color.LightSkyBlue },
+                { ThemeColor.Tertiary, Color.LightSteelBlue },
+                { ThemeColor.Quaternary, Color.DarkBlue }
+            });
+            Themes.Add("Browns", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.SaddleBrown },
+                { ThemeColor.Secondary, Color.Chocolate },
+                { ThemeColor.Tertiary, Color.Brown },
+                { ThemeColor.Quaternary, Color.Tan }
+            });
+            Themes.Add("Oranges", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.DarkOrange },
+                { ThemeColor.Secondary, Color.OrangeRed },
+                { ThemeColor.Tertiary, Color.Orange },
+                { ThemeColor.Quaternary, Color.Goldenrod }
+            });
+            Themes.Add("Grays", new Dictionary<ThemeColor, Color>
+            {
+                { ThemeColor.Primary, Color.DarkSlateGray },
+                { ThemeColor.Secondary, Color.Gray },
+                { ThemeColor.Tertiary, Color.LightGray },
+                { ThemeColor.Quaternary, Color.Silver }
+            });
+            Themes.Add("BlackRed", new Dictionary<ThemeColor, Color>
+{
+                { ThemeColor.Primary, Color.Black },
+                { ThemeColor.Secondary, Color.Red },
+                { ThemeColor.Tertiary, Color.Black },
+                { ThemeColor.Quaternary, Color.LightSalmon }
+            });
+            Themes.Add("BlackGreen", new Dictionary<ThemeColor, Color>
+{
+                { ThemeColor.Primary, Color.Black },
+                { ThemeColor.Secondary, Color.Green },
+                { ThemeColor.Tertiary, Color.Black },
+                { ThemeColor.Quaternary, Color.LimeGreen }
+            });
+            Themes.Add("BlackBlue", new Dictionary<ThemeColor, Color>
+{
+                { ThemeColor.Primary, Color.Black },
+                { ThemeColor.Secondary, Color.Blue },
+                { ThemeColor.Tertiary, Color.Black },
+                { ThemeColor.Quaternary, Color.LightSteelBlue }
             });
             #endregion
 
@@ -271,9 +326,32 @@ namespace Server {
         }
         #endregion
 
+
         #region Routines
         private void CommandHandler(object sender, KeyEventArgs e, string msg)                      // Handles "/" CLI commands 
-{
+        {
+            if (msg.StartsWith("/darkmode")) {                                                      // UI - Toggles Theme/DarMode
+                if (msg.IndexOf("on", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("1")) {
+                    DarkMode = true;
+                } else if (msg.IndexOf("off", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("0")) {
+                    DarkMode = false;
+                } else { DarkMode = !DarkMode; }
+
+                Darkmode(DarkMode);
+            }
+
+            if (msg.StartsWith("/debug")) {                                                        // Sets Debug message level <0=Off|1=Normal|2=More>
+                if (Convert.ToInt16(msg.Substring(6).Trim()) >= 0 && Convert.ToInt16(msg.Substring(6).Trim()) <= 2) { DebugLVL = Convert.ToInt16(msg.Substring(6).Trim()); }
+            }
+
+            if (msg.StartsWith("/export")) {                                                        // Export Tab related Text
+                ExportText(sender, e);
+            }
+
+            if (msg.StartsWith("/help")) {                                                          // Console out Help
+                Console("https://raw.githubusercontent.com/DSBash/GameServer/master/README.md");
+            }
+
             if (msg.StartsWith("/msg")) {                                                           // Client Send PM
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {
                     if (msg.Contains(row.Cells[1].Value.ToString())) {                              // if name in grid
@@ -284,19 +362,6 @@ namespace Server {
                         PostChat(MessagePack(hostPM, txtName.Text.Trim(), row.Cells[1].Value.ToString(), "Private"));   // Post Private Message
                     }
                 }
-            }
-
-            if (msg.StartsWith("/darkmode")) {                                                      // UI - Toggles Theme/DarMode
-                if (msg.IndexOf("on", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("1")) {
-                    DarkMode = true;
-                } else if (msg.IndexOf("off", StringComparison.OrdinalIgnoreCase) >= 0 || msg.Contains("0")) {
-                    DarkMode = false;
-                } else { DarkMode = !DarkMode; }
-                Darkmode(DarkMode);
-            }
-
-            if (msg.StartsWith("/export")) {                                                        // Export Tab related Text
-                ExportText(sender, e);
             }
 
             if (msg.StartsWith("/picme")) {                                                         // Drawing - Get Drawing from Server
@@ -311,8 +376,15 @@ namespace Server {
                 if (listening) { SendDrawing(); }
             }
 
-            if (msg.StartsWith("/theme")) {                                                         // UI - Sets Theme
-                Theme = msg.Substring(7).Trim();
+            if (msg.StartsWith("/theme")) {                                                         // UI - Theme                
+                if (msg.Substring(6).Trim() == "") {                                                // If Blank List Themes
+                    foreach (var theme in Themes) {
+                        Console(theme.Key);
+                    }
+                } else {
+                    Theme = msg.Substring(6).Trim();                                                // Sets the Theme
+                }
+
                 Darkmode(false);
             }
         }
@@ -471,7 +543,6 @@ namespace Server {
                 //return;
             }
 
-            string[] dataParts = hostData.Split(':');
             Console("Unrecognized: " + hostData);                                                   // Client Receive - Unformated Text
             clientObject.data.Clear();
             clientObject.handle.Set();
@@ -589,7 +660,7 @@ namespace Server {
         private void ChangeControlColors(Control control, Color primaryCol, Color secondaryCol, Color tertiaryCol, Color quaternary) 
         {
             foreach (Control childControl in control.Controls) {
-                Console(childControl.GetType().Name + " " + childControl.Name);
+                if (DebugLVL == 2) { Console(childControl.GetType().Name + " " + childControl.Name); }
                 switch (childControl.GetType().Name) {
                     case "TextBox":
                     case "RichTextBox":
@@ -620,6 +691,7 @@ namespace Server {
                 }
 
                 if (childControl.HasChildren) {
+                    if (DebugLVL == 2) { Console("Spawn Found"); }
                     ChangeControlColors(childControl, primaryCol, secondaryCol, tertiaryCol, quaternary);                    // if childControl has child controls, call this method recursively
                 }
             }
@@ -651,9 +723,7 @@ namespace Server {
             protected override void OnPaint(PaintEventArgs e) {
                 base.OnPaint(e);
                 if (Theme != null) {
-                    Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new ();
-
-                    if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {  // If a matching dictionary was found, access its values
+                    if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {  // If a matching dictionary was found
                         Color primaryColor = matchingDictionary[ThemeColor.Primary];
                         borderColor = primaryColor;
                     }                    
@@ -884,7 +954,7 @@ namespace Server {
                 MethodBase callingMethod = callingFrame.GetMethod();                                // get information about the calling method
                 string callingMethodName = callingMethod.Name + "-->";                              // get the name of the calling method
                 stackList = string.Concat(callingMethodName, stackList);
-                if (i == 4) { break; }                                                              // Sets the Thread Depth
+                if (i == DebugLVL + 2) { break; }                                                   // Sets the Thread Depth
             }
             return stackList;
         }
@@ -901,7 +971,7 @@ namespace Server {
         {
             txtConsole.Invoke((MethodInvoker)delegate {
                 if (msg.Length > 0) {
-                    txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine));
+                    txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine),txtAddress.ForeColor);
                 } else {
                     txtConsole.Clear();
                 }
@@ -941,6 +1011,7 @@ namespace Server {
                 string[] colParts = playerColor.Split(',');                                         // Format string to Color
                 Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
                 #endregion
+
                 switch (msgPack.MsgType) {
                 #region Private Messages
                 case "Private":
@@ -1116,14 +1187,17 @@ namespace Server {
         {
             #region Command Line History
             if (e.KeyCode == Keys.Up) {                                                             // User pressed up arrow key
+                e.SuppressKeyPress = true;
                 if (HistoryIndex > 0) {
                     HistoryIndex--;                                                                 // Decrement the command index to retrieve the previous command
                     txtMessage.Text = MSGHistory[HistoryIndex];
+                    SetMessageCursor();
                 }
             } else if (e.KeyCode == Keys.Down) {                                                    // User pressed down arrow key
                 if (HistoryIndex < MSGHistory.Count - 1) {
                     HistoryIndex++;                                                                 // Increment the command index to retrieve the next command
                     txtMessage.Text = MSGHistory[HistoryIndex];
+                    SetMessageCursor();
                 } else {
                     HistoryIndex = MSGHistory.Count;                                                // User has reached the end of the command history
                     txtMessage.Clear();                                                             // Clear the textbox
@@ -1144,6 +1218,12 @@ namespace Server {
                 }
                 txtMessage.Clear();
             }
+        }
+        private void SetMessageCursor()                                                             // Puts the cursor at the end of the CLI History 
+        {
+            txtMessage.SelectionStart = txtMessage.Text.Length;
+            txtMessage.SelectionLength = 0;
+            txtMessage.Focus();
         }
         #endregion
 
@@ -1679,7 +1759,6 @@ namespace Server {
 
                     ClearDataGrid();
                     Console(SystemMsg("Server has stopped"));
-                    drawingSocket?.Stop();
                 }
             });
         }
@@ -2163,7 +2242,7 @@ namespace Server {
         {
             try {
                 Thread.Sleep(100);                                                                  // Prep Server
-                var drawingSocket = new TcpListener(IPAddress.Any, Convert.ToInt16(txtPort.Text) + 1);
+                TcpListener drawingSocket = new(IPAddress.Any, Convert.ToInt16(txtPort.Text) + 1);
                 var clientSocket = default(TcpClient);
                 int counter = 0;
                 var source = new CancellationTokenSource();
