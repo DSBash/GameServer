@@ -34,58 +34,58 @@ namespace Server
             this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.tabSections = new System.Windows.Forms.TabControl();
+            this.tabSections = new Server.GameServer.BorderedTabControl();
             this.tConsole = new System.Windows.Forms.TabPage();
             this.txtConsole = new System.Windows.Forms.RichTextBox();
             this.tLobby = new System.Windows.Forms.TabPage();
             this.txtLobby = new System.Windows.Forms.RichTextBox();
             this.tPM = new System.Windows.Forms.TabPage();
             this.txtPM = new System.Windows.Forms.RichTextBox();
-            this.txtPort = new System.Windows.Forms.TextBox();
-            this.txtRoomKey = new System.Windows.Forms.TextBox();
+            this.txtPort = new Server.GameServer.BorderedTextBox();
+            this.txtRoomKey = new Server.GameServer.BorderedTextBox();
             this.cbMask = new System.Windows.Forms.CheckBox();
-            this.txtAddress = new System.Windows.Forms.TextBox();
+            this.txtAddress = new Server.GameServer.BorderedTextBox();
             this.lblRoomKey = new System.Windows.Forms.Label();
-            this.txtName = new System.Windows.Forms.TextBox();
+            this.txtName = new Server.GameServer.BorderedTextBox();
             this.lblName = new System.Windows.Forms.Label();
             this.lblPort = new System.Windows.Forms.Label();
             this.lblAddress = new System.Windows.Forms.Label();
-            this.cmdHost = new System.Windows.Forms.Button();
-            this.cmdJoin = new System.Windows.Forms.Button();
+            this.cmdHost = new Server.GameServer.BorderedButton();
+            this.cmdJoin = new Server.GameServer.BorderedButton();
             this.clientsDataGridView = new System.Windows.Forms.DataGridView();
             this.identifier = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.name = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.color = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.latency = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dc = new System.Windows.Forms.DataGridViewButtonColumn();
-            this.txtMessage = new System.Windows.Forms.TextBox();
+            this.txtMessage = new Server.GameServer.BorderedTextBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.gbSettings = new CustomGroupBox();
+            this.gbSettings = new Server.GameServer.BorderedGroupBox();
             this.lblColor = new System.Windows.Forms.Label();
+            this.cmdColor = new Unclassified.UI.ColorButton();
             this.gbDrawings = new System.Windows.Forms.GroupBox();
             this.gbBG = new System.Windows.Forms.GroupBox();
             this.cbTrans = new System.Windows.Forms.CheckBox();
             this.btnClearAll = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.btnClear = new System.Windows.Forms.Button();
+            this.btnBGColor = new Unclassified.UI.ColorButton();
             this.gbBrush = new System.Windows.Forms.GroupBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.btnFillColor = new Unclassified.UI.ColorButton();
             this.cbFillDraw = new System.Windows.Forms.CheckBox();
             this.cbBType = new System.Windows.Forms.ComboBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.btnColor = new Unclassified.UI.ColorButton();
             this.nudSize = new System.Windows.Forms.NumericUpDown();
-            this.btnSetDraw = new System.Windows.Forms.Button();
+            this.btnSetDraw = new Server.GameServer.BorderedButton();
             this.picDrawing = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tPing = new System.Windows.Forms.Timer(this.components);
-            this.cmdColor = new Unclassified.UI.ColorButton();
-            this.btnBGColor = new Unclassified.UI.ColorButton();
-            this.btnFillColor = new Unclassified.UI.ColorButton();
-            this.btnColor = new Unclassified.UI.ColorButton();
             this.tabSections.SuspendLayout();
             this.tConsole.SuspendLayout();
             this.tLobby.SuspendLayout();
@@ -147,7 +147,7 @@ namespace Server
             this.txtConsole.Margin = new System.Windows.Forms.Padding(0);
             this.txtConsole.Name = "txtConsole";
             this.txtConsole.ReadOnly = true;
-            this.txtConsole.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
+            this.txtConsole.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             this.txtConsole.Size = new System.Drawing.Size(568, 92);
             this.txtConsole.TabIndex = 25;
             this.txtConsole.TabStop = false;
@@ -171,7 +171,7 @@ namespace Server
             this.txtLobby.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtLobby.Location = new System.Drawing.Point(0, 0);
             this.txtLobby.Name = "txtLobby";
-            this.txtLobby.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
+            this.txtLobby.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             this.txtLobby.Size = new System.Drawing.Size(568, 92);
             this.txtLobby.TabIndex = 0;
             this.txtLobby.Text = "";
@@ -195,7 +195,7 @@ namespace Server
             this.txtPM.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtPM.Location = new System.Drawing.Point(0, 0);
             this.txtPM.Name = "txtPM";
-            this.txtPM.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
+            this.txtPM.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             this.txtPM.Size = new System.Drawing.Size(568, 92);
             this.txtPM.TabIndex = 1;
             this.txtPM.Tag = "PM";
@@ -203,6 +203,7 @@ namespace Server
             // 
             // txtPort
             // 
+            this.txtPort.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtPort.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.txtPort.Location = new System.Drawing.Point(5, 180);
             this.txtPort.Margin = new System.Windows.Forms.Padding(0);
@@ -216,6 +217,7 @@ namespace Server
             // 
             // txtRoomKey
             // 
+            this.txtRoomKey.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtRoomKey.Location = new System.Drawing.Point(5, 65);
             this.txtRoomKey.Margin = new System.Windows.Forms.Padding(0);
             this.txtRoomKey.MaxLength = 200;
@@ -242,11 +244,12 @@ namespace Server
             // 
             // txtAddress
             // 
+            this.txtAddress.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtAddress.Location = new System.Drawing.Point(5, 140);
             this.txtAddress.Margin = new System.Windows.Forms.Padding(0);
             this.txtAddress.MaxLength = 200;
             this.txtAddress.Name = "txtAddress";
-            this.txtAddress.Size = new System.Drawing.Size(132, 20);
+            this.txtAddress.Size = new System.Drawing.Size(130, 20);
             this.txtAddress.TabIndex = 53;
             this.txtAddress.TabStop = false;
             this.txtAddress.Text = "192.168.0.81";
@@ -265,6 +268,7 @@ namespace Server
             // 
             // txtName
             // 
+            this.txtName.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtName.Location = new System.Drawing.Point(5, 25);
             this.txtName.Margin = new System.Windows.Forms.Padding(0);
             this.txtName.MaxLength = 50;
@@ -430,6 +434,7 @@ namespace Server
             // 
             // txtMessage
             // 
+            this.txtMessage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtMessage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtMessage.Font = new System.Drawing.Font("Times New Roman", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtMessage.Location = new System.Drawing.Point(0, 121);
@@ -537,6 +542,18 @@ namespace Server
             this.lblColor.Text = "Color:";
             this.lblColor.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // cmdColor
+            // 
+            this.cmdColor.BackColor = System.Drawing.Color.Yellow;
+            this.cmdColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cmdColor.Location = new System.Drawing.Point(110, 25);
+            this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
+            this.cmdColor.Name = "cmdColor";
+            this.cmdColor.SelectedColor = System.Drawing.Color.Yellow;
+            this.cmdColor.Size = new System.Drawing.Size(25, 20);
+            this.cmdColor.TabIndex = 56;
+            this.cmdColor.UseVisualStyleBackColor = false;
+            // 
             // gbDrawings
             // 
             this.gbDrawings.Controls.Add(this.gbBG);
@@ -608,6 +625,19 @@ namespace Server
             this.btnClear.UseVisualStyleBackColor = true;
             this.btnClear.Click += new System.EventHandler(this.CmdClear_Click);
             // 
+            // btnBGColor
+            // 
+            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
+            this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBGColor.Location = new System.Drawing.Point(5, 16);
+            this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnBGColor.Name = "btnBGColor";
+            this.btnBGColor.SelectedColor = System.Drawing.Color.Linen;
+            this.btnBGColor.Size = new System.Drawing.Size(42, 20);
+            this.btnBGColor.TabIndex = 0;
+            this.btnBGColor.UseVisualStyleBackColor = false;
+            this.btnBGColor.SelectedColorChanged += new System.EventHandler(this.BGColorChange);
+            // 
             // gbBrush
             // 
             this.gbBrush.Controls.Add(this.label3);
@@ -634,6 +664,18 @@ namespace Server
             this.label3.Size = new System.Drawing.Size(52, 13);
             this.label3.TabIndex = 7;
             this.label3.Text = "Fill Colour";
+            // 
+            // btnFillColor
+            // 
+            this.btnFillColor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnFillColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnFillColor.Location = new System.Drawing.Point(58, 72);
+            this.btnFillColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnFillColor.Name = "btnFillColor";
+            this.btnFillColor.SelectedColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
+            this.btnFillColor.Size = new System.Drawing.Size(28, 20);
+            this.btnFillColor.TabIndex = 6;
+            this.btnFillColor.UseVisualStyleBackColor = false;
             // 
             // cbFillDraw
             // 
@@ -680,6 +722,18 @@ namespace Server
             this.label1.Size = new System.Drawing.Size(37, 13);
             this.label1.TabIndex = 2;
             this.label1.Text = "Colour";
+            // 
+            // btnColor
+            // 
+            this.btnColor.BackColor = System.Drawing.Color.Green;
+            this.btnColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnColor.Location = new System.Drawing.Point(5, 15);
+            this.btnColor.Margin = new System.Windows.Forms.Padding(0);
+            this.btnColor.Name = "btnColor";
+            this.btnColor.SelectedColor = System.Drawing.Color.Green;
+            this.btnColor.Size = new System.Drawing.Size(28, 20);
+            this.btnColor.TabIndex = 0;
+            this.btnColor.UseVisualStyleBackColor = false;
             // 
             // nudSize
             // 
@@ -764,55 +818,6 @@ namespace Server
             this.tPing.Interval = 5000;
             this.tPing.Tick += new System.EventHandler(this.Ping_Tick);
             // 
-            // cmdColor
-            // 
-            this.cmdColor.BackColor = System.Drawing.Color.Yellow;
-            this.cmdColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cmdColor.Location = new System.Drawing.Point(110, 25);
-            this.cmdColor.Margin = new System.Windows.Forms.Padding(0);
-            this.cmdColor.Name = "cmdColor";
-            this.cmdColor.SelectedColor = System.Drawing.Color.Yellow;
-            this.cmdColor.Size = new System.Drawing.Size(25, 20);
-            this.cmdColor.TabIndex = 56;
-            this.cmdColor.UseVisualStyleBackColor = false;
-            // 
-            // btnBGColor
-            // 
-            this.btnBGColor.BackColor = System.Drawing.Color.Linen;
-            this.btnBGColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBGColor.Location = new System.Drawing.Point(5, 16);
-            this.btnBGColor.Margin = new System.Windows.Forms.Padding(0);
-            this.btnBGColor.Name = "btnBGColor";
-            this.btnBGColor.SelectedColor = System.Drawing.Color.Linen;
-            this.btnBGColor.Size = new System.Drawing.Size(42, 20);
-            this.btnBGColor.TabIndex = 0;
-            this.btnBGColor.UseVisualStyleBackColor = false;
-            this.btnBGColor.SelectedColorChanged += new System.EventHandler(this.BGColorChange);
-            // 
-            // btnFillColor
-            // 
-            this.btnFillColor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
-            this.btnFillColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnFillColor.Location = new System.Drawing.Point(58, 72);
-            this.btnFillColor.Margin = new System.Windows.Forms.Padding(0);
-            this.btnFillColor.Name = "btnFillColor";
-            this.btnFillColor.SelectedColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
-            this.btnFillColor.Size = new System.Drawing.Size(28, 20);
-            this.btnFillColor.TabIndex = 6;
-            this.btnFillColor.UseVisualStyleBackColor = false;
-            // 
-            // btnColor
-            // 
-            this.btnColor.BackColor = System.Drawing.Color.Green;
-            this.btnColor.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnColor.Location = new System.Drawing.Point(5, 15);
-            this.btnColor.Margin = new System.Windows.Forms.Padding(0);
-            this.btnColor.Name = "btnColor";
-            this.btnColor.SelectedColor = System.Drawing.Color.Green;
-            this.btnColor.Size = new System.Drawing.Size(28, 20);
-            this.btnColor.TabIndex = 0;
-            this.btnColor.UseVisualStyleBackColor = false;
-            // 
             // GameServer
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
@@ -858,35 +863,33 @@ namespace Server
         }
 
         #endregion
-        private System.Windows.Forms.TabControl tabSections;
         private System.Windows.Forms.TabPage tConsole;
         private System.Windows.Forms.TabPage tLobby;
         private System.Windows.Forms.RichTextBox txtConsole;
-        private System.Windows.Forms.TextBox txtMessage;
+        private BorderedTextBox txtMessage;
         private System.Windows.Forms.DataGridView clientsDataGridView;
-        private System.Windows.Forms.TextBox txtPort;
-        private System.Windows.Forms.TextBox txtRoomKey;
+        private BorderedTextBox txtPort;
+        private BorderedTextBox txtRoomKey;
         private System.Windows.Forms.CheckBox cbMask;
-        private System.Windows.Forms.TextBox txtAddress;
+        private BorderedTextBox txtAddress;
         private System.Windows.Forms.Label lblRoomKey;
-        private System.Windows.Forms.TextBox txtName;
         private System.Windows.Forms.Label lblName;
         private System.Windows.Forms.Label lblPort;
         private System.Windows.Forms.Label lblAddress;
-        private System.Windows.Forms.Button cmdHost;
-        private System.Windows.Forms.Button cmdJoin;
+        private BorderedButton cmdHost;
+        private BorderedButton cmdJoin;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private CustomGroupBox gbSettings;
+        private BorderedGroupBox gbSettings;
         private System.Windows.Forms.GroupBox gbDrawings;
         private System.Windows.Forms.RichTextBox txtLobby;
         private System.Windows.Forms.Timer tPing;
         private System.Windows.Forms.Label lblColor;
         private ColorButton cmdColor;
-        private System.Windows.Forms.Button btnSetDraw;
+        private BorderedButton btnSetDraw;
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.NumericUpDown nudSize;
         private ColorButton btnColor;
@@ -910,6 +913,8 @@ namespace Server
         private System.Windows.Forms.DataGridViewTextBoxColumn latency;
         private System.Windows.Forms.DataGridViewButtonColumn dc;
         private System.Windows.Forms.RichTextBox txtPM;
+        private BorderedTextBox txtName;
+        private BorderedTabControl tabSections;
     }
 }
 

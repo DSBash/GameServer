@@ -1,20 +1,18 @@
 ﻿using Newtonsoft.Json;
-using Server.Properties;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Drawing.Printing;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,15 +20,25 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Unclassified.UI;
 using static Server.Encryption;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
-namespace Server {
-    public partial class GameServer : Form {
+namespace Server
+{
+    public partial class GameServer : Form
+    {
         /* Used to enable Console
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool AllocConsole();
 */
+
+
+        [DllImport("DwmApi")]                                                                       // Black Title Bar 
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            if (DwmSetWindowAttribute(Handle, 19, new[] { 1 }, 4) != 0)
+                DwmSetWindowAttribute(Handle, 20, new[] { 1 }, 4);
+        }
 
         #region Declarations
         #region Host Specific Declarations
@@ -128,14 +136,15 @@ namespace Server {
         #region Theme Settings
         private bool DarkMode { get; set; }
         private static string Theme { get; set; }
-        enum ThemeColor {
+        enum ThemeColor
+        {
             Primary,
             Secondary,
             Tertiary,
             Quaternary
         }
         private static readonly Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new(StringComparer.OrdinalIgnoreCase);
-       // Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new();
+        // Dictionary<string, Dictionary<ThemeColor, Color>> Themes = new();
         #endregion
 
         #region Message Settings
@@ -166,6 +175,8 @@ namespace Server {
         public GameServer(/*string PlayerName*/)                                                    // Main 
         {
             InitializeComponent();
+
+
             //AllocConsole();
             txtName.Text = Environment.UserName;
 
@@ -196,6 +207,15 @@ namespace Server {
             G.Clear(Color.Transparent);
             #endregion
         }
+        protected override CreateParams CreateParams                                                // Reduce Control Flicker 
+        {
+            get {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x02000000;  // Turn on WS_EX_COMPOSITED
+                return cp;
+            }
+        }
+
         private void GameServer_Load(object sender, EventArgs e)                                    // On Open 
         {
             LoadSettings();
@@ -217,10 +237,10 @@ namespace Server {
             });
             Themes.Add("Greens", new Dictionary<ThemeColor, Color>
             {
-                { ThemeColor.Primary, Color.LimeGreen },
+                { ThemeColor.Primary, Color.ForestGreen },
                 { ThemeColor.Secondary, Color.DarkGreen },
                 { ThemeColor.Tertiary, Color.YellowGreen },
-                { ThemeColor.Quaternary, Color.ForestGreen }
+                { ThemeColor.Quaternary, Color.LimeGreen }
             });
             Themes.Add("Rose", new Dictionary<ThemeColor, Color>
             {
@@ -257,12 +277,12 @@ namespace Server {
                 { ThemeColor.Tertiary, Color.Orange },
                 { ThemeColor.Quaternary, Color.Goldenrod }
             });
-            Themes.Add("Grays", new Dictionary<ThemeColor, Color>
+            Themes.Add("Default", new Dictionary<ThemeColor, Color>
             {
-                { ThemeColor.Primary, Color.DarkSlateGray },
-                { ThemeColor.Secondary, Color.Gray },
-                { ThemeColor.Tertiary, Color.LightGray },
-                { ThemeColor.Quaternary, Color.Silver }
+                { ThemeColor.Primary, SystemColors.WindowText },
+                { ThemeColor.Secondary, SystemColors.Window },
+                { ThemeColor.Tertiary, SystemColors.ControlText },
+                { ThemeColor.Quaternary, SystemColors.Control }
             });
             Themes.Add("BlackRed", new Dictionary<ThemeColor, Color>
 {
@@ -395,33 +415,33 @@ namespace Server {
                 remoteMsg = true;
                 MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(clientData);
                 switch (remoteMP.MsgType) {
-                case "Private":                                                                     // Private Message
-                    for (int p = 1; p <= players.Count; p++) {                                      // Determine the PM Dest
-                        if (remoteMP.To == players[p].username.ToString()) {                        // Dest is a player   
-                            HostSendPrivate(clientData, players[p]);                                // Host - Send PM
-                            Console(SystemMsg("PM Relayed."));
-                            obj.data.Clear();
-                            obj.handle.Set();
-                            //return;
-                            break;
-                        } else if (remoteMP.To == txtName.Text.Trim()) {                            // Dest is host
-                            PostChat(remoteMP);                                                     // Post Host PM
-                            obj.data.Clear();
-                            obj.handle.Set();
-                            //return;
-                            break;
+                    case "Private":                                                                     // Private Message
+                        for (int p = 1; p <= players.Count; p++) {                                      // Determine the PM Dest
+                            if (remoteMP.To == players[p].username.ToString()) {                        // Dest is a player   
+                                HostSendPrivate(clientData, players[p]);                                // Host - Send PM
+                                Console(SystemMsg("PM Relayed."));
+                                obj.data.Clear();
+                                obj.handle.Set();
+                                //return;
+                                break;
+                            } else if (remoteMP.To == txtName.Text.Trim()) {                            // Dest is host
+                                PostChat(remoteMP);                                                     // Post Host PM
+                                obj.data.Clear();
+                                obj.handle.Set();
+                                //return;
+                                break;
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                case "Public":                                                                      // Public Message
-                    PostChat(remoteMP);
-                    HostSendPublic(clientData, obj.id);                                             // Host relay public message to other clients
-                    obj.data.Clear();
-                    obj.handle.Set();
-                    break;
-                default:
-                    break;
+                    case "Public":                                                                      // Public Message
+                        PostChat(remoteMP);
+                        HostSendPublic(clientData, obj.id);                                             // Host relay public message to other clients
+                        obj.data.Clear();
+                        obj.handle.Set();
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -527,16 +547,16 @@ namespace Server {
             if (hostData.StartsWith("CMD:")) {                                                      // Client Receive - Commands from Host
                 string[] cmdParts = hostData.Split(':');
                 switch (cmdParts[1]) {
-                case "ClearDrawing":
-                    Button sender = new();
-                    EventArgs e = new();
-                    CmdClear_Click(sender, e);
-                    break;
-                case "ReceiveDrawing":
-                    ListenForFile();                                                                // Client open server to receive
-                    break;
-                default:
-                    break;
+                    case "ClearDrawing":
+                        Button sender = new();
+                        EventArgs e = new();
+                        CmdClear_Click(sender, e);
+                        break;
+                    case "ReceiveDrawing":
+                        ListenForFile();                                                                // Client open server to receive
+                        break;
+                    default:
+                        break;
                 }
                 clientObject.data.Clear();
                 clientObject.handle.Set();
@@ -574,12 +594,12 @@ namespace Server {
                         case "IsDarkModeEnabled":
                             loadSettings.IsDarkModeEnabled = bool.Parse(value);
                             DarkMode = loadSettings.IsDarkModeEnabled;
-                            break;                        
+                            break;
                         case "ThemeName":
                             loadSettings.ThemeName = value;
                             Theme = loadSettings.ThemeName;
-                        break;
-                    case "UserColor":
+                            break;
+                        case "UserColor":
                             loadSettings.UserColor = value;
                             cmdColor.SelectedColor = ArgbColor(loadSettings.UserColor);
                             break;
@@ -595,22 +615,22 @@ namespace Server {
                             loadSettings.Port = value;
                             txtPort.Text = loadSettings.Port;
                             break;
-
                     }
-                }             
+                }
             } else {
                 Console("Settings file not found - loading defaults.");                             // Output load fail
+                Theme = "Default";
             }
-        }    
+        }
         private void SaveSettings()                                                                 // Save settings to File 
-        {            
+        {
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);// Retrieve the application data folder path            
             string appFolder = Path.Combine(appDataFolder, "DoolittleInc\\GSDEV");                  // Create a directory for your application if it doesn't exist yet
             if (!Directory.Exists(appFolder)) {
                 Directory.CreateDirectory(appFolder);
             }
             string settingsFilePath = Path.Combine(appFolder, $"config.txt");                       // File in the application folder
-            
+
             Color pCol = cmdColor.SelectedColor;
             CustomizationSettings saveSettings = new() {
                 UserName = txtName.Text.Trim(),
@@ -644,7 +664,7 @@ namespace Server {
                     Color quaternaryColor = matchingDictionary[ThemeColor.Quaternary];
 
                     ChangeControlColors(this, primaryColor, secondaryColor, tertiaryColor, quaternaryColor); // Set the Theme
-                }  
+                }
 
                 /*
                 switch (Theme) {
@@ -656,43 +676,78 @@ namespace Server {
                         break;
                 */
             }
-        }        
-        private void ChangeControlColors(Control control, Color primaryCol, Color secondaryCol, Color tertiaryCol, Color quaternary) 
-        {
+        }
+        private void ChangeControlColors(Control control, Color primaryCol, Color secondaryCol, Color tertiaryCol, Color quaternaryCol)
+        { /// Changes the Fore, Back, BackGround
             foreach (Control childControl in control.Controls) {
                 if (DebugLVL == 2) { Console(childControl.GetType().Name + " " + childControl.Name); }
                 switch (childControl.GetType().Name) {
+                    case "BorderedButton":
+                        BorderedButton cBB = childControl as BorderedButton;
+                        cBB.ForeColor = primaryCol;
+                        cBB.BackColor = secondaryCol;
+                        cBB.BorderColor = primaryCol;
+                        break;
+                    case "BorderedTabControl":
+                        BorderedTabControl cBTC = childControl as BorderedTabControl;
+                        cBTC.BorderColor = primaryCol;
+                        foreach (TabPage page in childControl.Controls) {
+                            page.ForeColor = tertiaryCol;
+                            page.BackColor = quaternaryCol;
+                        }
+                        break;
+                    case "BorderedTextBox":
+                        BorderedTextBox cBTB = childControl as BorderedTextBox;
+                        cBTB.ForeColor = primaryCol;
+                        cBTB.BackColor = secondaryCol;
+                        cBTB.BorderColor = primaryCol;
+                        break;
+/*                    case "BorderedRichTextBox":
+                        BorderedRichTextBox cBRTB = childControl as BorderedRichTextBox;
+                        cBRTB.ForeColor = primaryCol;
+                        cBRTB.BackColor = secondaryCol;
+                        cBRTB.BorderColor = primaryCol;
+                        break;*/
+                    case "Button":
                     case "TextBox":
                     case "RichTextBox":
-                    case "Button":
                         childControl.ForeColor = primaryCol;
                         childControl.BackColor = secondaryCol;
                         break;
                     case "SplitContainer":
                         childControl.ForeColor = tertiaryCol;
-                        childControl.BackColor = quaternary;
+                        childControl.BackColor = quaternaryCol;
                         break;
                     case "SplitterPanel":
                     case "FlowLayoutPanel":
                         foreach (Panel panel in control.Controls) {
                             panel.ForeColor = tertiaryCol;
-                            panel.BackColor = quaternary;
+                            panel.BackColor = quaternaryCol;
                         }
                         break;
                     case "TabControl":
                         foreach (TabPage page in childControl.Controls) {
                             page.ForeColor = tertiaryCol;
-                            page.BackColor = quaternary;
+                            page.BackColor = quaternaryCol;
                         }
                         break;
                     case "DataGridView":
-                        ((System.Windows.Forms.DataGridView)childControl).BackgroundColor = quaternary;
+                        ((System.Windows.Forms.DataGridView)childControl).BackgroundColor = quaternaryCol;
+                        foreach (DataGridViewColumn col in ((System.Windows.Forms.DataGridView)childControl).Columns) {
+                            col.HeaderCell.Style.BackColor = secondaryCol;                          // Change the color to your desired color
+                            col.HeaderCell.Style.ForeColor = primaryCol;
+                            col.HeaderCell.Style.SelectionForeColor = Color.Red;
+                            col.HeaderCell.Style.SelectionBackColor = Color.Red;
+
+                            ((System.Windows.Forms.DataGridView)childControl).GridColor = primaryCol;
+                        }
+
                         break;
                 }
 
                 if (childControl.HasChildren) {
                     if (DebugLVL == 2) { Console("Spawn Found"); }
-                    ChangeControlColors(childControl, primaryCol, secondaryCol, tertiaryCol, quaternary);                    // if childControl has child controls, call this method recursively
+                    ChangeControlColors(childControl, primaryCol, secondaryCol, tertiaryCol, quaternaryCol);   // if childControl has child controls, recurse
                 }
             }
         }
@@ -717,23 +772,135 @@ namespace Server {
 
 
         #region Controls
-        private class CustomGroupBox                                                                /* Group Box Color Borders */ : System.Windows.Forms.GroupBox
+
+        private class BorderedGroupBox                                                                /* Group Box Color Borders */ : System.Windows.Forms.GroupBox
         {
-            Color borderColor;
-            protected override void OnPaint(PaintEventArgs e) {
+            public static Color BorderColor { get; internal set; }
+            protected override void OnPaint(PaintEventArgs e)
+            {
                 base.OnPaint(e);
                 if (Theme != null) {
                     if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {  // If a matching dictionary was found
-                        Color primaryColor = matchingDictionary[ThemeColor.Primary];
-                        borderColor = primaryColor;
-                    }                    
-                } else { borderColor = Color.Transparent; }
+                        Color SecondaryColor = matchingDictionary[ThemeColor.Secondary];
+                        BorderColor = SecondaryColor;
+                    }
+                } else { BorderColor = Color.Transparent; }
 
-                using Pen pen = new(borderColor, 2);                                                // Create a new Pen with the desired border color
+                using Pen pen = new(BorderColor, 2);                                                // Create a new Pen with the desired border color
                 Rectangle rect = new(1, 7, Width - 2, Height - 8);                                  // Draw a rectangle around the group box
                 e.Graphics.DrawRectangle(pen, rect);
             }
         }
+        private class BorderedButton : Button
+        {
+            public Color BorderColor { get; internal set; }
+            protected override void WndProc(ref Message m)
+            {
+                base.WndProc(ref m);
+                if (m.Msg == 0xf) {
+                    using var g = Graphics.FromHwnd(Handle);
+                    using var p = new Pen(BorderColor, 4);
+                    g.DrawRectangle(p, new Rectangle(2, 2, Width - 4, Height - 4));
+                }
+            }
+        }
+        private class BorderedTextBox : TextBox
+        {
+            public Color BorderColor { get; internal set; }
+            protected override void WndProc(ref Message m)
+            {
+                base.WndProc(ref m);
+                if (m.Msg == 0xf) {
+                    using var g = Graphics.FromHwnd(Handle);
+                    using var p = new Pen(BorderColor, 4);
+                    g.DrawRectangle(p, new Rectangle(0, 0, Width - 1, Height - 1));
+                }
+            }
+        }
+        private class BorderedTabControl : TabControl
+        {
+            public Color BorderColor { get; internal set; }
+            protected override void WndProc(ref Message m)
+            {
+                base.WndProc(ref m);
+                if (m.Msg == 0xf) {
+                    using var g = Graphics.FromHwnd(Handle);
+                    using var p = new Pen(BorderColor, 4);
+                    g.DrawRectangle(p, new Rectangle(2, 23, Width - 4, Height - 25));               // - 26 Will remove the White line below the Tab Control
+                }
+            }
+        }
+        private class BorderedRichTextBox : RichTextBox
+        {
+            public Color BorderColor { get; internal set; }
+            protected override void WndProc(ref Message m)
+            {
+                base.WndProc(ref m);
+                if (m.Msg == 0xf) {
+                    using var g = Graphics.FromHwnd(Handle);
+                    using var p = new Pen(BorderColor, 5);
+                    g.DrawRectangle(p, new Rectangle(0, 0, Width - 1, Height - 1));
+
+                }
+            }
+        }
+
+        /*        public class BorderedTextBox : UserControl {
+                    TextBox textBox;
+
+                    public BorderedTextBox() {
+                        textBox = new TextBox() {
+                            BorderStyle = BorderStyle.FixedSingle,
+                            Location = new Point(-1, -1),
+                            Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
+                                     AnchorStyles.Left | AnchorStyles.Right
+                        };
+                        Control container = new ContainerControl() {
+                            Dock = DockStyle.Fill,
+                            Padding = new Padding(-1)
+                        };
+                        container.Controls.Add(textBox);
+                        this.Controls.Add(container);
+
+                        if (Theme != null) {
+                            if (Themes.TryGetValue(Theme, out Dictionary<ThemeColor, Color> matchingDictionary)) {  // If a matching dictionary was found 
+                                DefaultBorderColor = matchingDictionary[ThemeColor.Secondary];
+                                FocusedBorderColor = matchingDictionary[ThemeColor.Primary];
+                                BackColor = matchingDictionary[ThemeColor.Secondary];
+                            }
+                        } else {
+                            DefaultBorderColor = Color.Transparent; 
+                            FocusedBorderColor = Color.Transparent;
+                            BackColor = DefaultBorderColor;
+                        }
+                        Padding = new Padding(1);
+                        Size = textBox.Size;
+                    }
+
+                    public Color DefaultBorderColor { get; set; }
+                    public Color FocusedBorderColor { get; set; }
+
+                    public override string Text {
+                        get { return textBox.Text; }
+                        set { textBox.Text = value; }
+                    }
+
+                    protected override void OnEnter(EventArgs e) {
+                        BackColor = FocusedBorderColor;
+                        base.OnEnter(e);
+                    }
+
+                    protected override void OnLeave(EventArgs e) {
+                        BackColor = DefaultBorderColor;
+                        base.OnLeave(e);
+                    }
+
+                    protected override void SetBoundsCore(int x, int y,
+                        int width, int height, BoundsSpecified specified) {
+                        base.SetBoundsCore(x, y, width, textBox.PreferredHeight, specified);
+                    }
+                }*/
+
         private void ChangeTXTBackColor(object sender, EventArgs e)                                 // Set the background color of respective TextBox 
         {
             if (sender is System.Windows.Forms.MenuItem) {
@@ -757,7 +924,7 @@ namespace Server {
             if (tabSections.SelectedTab.Tag.ToString() == "PM") { ReturnFirstBoxFrom(sender).Text = ""; }
         }
         private void TabSections_SelectedIndexChanged(object sender, EventArgs e)                   // Remove the *unread8 indicators 
-{
+        {
             TabControl tabControl = (TabControl)sender;
             TabPage selectedTabPage = tabControl.SelectedTab;
 
@@ -767,7 +934,7 @@ namespace Server {
         }
 
         private RichTextBox ReturnFirstBoxFrom(object sender)                                       // Get RTB from Sender(Menu) 
-{
+        {
             MenuItem menuItem = sender as MenuItem;                                                 // Get the MenuItem that triggered the event
             ContextMenu contextMenu = menuItem.Parent as ContextMenu;                               // Get the immediate parent of the MenuItem, which should be the ContextMenu
             TabControl tabControl = contextMenu.SourceControl as TabControl;                        // Get the control on which the ContextMenu was displayed, which should be the TabControl
@@ -971,7 +1138,7 @@ namespace Server {
         {
             txtConsole.Invoke((MethodInvoker)delegate {
                 if (msg.Length > 0) {
-                    txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine),txtAddress.ForeColor);
+                    txtConsole.AppendText(string.Format("{2}[ {0} ] {1}", DateTime.Now.ToString("HH:mm:ss"), msg, Environment.NewLine), txtAddress.ForeColor);
                 } else {
                     txtConsole.Clear();
                 }
@@ -1013,82 +1180,82 @@ namespace Server {
                 #endregion
 
                 switch (msgPack.MsgType) {
-                #region Private Messages
-                case "Private":
-                    string formattedMSG = "";                                                       // To store formated Message
-                    if (msgPack.To == txtName.Text || msgPack.From == txtName.Text) {               // Mine in any way
-                        TabPage tabPage = null;
-                        string tabName = "Lobby";
+                    #region Private Messages
+                    case "Private":
+                        string formattedMSG = "";                                                       // To store formated Message
+                        if (msgPack.To == txtName.Text || msgPack.From == txtName.Text) {               // Mine in any way
+                            TabPage tabPage = null;
+                            string tabName = "Lobby";
 
-                        if (msgPack.To == txtName.Text) {
-                            tabName = msgPack.From;
-                        } else {
-                            tabName = msgPack.From;
-                            if (msgPack.From == txtName.Text) { tabName = msgPack.To; }
+                            if (msgPack.To == txtName.Text) {
+                                tabName = msgPack.From;
+                            } else {
+                                tabName = msgPack.From;
+                                if (msgPack.From == txtName.Text) { tabName = msgPack.To; }
+                            }
+
+                            tabSections.Invoke((MethodInvoker)delegate {
+
+                                foreach (TabPage tab in tabSections.TabPages) {
+                                    if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
+                                        tabPage = tab;
+                                        break;
+                                    }
+                                }
+
+                                if (tabPage == null) {                                                  // If the tab is not found
+                                    tabPage = new() {
+                                        Name = "t" + tabName,
+                                        Tag = "PM",
+                                        Text = tabName
+                                    };
+
+                                    foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
+                                        Control newControl = (Control)Activator.CreateInstance(control.GetType());
+                                        newControl.Location = control.Location;
+                                        newControl.Size = control.Size;
+                                        newControl.Name = control.Name;
+                                        newControl.Tag = control.Tag;
+                                        newControl.BackColor = control.BackColor;
+                                        tabPage.Controls.Add(newControl);
+                                    }
+                                    tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
+                                }
+
+                                if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
+                                    formattedMSG = string.Format("{0}[{1}] {2} whispers: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
+
+                                    if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
+                                        tabPage.Text = string.Format("*" + tabName + "*");
+                                    }
+                                    textBox.AppendText(formattedMSG, msgColor);                         // Post Private msg in Tab
+                                }
+
+                            });
                         }
+                        break;
+                    #endregion
 
+                    case "Public":
+                        formattedMSG = string.Format("{0}[{1}] From {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
                         tabSections.Invoke((MethodInvoker)delegate {
-
-                            foreach (TabPage tab in tabSections.TabPages) {
-                                if (tab.Text == tabName || tab.Text == "*" + tabName + "*") {       // Search for a tab with the specified username
-                                    tabPage = tab;
-                                    break;
-                                }
+                            if (tabSections.SelectedIndex != 1) {                                       // If not in focus change the Tab text
+                                tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
                             }
-
-                            if (tabPage == null) {                                                  // If the tab is not found
-                                tabPage = new() {
-                                    Name = "t" + tabName,
-                                    Tag = "PM",
-                                    Text = tabName
-                                };
-
-                                foreach (Control control in pmTab.Controls) {                       // create copy the controls from pmTab
-                                    Control newControl = (Control)Activator.CreateInstance(control.GetType());
-                                    newControl.Location = control.Location;
-                                    newControl.Size = control.Size;
-                                    newControl.Name = control.Name;
-                                    newControl.Tag = control.Tag;
-                                    newControl.BackColor = control.BackColor;
-                                    tabPage.Controls.Add(newControl);
-                                }
-                                tabSections.TabPages.Add(tabPage);                                  // Add the new PM tab
-                            }
-
-                            if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
-                                formattedMSG = string.Format("{0}[{1}] {2} whispers: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
-
-                                if (tabSections.SelectedTab != tabPage) {                           // If not in focus change the Tab text
-                                    tabPage.Text = string.Format("*" + tabName + "*");
-                                }
-                                textBox.AppendText(formattedMSG, msgColor);                         // Post Private msg in Tab
-                            }
-
                         });
-                    }
-                    break;
-                #endregion
+                        txtLobby.AppendText(formattedMSG, msgColor);                                    // Post Public msg in Lobby
+                        break;
 
-                case "Public":
-                    formattedMSG = string.Format("{0}[{1}] From {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
-                    tabSections.Invoke((MethodInvoker)delegate {
-                        if (tabSections.SelectedIndex != 1) {                                       // If not in focus change the Tab text
-                            tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
-                        }
-                    });
-                    txtLobby.AppendText(formattedMSG, msgColor);                                    // Post Public msg in Lobby
-                    break;
+                    case "Console":
+                        Console(msgPack.Msg);
+                        break;
 
-                case "Console":
-                    Console(msgPack.Msg);
-                    break;
+                    case "System":
+                        SystemMsg(msgPack.Msg);
+                        break;
 
-                case "System":
-                    SystemMsg(msgPack.Msg);
-                    break;
-
-                default:
-                    break;
+                    default:
+                        break;
                 }
 
                 string json = JsonConvert.SerializeObject(msgPack) + "\n";                          // Format the Package 
@@ -1376,20 +1543,20 @@ namespace Server {
             if (Drawing && e.Button == MouseButtons.Left) {
                 PT2 = e.Location;                                                                   // Update PT2 for Mouse up event                 
                 switch (cbBType.Text) {
-                case "Circle":
-                case "Fill Tool":
-                case "Line":
-                case "Rectangle":
-                case "Triangle":
-                    break;
-                default:
-                    mPath ??= new();                                                            // New Path if needed
-                    Point mP = new(e.Location.X, e.Location.Y);
-                    mPath.AddLines(new Point[] {                                               // Add points to Path
+                    case "Circle":
+                    case "Fill Tool":
+                    case "Line":
+                    case "Rectangle":
+                    case "Triangle":
+                        break;
+                    default:
+                        mPath ??= new();                                                            // New Path if needed
+                        Point mP = new(e.Location.X, e.Location.Y);
+                        mPath.AddLines(new Point[] {                                               // Add points to Path
                             mP
                         });
-                    PT1 = PT2;
-                    break;
+                        PT1 = PT2;
+                        break;
                 }
                 picDrawing.Refresh();
                 x = e.X;
@@ -1415,49 +1582,49 @@ namespace Server {
                 Pen pen = new(btnColor.SelectedColor, (int)nudSize.Value);
                 SolidBrush brush = new(btnFillColor.SelectedColor);
                 switch (cbBType.Text) {
-                case "Circle":
-                    G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);                                 // Draw
-                    if (cbFillDraw.Checked) {
-                        G.FillEllipse(brush, PT1X, PT1Y, PT2X, PT2Y);                           // Fill
-                    }
-                    break;
-                case "Fill Tool":
-                    break;
-                case "Line":
-                    G.DrawLine(pen, PT1X, PT1Y, x, y);
-                    break;
-                case "Rectangle":
-                    var rc = new Rectangle(
-                        Math.Min(PT1.X, PT2.X),
-                        Math.Min(PT1.Y, PT2.Y),
-                        Math.Abs(PT2.X - PT1.X),
-                        Math.Abs(PT2.Y - PT1.Y));
-                    G.DrawRectangle(pen, rc);                                                   // Draw
-                    if (cbFillDraw.Checked) {
-                        e.Graphics.FillRectangle(brush, rc);                                    // Fill
-                    }
-                    break;
-                case "Triangle":
-                    double midX = (PT1.X + PT2.X) / 2;
-                    Point first = new(PT1.X, PT2.Y);
-                    Point mid = new((int)midX, PT1.Y);
-                    var tPath = new GraphicsPath();
-                    tPath.AddLines(new PointF[] {
+                    case "Circle":
+                        G.DrawEllipse(pen, PT1X, PT1Y, PT2X, PT2Y);                                 // Draw
+                        if (cbFillDraw.Checked) {
+                            G.FillEllipse(brush, PT1X, PT1Y, PT2X, PT2Y);                           // Fill
+                        }
+                        break;
+                    case "Fill Tool":
+                        break;
+                    case "Line":
+                        G.DrawLine(pen, PT1X, PT1Y, x, y);
+                        break;
+                    case "Rectangle":
+                        var rc = new Rectangle(
+                            Math.Min(PT1.X, PT2.X),
+                            Math.Min(PT1.Y, PT2.Y),
+                            Math.Abs(PT2.X - PT1.X),
+                            Math.Abs(PT2.Y - PT1.Y));
+                        G.DrawRectangle(pen, rc);                                                   // Draw
+                        if (cbFillDraw.Checked) {
+                            e.Graphics.FillRectangle(brush, rc);                                    // Fill
+                        }
+                        break;
+                    case "Triangle":
+                        double midX = (PT1.X + PT2.X) / 2;
+                        Point first = new(PT1.X, PT2.Y);
+                        Point mid = new((int)midX, PT1.Y);
+                        var tPath = new GraphicsPath();
+                        tPath.AddLines(new PointF[] {
                             first, mid, PT2,
                         });
-                    tPath.CloseFigure();
-                    G.DrawPath(pen, tPath);                                                     // Draw
-                    if (cbFillDraw.Checked) {
-                        G.FillPath(brush, tPath);                                               // Fill
-                    }
-                    break;
-                case "Pen w/ Close":
-                    G.DrawLine(pen, PT1X, PT1Y, x, y);
-                    goto default;
-                default:
-                    mPath ??= new();
-                    G.DrawPath(pen, mPath);
-                    break;
+                        tPath.CloseFigure();
+                        G.DrawPath(pen, tPath);                                                     // Draw
+                        if (cbFillDraw.Checked) {
+                            G.FillPath(brush, tPath);                                               // Fill
+                        }
+                        break;
+                    case "Pen w/ Close":
+                        G.DrawLine(pen, PT1X, PT1Y, x, y);
+                        goto default;
+                    default:
+                        mPath ??= new();
+                        G.DrawPath(pen, mPath);
+                        break;
                 }
             }
         }
@@ -1596,22 +1763,22 @@ namespace Server {
                 string extension = Path.GetExtension(fileName);
                 ImageFormat imageFormat;
                 switch (extension.ToLower()) {                                                      // ImageFormat based on the file extension
-                case ".jpg":
-                case ".jpeg":
-                    imageFormat = ImageFormat.Jpeg;
-                    break;
-                case ".png":
-                    imageFormat = ImageFormat.Png;
-                    break;
-                case ".bmp":
-                    imageFormat = ImageFormat.Bmp;
-                    break;
-                case ".gif":
-                    imageFormat = ImageFormat.Gif;
-                    break;
-                default:
-                    Console(ErrorMsg("Invalid file format."));
-                    return;
+                    case ".jpg":
+                    case ".jpeg":
+                        imageFormat = ImageFormat.Jpeg;
+                        break;
+                    case ".png":
+                        imageFormat = ImageFormat.Png;
+                        break;
+                    case ".bmp":
+                        imageFormat = ImageFormat.Bmp;
+                        break;
+                    case ".gif":
+                        imageFormat = ImageFormat.Gif;
+                        break;
+                    default:
+                        Console(ErrorMsg("Invalid file format."));
+                        return;
                 }
                 Bitmap btm = BM.Clone(new Rectangle(0, 0, picDrawing.Width, picDrawing.Height), BM.PixelFormat);
                 if (imageFormat == ImageFormat.Png) { ReplaceTargetColor(btm, Color.Empty, Color.Empty); }    // TrueTransP Key colour conversion
@@ -1638,52 +1805,52 @@ namespace Server {
                 }
 
                 switch (drawPackage.DrawType) {
-                case "Fill Tool":
-                    break;
-                case "Line":
-                    G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
-                    break;
-                case "Circle":
-                    if (drawPackage.Fill) {
-                        G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                    }
-                    G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                    break;
-                case "Rectangle":
-                    var rc = new Rectangle(
-                        Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
-                        Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
-                        Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
-                        Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
-                    if (drawPackage.Fill) {
-                        G.FillRectangle(brush, rc);                                             // Fill
-                    }
-                    G.DrawRectangle(pen, rc);                                                   // Draw
-                    break;
-                case "Triangle":
-                    double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
-                    double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
-                    Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
-                    Point mid = new((int)midX, drawPackage.PT1.Y);
-                    var tPath = new GraphicsPath();
-                    tPath.AddLines(new PointF[] {
+                    case "Fill Tool":
+                        break;
+                    case "Line":
+                        G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
+                        break;
+                    case "Circle":
+                        if (drawPackage.Fill) {
+                            G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                        }
+                        G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                        break;
+                    case "Rectangle":
+                        var rc = new Rectangle(
+                            Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
+                            Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
+                            Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
+                            Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
+                        if (drawPackage.Fill) {
+                            G.FillRectangle(brush, rc);                                             // Fill
+                        }
+                        G.DrawRectangle(pen, rc);                                                   // Draw
+                        break;
+                    case "Triangle":
+                        double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
+                        double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
+                        Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
+                        Point mid = new((int)midX, drawPackage.PT1.Y);
+                        var tPath = new GraphicsPath();
+                        tPath.AddLines(new PointF[] {
                             first, mid, drawPackage.PT2,
                         });
-                    tPath.CloseFigure();
-                    if (drawPackage.Fill) {
-                        G.FillPath(brush, tPath);                                               // Fill
-                    }
-                    G.DrawPath(pen, tPath);                                                     // Draw
-                    break;
-                case "Pen w/ Close":
-                    if (drawPackage.Fill) {
-                        G.FillPath(brush, pPath);
-                    }
-                    G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
-                    goto default;
-                default:
-                    G.DrawPath(pen, pPath);
-                    break;
+                        tPath.CloseFigure();
+                        if (drawPackage.Fill) {
+                            G.FillPath(brush, tPath);                                               // Fill
+                        }
+                        G.DrawPath(pen, tPath);                                                     // Draw
+                        break;
+                    case "Pen w/ Close":
+                        if (drawPackage.Fill) {
+                            G.FillPath(brush, pPath);
+                        }
+                        G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
+                        goto default;
+                    default:
+                        G.DrawPath(pen, pPath);
+                        break;
                 }
 
                 if (listening && !remoteDraw) {
@@ -2122,7 +2289,7 @@ namespace Server {
 
             SendFile(filePath);                                                                     // Send
             DeleteTemps(filePath);                                                                  // Clean
-        } 
+        }
         private void SendFile(string fn)                                                            // BW - Send file - FileName 
         {
             try {
@@ -2354,7 +2521,7 @@ namespace Server {
                     try {
                         if (obj.stream.DataAvailable) {
                             obj.stream.BeginRead(obj.buffer, 0, obj.buffer.Length, new AsyncCallback(Read), obj);   // Host Receive
-                        } else {                            
+                        } else {
                             string clientData = AesOperation.DecryptString(AeS, obj.data.ToString());   // Decrypt
                             HostDataHandler(obj, clientData);                                       // Host Data Handler
                         }
