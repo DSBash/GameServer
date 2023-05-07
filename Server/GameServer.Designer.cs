@@ -125,6 +125,7 @@ namespace Server
             this.tabSections.SelectedIndex = 0;
             this.tabSections.Size = new System.Drawing.Size(576, 121);
             this.tabSections.TabIndex = 45;
+            this.tabSections.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.TabSections_DrawItem);
             this.tabSections.SelectedIndexChanged += new System.EventHandler(this.TabSections_SelectedIndexChanged);
             // 
             // tConsole

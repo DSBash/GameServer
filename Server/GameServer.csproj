@@ -52,6 +52,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BorderedControls.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Clienting.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ColorButton.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -68,6 +74,9 @@
     <Compile Include="ColorWheel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Drawing.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Encryption.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="GameServer.cs">
@@ -75,6 +84,12 @@
     </Compile>
     <Compile Include="GameServer.Designer.cs">
       <DependentUpon>GameServer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Messaging.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Hosting.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
