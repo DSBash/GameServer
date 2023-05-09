@@ -126,7 +126,7 @@ namespace Server
             this.tabSections.Size = new System.Drawing.Size(576, 121);
             this.tabSections.TabIndex = 45;
             this.tabSections.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.TabSections_DrawItem);
-            this.tabSections.SelectedIndexChanged += new System.EventHandler(this.TabSections_SelectedIndexChanged);
+            this.tabSections.SelectedIndexChanged += new System.EventHandler(this.TabSections_TabChanged);
             // 
             // tConsole
             // 
@@ -323,7 +323,7 @@ namespace Server
             this.cmdHost.TabStop = false;
             this.cmdHost.Text = "Host";
             this.cmdHost.UseVisualStyleBackColor = true;
-            this.cmdHost.Click += new System.EventHandler(this.CmdHost_Click);
+            this.cmdHost.Click += new System.EventHandler(this.StartHosting);
             // 
             // cmdJoin
             // 
@@ -335,7 +335,7 @@ namespace Server
             this.cmdJoin.TabStop = false;
             this.cmdJoin.Text = "Join";
             this.cmdJoin.UseVisualStyleBackColor = true;
-            this.cmdJoin.Click += new System.EventHandler(this.CmdJoin_Click);
+            this.cmdJoin.Click += new System.EventHandler(this.StartClienting);
             // 
             // clientsDataGridView
             // 
@@ -379,7 +379,7 @@ namespace Server
             this.clientsDataGridView.Size = new System.Drawing.Size(150, 121);
             this.clientsDataGridView.TabIndex = 33;
             this.clientsDataGridView.TabStop = false;
-            this.clientsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.ClientsDataGridView_CellClick);
+            this.clientsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.CDGV_CellClick);
             // 
             // identifier
             // 
@@ -594,7 +594,7 @@ namespace Server
             this.cbTrans.TabIndex = 4;
             this.cbTrans.Text = "Trans";
             this.cbTrans.UseVisualStyleBackColor = false;
-            this.cbTrans.CheckedChanged += new System.EventHandler(this.Trans_CheckedChanged);
+            this.cbTrans.CheckedChanged += new System.EventHandler(this.TransToggle);
             // 
             // btnClearAll
             // 
@@ -687,7 +687,7 @@ namespace Server
             this.cbFillDraw.TabIndex = 5;
             this.cbFillDraw.Text = "Fill";
             this.cbFillDraw.UseVisualStyleBackColor = true;
-            this.cbFillDraw.CheckedChanged += new System.EventHandler(this.FillToggle_CheckedChanged);
+            this.cbFillDraw.CheckedChanged += new System.EventHandler(this.FillToggle);
             // 
             // cbBType
             // 

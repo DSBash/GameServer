@@ -83,6 +83,89 @@ namespace Server
             return drawPack;                                                                        // Return Package to caller
         }
 
+        private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
+{
+            picDrawing.Invoke((MethodInvoker)delegate {
+                using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);      // Set Pen
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+
+                SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                          // Set Brush
+
+                GraphicsPath pPath = new();                                                         // Set Path
+                if (drawPackage.PPath != null && drawPackage.PPath.Length > 0) {
+                    for (int i = 0; i < drawPackage.PPath.Length; i++) {                            // Add each Point
+                        pPath.AddLines(new PointF[] {                                               // to Draw Package
+                                drawPackage.PPath[i]
+                        });
+                    }
+                }
+
+                switch (drawPackage.DrawType) {
+                case "Fill Tool":
+                    break;
+                case "Line":
+                    G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
+                    break;
+                case "Circle":
+                    if (drawPackage.Fill) {
+                        G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                    }
+                    G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
+                    break;
+                case "Rectangle":
+                    var rc = new Rectangle(
+                        Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
+                        Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
+                        Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
+                        Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
+                    if (drawPackage.Fill) {
+                        G.FillRectangle(brush, rc);                                             // Fill
+                    }
+                    G.DrawRectangle(pen, rc);                                                   // Draw
+                    break;
+                case "Triangle":
+                    double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
+                    double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
+                    Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
+                    Point mid = new((int)midX, drawPackage.PT1.Y);
+                    var tPath = new GraphicsPath();
+                    tPath.AddLines(new PointF[] {
+                            first, mid, drawPackage.PT2,
+                        });
+                    tPath.CloseFigure();
+                    if (drawPackage.Fill) {
+                        G.FillPath(brush, tPath);                                               // Fill
+                    }
+                    G.DrawPath(pen, tPath);                                                     // Draw
+                    break;
+                case "Pen w/ Close":
+                    if (drawPackage.Fill) {
+                        G.FillPath(brush, pPath);
+                    }
+                    G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
+                    goto default;
+                default:
+                    G.DrawPath(pen, pPath);
+                    break;
+                }
+
+                if (listening && !remoteDraw) {
+                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                  // Format the Package 
+                    HostSendPublic(json);                                                           // Host Send Draw Package
+                } else if (connected && !remoteDraw) {
+                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                  // Format the Package 
+                    Send(json);                                                                     // Client Send Draw Package
+                }
+                picDrawing.Refresh();                                                               // Update the Canvas
+                pPath.Reset();                                                                      // Clean up
+                pen.Dispose();
+                brush.Dispose();
+                remoteDraw = false;
+            });
+        }
+
+
         private void SetDraw_Click(object sender, EventArgs e)                                      // Toggles Settings and Drawings Group Boxes 
         {
             if (!gbSettings.Visible) {
@@ -97,6 +180,7 @@ namespace Server
                 btnSetDraw.Text = "Settings";
             }
         }
+
         private void CmdClear_Click(object sender, EventArgs e)                                     // Clears the gfx 
         {
             G.Clear(btnBGColor.SelectedColor);
@@ -104,11 +188,13 @@ namespace Server
                 picDrawing.Refresh();
             });
         }
+
         private void CmdClearAll_Click(object sender, EventArgs e)                                  // Clears gfx and Sends Clear to Clients 
         {
             CmdClear_Click(sender, e);
             HostSendPublic("CMD:ClearDrawing");
         }
+
 
         private void Drawing_MouseDown(object sender, MouseEventArgs e)                             // Start Drawing points 
         {
@@ -118,6 +204,7 @@ namespace Server
                 PT1Y = e.Y;
             }
         }
+
         private void Drawing_MouseMove(object sender, MouseEventArgs e)                             // Continue Drawing 
         {
             if (Drawing && e.Button == MouseButtons.Left) {
@@ -145,6 +232,7 @@ namespace Server
                 PT2Y = e.Y - PT1Y;
             }
         }
+
         private void Drawing_MouseUp(object sender, MouseEventArgs e)                               // Draw shape on Mouse Up 
         {
             if (Drawing && e.Button == MouseButtons.Left) {
@@ -155,6 +243,7 @@ namespace Server
                 x = e.Location.X; y = e.Location.Y;
             }
         }
+
         private void Drawing_Paint(object sender, PaintEventArgs e)                                 // Shape Preview 
         {
             if (Drawing) {
@@ -208,10 +297,13 @@ namespace Server
                 }
             }
         }
+
         private void Drawing_Resize(object sender, EventArgs e)                                     // Canvas resize 
         {
             UpdateCanvas();
         }
+
+
         private void UpdateCanvas()                                                                 // Update the PictureBox and Graphics 
         {
             Bitmap savedImage = (Bitmap)picDrawing.Image;                                           // Save the current image to a Bitmap object
@@ -222,6 +314,7 @@ namespace Server
             picDrawing.Image = BM;                                                                  // Set the resized Bitmap as the new image for the PictureBox
             G = Graphics.FromImage(BM);                                                             // Set the canvas
         }
+
 
         private void Drawing_MouseClick(object sender, MouseEventArgs e)                            // Fill Tool 
         {
@@ -245,12 +338,14 @@ namespace Server
                 }
             }
         }
+
         static Point Set_Point(PictureBox pb, Point pt)                                             // Calculare Fill Point on Canvas 
         {
             float pX = 1f * pb.Image.Width / pb.Width;
             float pY = 1f * pb.Image.Height / pb.Height;
             return new Point((int)(pt.X * pX), (int)(pt.Y * pY));
         }
+
         private void FillTool(Bitmap bm, int x, int y, Color c2)                                    // Fill Process 
         {
             Color c1 = bm.GetPixel(x, y);                                                           // Get color of clicked pixel
@@ -268,6 +363,7 @@ namespace Server
                 }
             }
         }
+
         private void Validate(Bitmap bm, Stack<Point> sp, int x, int y, Color c1, Color c2)         // Fill 
         {
             if (x < bm.Width && y < bm.Height) {
@@ -278,6 +374,24 @@ namespace Server
                 }
             }
         }
+
+
+        private void FillToggle(object sender, EventArgs e)                                         // Change to /w Close if on Pen or start 
+{
+            if (!cbFillDraw.Checked || cbBType.Text == "Pen" || cbBType.Text == "Shape / Style") {
+                cbBType.SelectedItem = "Pen w/ Close";
+            }
+        }
+
+        private void TransToggle(object sender, EventArgs e)                                        // Transparent Canvas 
+        {
+            if (cbTrans.Checked) {
+                this.TransparencyKey = Color.LightGoldenrodYellow;                                  // LightGoldenrodYellow (250,250,210) is used for
+                picDrawing.BackColor = Color.LightGoldenrodYellow;                                  // transparency key (True-TransP)
+                btnBGColor.SelectedColor = Color.LightGoldenrodYellow;
+            }
+        }
+
 
         private void ReplaceTargetColor(Bitmap BM, Color tCol, Color rCol)                          // Replace target pixel colour 
         {
@@ -292,6 +406,7 @@ namespace Server
                 }
             }
         }
+
         private void BGColorChange(object sender, EventArgs e)                                      // Background - Uses Replace - This happens 3 Times and I'm not sure why 
         {
             //ReplaceTargetColor(BM, _preBC, ((ColorButton)sender).SelectedColor);                  // BUG - faster but only works the second time
@@ -310,6 +425,7 @@ namespace Server
             picDrawing.Image = BM;
             G = Graphics.FromImage(BM);
         }
+
 
         private void DeleteTemps(string filePath = "")                                              // Remove tmp image file 
         {
@@ -333,6 +449,7 @@ namespace Server
                 }
             }
         }
+
         private void SaveDrawing()                                                                  // Drawing Save Routine 
         {
             SaveFileDialog saveFileDialog = new() {                                                 // Prompt user for Save File
@@ -365,87 +482,6 @@ namespace Server
                 btm.Save(saveFileDialog.FileName, imageFormat);                                     // Save the image in the selected format                
                 Console("Image Saved: " + saveFileDialog.FileName);
             }
-        }
-        private void DrawShape(DrawPackage drawPackage)                                             // Draw the shape from package 
-        {
-            picDrawing.Invoke((MethodInvoker)delegate {
-                using var pen = new Pen(ArgbColor(drawPackage.PenColor), drawPackage.PenSize);      // Set Pen
-                pen.StartCap = LineCap.Round;
-                pen.EndCap = LineCap.Round;
-
-                SolidBrush brush = new(ArgbColor(drawPackage.BrushColor));                          // Set Brush
-
-                GraphicsPath pPath = new();                                                         // Set Path
-                if (drawPackage.PPath != null && drawPackage.PPath.Length > 0) {
-                    for (int i = 0; i < drawPackage.PPath.Length; i++) {                            // Add each Point
-                        pPath.AddLines(new PointF[] {                                               // to Draw Package
-                                drawPackage.PPath[i]
-                        });
-                    }
-                }
-
-                switch (drawPackage.DrawType) {
-                    case "Fill Tool":
-                        break;
-                    case "Line":
-                        G.DrawLine(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.X, drawPackage.Y);
-                        break;
-                    case "Circle":
-                        if (drawPackage.Fill) {
-                            G.FillEllipse(brush, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                        }
-                        G.DrawEllipse(pen, drawPackage.PT1.X, drawPackage.PT1.Y, drawPackage.PT2X, drawPackage.PT2Y);
-                        break;
-                    case "Rectangle":
-                        var rc = new Rectangle(
-                            Math.Min(drawPackage.PT1.X, drawPackage.PT2.X),
-                            Math.Min(drawPackage.PT1.Y, drawPackage.PT2.Y),
-                            Math.Abs(drawPackage.PT2.X - drawPackage.PT1.X),
-                            Math.Abs(drawPackage.PT2.Y - drawPackage.PT1.Y));
-                        if (drawPackage.Fill) {
-                            G.FillRectangle(brush, rc);                                             // Fill
-                        }
-                        G.DrawRectangle(pen, rc);                                                   // Draw
-                        break;
-                    case "Triangle":
-                        double midX = (drawPackage.PT1.X + drawPackage.PT2.X) / 2;
-                        double midY = (drawPackage.PT1.Y + drawPackage.PT2.Y) / 2;
-                        Point first = new(drawPackage.PT1.X, drawPackage.PT2.Y);
-                        Point mid = new((int)midX, drawPackage.PT1.Y);
-                        var tPath = new GraphicsPath();
-                        tPath.AddLines(new PointF[] {
-                            first, mid, drawPackage.PT2,
-                        });
-                        tPath.CloseFigure();
-                        if (drawPackage.Fill) {
-                            G.FillPath(brush, tPath);                                               // Fill
-                        }
-                        G.DrawPath(pen, tPath);                                                     // Draw
-                        break;
-                    case "Pen w/ Close":
-                        if (drawPackage.Fill) {
-                            G.FillPath(brush, pPath);
-                        }
-                        G.DrawLine(pen, drawPackage.PT1X, drawPackage.PT1Y, drawPackage.X, drawPackage.Y);
-                        goto default;
-                    default:
-                        G.DrawPath(pen, pPath);
-                        break;
-                }
-
-                if (listening && !remoteDraw) {
-                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                  // Format the Package 
-                    HostSendPublic(json);                                                           // Host Send Draw Package
-                } else if (connected && !remoteDraw) {
-                    string json = JsonConvert.SerializeObject(drawPackage) + "\n";                  // Format the Package 
-                    Send(json);                                                                     // Client Send Draw Package
-                }
-                picDrawing.Refresh();                                                               // Update the Canvas
-                pPath.Reset();                                                                      // Clean up
-                pen.Dispose();
-                brush.Dispose();
-                remoteDraw = false;
-            });
         }
         #endregion
     }

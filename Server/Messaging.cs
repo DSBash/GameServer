@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -11,6 +12,14 @@ namespace Server
 {
     public partial class GameServer
     {
+        #region Message Declarations
+        private bool remoteMsg = false;
+        private TabPage pmTab;
+        private readonly List<string> MSGHistory = new();                                           // CLI History
+        private int HistoryIndex = -1;
+        #endregion
+
+
         private class MessagePackage                                                                // Details needed to Draw and Broadcast 
         {
             public string Msg { get; set; }
@@ -38,7 +47,7 @@ namespace Server
                     txtLobby.Clear();
                 });
             } else {
-                #region Message Color
+    #region Message Color
                 string playerColor = "255,0,0,0,0";
                 foreach (DataGridViewRow row in clientsDataGridView.Rows) {                         // Determine color for post using Grid
                     if (row.Cells[1].Value.ToString() == msgPack.From) {
@@ -48,10 +57,10 @@ namespace Server
                 }
                 string[] colParts = playerColor.Split(',');                                         // Format string to Color
                 Color msgColor = Color.FromArgb(Convert.ToInt32(colParts[0]), Convert.ToInt32(colParts[1]), Convert.ToInt32(colParts[2]), Convert.ToInt32(colParts[3]));
-                #endregion
+    #endregion
 
                 switch (msgPack.MsgType) {
-                    #region Private Messages
+    #region Private Messages
                     case "Private":
                         string formattedMSG = "";                                                       // To store formated Message
                         if (msgPack.To == txtName.Text || msgPack.From == txtName.Text) {               // Mine in any way
@@ -105,9 +114,9 @@ namespace Server
                             });
                         }
                         break;
-                    #endregion
-
-                    case "Public":
+    #endregion
+    #region Public Messages
+                case "Public":
                         formattedMSG = string.Format("{0}[{1}] From {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), msgPack.From, msgPack.Msg);
                         tabSections.Invoke((MethodInvoker)delegate {
                             if (tabSections.SelectedIndex != 1) {                                       // If not in focus change the Tab text
@@ -128,7 +137,7 @@ namespace Server
                     default:
                         break;
                 }
-
+    #endregion
                 string json = JsonConvert.SerializeObject(msgPack) + "\n";                          // Format the Package 
                 if (listening && !remoteMsg) {
                     HostSendPublic(json);                                                           // Host Send Draw Package
@@ -136,62 +145,11 @@ namespace Server
                     Send(json);                                                                     // Client Send Draw Package
                 }
                 remoteMsg = false;
-
-                /*                if (username.Contains("to you")) {                                                  // Private Messages
-                                    username = username.Replace("to you", "").Trim();
-                                    TabPage tabPage = null;
-                                    tabSections.Invoke((MethodInvoker)delegate {
-                                        foreach (TabPage tab in tabSections.TabPages) {
-                                            if (tab.Text == username
-                                            || tab.Text == "*" + username + "*" 
-                                            || tab.Text == txtName.Text.Trim()) {                                   // Search for a tab with the specified username
-                                                tabPage = tab;
-                                                break;
-                                            }
-                                        }
-
-                                        if (tabPage == null) {                                                      // If the tab is not found
-                                            tabPage = new();
-                                            tabPage.Name = "t" + username;
-                                            tabPage.Tag = "PM";
-                                            tabPage.Text = username;
-
-                                            foreach (Control control in pmTab.Controls) {                           // create copy the controls from pmTab
-                                                Control newControl = (Control)Activator.CreateInstance(control.GetType());
-                                                newControl.Location = control.Location;
-                                                newControl.Size = control.Size;
-                                                newControl.Name = control.Name;
-                                                newControl.Tag = control.Tag;
-                                                newControl.BackColor = control.BackColor;
-                                                tabPage.Controls.Add(newControl);
-                                            }                            
-                                            tabSections.TabPages.Add(tabPage);                                      // Add the new PM tab
-                                        }
-
-                                        if (tabPage.Controls.Find("txtPM", true).FirstOrDefault() is RichTextBox textBox) { // Find the TextBox control
-                                            formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-
-                                            if (tabSections.SelectedTab != tabPage) {                               // If not in focus change the Tab text
-                                                    tabPage.Text = string.Format("*" + username + "*");
-                                            }
-                                            textBox.AppendText(formattedMSG, msgColor);                             // Post actual msg
-                                            txtMessage.Focus();                                                     // Leave focus for next message
-                                        }
-                                    });
-                                #endregion 
-                                } else {                                                                            // Public Messages
-                                    formattedMSG = string.Format("{0}[{1}] {2}: {3}", Environment.NewLine, DateTime.Now.ToString("HH:mm:ss"), username, msg);
-                                    tabSections.Invoke((MethodInvoker)delegate {
-                                        if (tabSections.SelectedIndex != 1) {                                       // If not in focus change the Tab text
-                                                tabSections.TabPages[1].Text = string.Format("*Lobby ({0})*", clientsDataGridView.Rows.Count);
-                                        }
-                                    });
-                                        txtLobby.AppendText(formattedMSG, msgColor);                                // Post actual msg
-                                        txtMessage.Focus();                                                         // Leave focus for next message
-                                }*/
             }
         }
-        #region Console & Chats & Message formatters
+
+
+        #region Message formatters
         private string StackTrace()                                                                 // Better Debug Info 
         {
             StackTrace stackTrace = new();
@@ -205,14 +163,17 @@ namespace Server
             }
             return stackList;
         }
+
         private string ErrorMsg(string msg)                                                         // Format Errors 
         {
             return string.Format("ERROR: {0} : {1}", StackTrace(), msg);
         }
+
         private string SystemMsg(string msg)                                                        // Format System 
         {
             return string.Format("SYSTEM: {0}", msg);
         }
+
         private void Console(string msg = "")                                                       // Console message / Clear if empty 
         {
             txtConsole.Invoke((MethodInvoker)delegate {
@@ -228,6 +189,7 @@ namespace Server
                 }
             });
         }
+        #endregion
 
 
         private void ExportText(object sender, EventArgs e)                                         // Export to \exports\<tabname>.txts 
@@ -245,6 +207,14 @@ namespace Server
                 File.AppendAllText(path, contents);                                                 // Save the file
             }
         }
+
+        private void SetMessageCursor()                                                             // Puts the cursor at the end of the CLI History 
+        {
+            txtMessage.SelectionStart = txtMessage.Text.Length;
+            txtMessage.SelectionLength = 0;
+            txtMessage.Focus();
+        }
+
         private void TxtMessage_Enter(object sender, EventArgs e)                                   // Messagebox 
         {
             if (txtMessage.Text == "Type and press enter to send.") {
@@ -254,12 +224,14 @@ namespace Server
                 }
             }
         }
+
         private void TxtMessage_Leave(object sender, EventArgs e)                                   // Messagebox Note 
         {
             if (txtMessage.Text == "") {
                 txtMessage.Text = "Type and press enter to send.";
             }
         }
+
         private void TxtMessage_KeyDown(object sender, KeyEventArgs e)                              // Commands / History / Send on <Enter> 
         {
             #region Command Line History
@@ -296,12 +268,6 @@ namespace Server
                 txtMessage.Clear();
             }
         }
-        private void SetMessageCursor()                                                             // Puts the cursor at the end of the CLI History 
-        {
-            txtMessage.SelectionStart = txtMessage.Text.Length;
-            txtMessage.SelectionLength = 0;
-            txtMessage.Focus();
-        }
-        #endregion
+      
     }
 }

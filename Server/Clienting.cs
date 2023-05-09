@@ -11,6 +11,8 @@ using System.Net;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Web.Script.Serialization;
+using Newtonsoft.Json;
+using System.Linq;
 
 namespace Server
 {
@@ -34,8 +36,274 @@ namespace Server
         };
         #endregion
 
-        private void Connected(bool status)                                                         // Client - Mode Tasks 
+        private void StartClienting(object sender, EventArgs e)                                     // Start the Cient Session
         {
+            var source = new CancellationTokenSource();
+            Task.Factory.StartNew(() => {
+                if (connected) {
+                    clientObject.client.Close();
+                } else if (client == null || !client.IsAlive) {
+                    string address = txtAddress.Text.Trim();
+                    string number = txtPort.Text.Trim();
+                    if (txtName.Text.Trim() == "Player 1") { cmdColor.SelectedColor = Color.Red; }
+                    if (txtName.Text.Trim() == "Player 2") { cmdColor.SelectedColor = Color.Green; }
+                    if (txtName.Text.Trim() == "Player 3") { cmdColor.SelectedColor = Color.Blue; }
+                    string username = txtName.Text.Trim();
+                    bool error = false;
+                    IPAddress ip = null;
+                    if (address.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Address is required"));
+                    } else {
+                        try {
+                            ip = Dns.GetHostEntry(address)
+                                .AddressList
+                                .FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                        } catch {
+                            error = true;
+                            Console(SystemMsg("Address is not valid"));
+                        }
+                    }
+                    int port = -1;
+                    if (number.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Port number is required"));
+                    } else if (!int.TryParse(number, out port)) {
+                        error = true;
+                        Console(SystemMsg("Port number is not valid"));
+                    } else if (port < 0 || port > 65535) {
+                        error = true;
+                        Console(SystemMsg("Port number is out of range"));
+                    }
+                    if (username.Length < 1) {
+                        error = true;
+                        Console(SystemMsg("Username is required"));
+                    }
+                    if (!error) {
+                        client = new Thread(() => Connection(ip, port, username, txtRoomKey.Text)) {
+                            IsBackground = true
+                        };
+                        client.Start();
+                    }
+                }
+            }, source.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
+
+        // Client Receive
+        private void ClientAuthReader(IAsyncResult result)                                          // Handles Async Handshake to Host 
+        {
+            int bytes = 0;
+            if (clientObject.client.Connected) {
+                try {
+                    bytes = clientObject.stream.EndRead(result);
+                } catch (Exception ex) {
+                    Console(ErrorMsg("CRA1: " + ex.Message));
+                }
+            }
+            if (bytes > 0) {
+                clientObject.data.AppendFormat("{0}", Encoding.UTF8.GetString(clientObject.buffer, 0, bytes));
+                try {
+                    if (clientObject.stream.DataAvailable) {
+                        clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(ReadAuth), null);
+                    } else {
+                        var decryptedString = AesOperation.DecryptString(AeS, clientObject.data.ToString()); // Decrypt
+                        JavaScriptSerializer json = new();
+                        Dictionary<string, string> data = json.Deserialize<Dictionary<string, string>>(decryptedString);
+
+                        if (data.ContainsKey("status") && data["status"].Equals("authorized")) {
+                            Connected(true);
+                        }
+                        clientObject.data.Clear();
+                        clientObject.handle.Set();
+                    }
+                } catch (Exception ex) {
+                    clientObject.data.Clear();
+                    Console(ErrorMsg("CRA2: " + ex.Message));
+                    clientObject.handle.Set();
+                }
+            } else {
+                clientObject.client.Close();
+                clientObject.handle.Set();
+            }
+        }
+
+        private void ClientDataHandler(string hostData)                                             // Handles incoming Data from Host  
+{
+            if (hostData.StartsWith("{\"Id\"")) {                                                   // Grid update
+                ClearDataGrid();                                                                    // Clear DataGrid 
+                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string message in messages) {
+                    PlayerPackage player = JsonConvert.DeserializeObject<PlayerPackage>(message);
+                    Color argbColor = Color.FromArgb(player.Color[0], player.Color[1], player.Color[2], player.Color[3]);
+                    AddToGrid(player.Id, player.Name, argbColor);
+                }
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                return;
+            }
+            if (hostData.StartsWith("{\"Msg\"")) {                                                  // Client Receive - Message
+                remoteMsg = true;
+                MessagePackage remoteMP = JsonConvert.DeserializeObject<MessagePackage>(hostData);
+                PostChat(remoteMP);
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                return;
+            }
+            if (hostData.StartsWith("SYSTEM:")) {                                                   // Client Receive - System Message
+                string[] sysParts = hostData.Split(':');
+                Console(sysParts[2]);
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                return;
+            }
+
+            if (hostData.StartsWith("{\"PenColor\"")) {                                             // Client Receive - Drawing
+                string[] messages = hostData.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string message in messages) {
+                    DrawPackage remoteDP = JsonConvert.DeserializeObject<DrawPackage>(message);
+                    remoteDraw = true;
+                    DrawShape(remoteDP);
+                }
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                return;
+            }
+
+            if (hostData.StartsWith("{\"FillColor\"")) {                                            // Client Receive - FillTool
+                FillPackage remoteFP = JsonConvert.DeserializeObject<FillPackage>(hostData);
+                FillTool(BM, remoteFP.X, remoteFP.Y, ArgbColor(remoteFP.FillColor));
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                return;
+            }
+
+            if (hostData.StartsWith("CMD:")) {                                                      // Client Receive - Commands from Host
+                string[] cmdParts = hostData.Split(':');
+                switch (cmdParts[1]) {
+                case "ClearDrawing":
+                    Button sender = new();
+                    EventArgs e = new();
+                    CmdClear_Click(sender, e);
+                    break;
+                case "ReceiveDrawing":
+                    ListenForFile();                                                                // Client open server to receive
+                    break;
+                default:
+                    break;
+                }
+                clientObject.data.Clear();
+                clientObject.handle.Set();
+                return;
+            }
+
+            Console("Unrecognized: " + hostData);                                                   // Client Receive - Unformated Text
+            clientObject.data.Clear();
+            clientObject.handle.Set();
+        }
+
+        private void ClientStreamReader(IAsyncResult result)                                        // Stream Reader 
+        {
+            if (clientObject == null) { return; }
+            int bytes = 0;
+            if (clientObject.client.Connected) {
+                try {
+                    bytes = clientObject.stream.EndRead(result);
+                } catch (Exception ex) {
+                    Console(ErrorMsg("CSR1: " + ex.Message));
+                }
+            }
+            if (bytes > 0) {
+                clientObject.data.AppendFormat("{0}", Encoding.UTF8.GetString(clientObject.buffer, 0, bytes));
+                try {
+                    if (clientObject.stream.DataAvailable) {
+                        clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(Read), null);
+                    } else {
+                        string hostData = AesOperation.DecryptString(AeS, clientObject.data.ToString()); // Decrypt
+                        ClientDataHandler(hostData);                                            // Client Data Handler
+                    }
+                } catch (Exception ex) {
+                    clientObject.data.Clear();
+                    Console(ErrorMsg("CSR2: " + ex.Message));
+                    clientObject.handle.Set();
+                }
+            } else {
+                clientObject.client.Close();
+                clientObject.handle.Set();
+            }
+        }
+
+
+        // Client Send
+        private void Send(string msg)                                                               // Client Send 
+        {
+            if (!listening) {
+                var encryptedString = AesOperation.EncryptString(AeS, msg);
+                if (send == null || send.IsCompleted) {
+                    send = Task.Factory.StartNew(() => BeginWrite(encryptedString));
+                } else {
+                    send.ContinueWith(antecendent => BeginWrite(encryptedString));
+                }
+            }
+        }
+
+        private void BeginWrite(string msg)                                                         // Client Begin 
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(msg);
+            if (clientObject.client.Connected) {
+                try {
+                    clientObject.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(Write), null);
+                } catch (Exception ex) {
+                    Console(ErrorMsg("CBW: " + ex.Message));
+                }
+            }
+        }
+
+        private void Write(IAsyncResult result)                                                     // Client Write 
+        {
+            if (clientObject.client.Connected) {
+                try {
+                    clientObject.stream.EndWrite(result);
+                } catch (Exception ex) {
+                    Console(ErrorMsg("CW: " + ex.Message));
+                }
+            }
+        }
+
+
+
+        // Client Routines
+        private bool Authorize()                                                                    // Client - Handshake 
+        {
+            bool success = false;
+            Dictionary<string, string> handShake = new() {                                          // Collect info to send as object Handshake
+                { "username", clientObject.username },
+                { "roomkey", clientObject.key },
+                { "color" , Convert.ToString(cmdColor.SelectedColor.A) +","+ Convert.ToString(cmdColor.SelectedColor.R) +","+ Convert.ToString(cmdColor.SelectedColor.G) +","+ Convert.ToString(cmdColor.SelectedColor.B) }, // Send COLOURS to host
+            };
+            JavaScriptSerializer json = new();                                                      // Format the Handshake object
+            Send(json.Serialize(handShake));                                                        // Client send Handshake to Host
+            while (clientObject.client.Connected) {
+                try {
+                    clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(ReadAuth), null);
+                    clientObject.handle.WaitOne();
+                    if (connected) {                                                                // on connection
+                        success = true;
+                        break;
+                    }
+                } catch (Exception ex) {
+                    Console(ErrorMsg("CHS: " + ex.Message));
+                }
+            }
+            if (!connected) {                                                                       // Connection refused
+                Console(SystemMsg("Unauthorized: Confirm the RoomKey, or try another name."));
+                success = false;
+            }
+            return success;
+        }
+
+        private void Connected(bool status)                                                         // Client - Mode Tasks 
+{
             cmdJoin.Invoke((MethodInvoker)delegate {
                 connected = status;
                 if (status) {
@@ -63,6 +331,7 @@ namespace Server
                 }
             });
         }
+
         private void Connection(IPAddress ip, int port, string username, string roomkey)            // C - Single TCP to host 
         {
             try {
@@ -94,70 +363,6 @@ namespace Server
             }
         }
 
-
-        // Client Send
-        private void Send(string msg)                                                               // Client Send 
-        {
-            if (!listening) {
-                var encryptedString = AesOperation.EncryptString(AeS, msg);
-                if (send == null || send.IsCompleted) {
-                    send = Task.Factory.StartNew(() => BeginWrite(encryptedString));
-                } else {
-                    send.ContinueWith(antecendent => BeginWrite(encryptedString));
-                }
-            }
-        }
-        private void BeginWrite(string msg)                                                         // Client Begin 
-        {
-            byte[] buffer = Encoding.UTF8.GetBytes(msg);
-            if (clientObject.client.Connected) {
-                try {
-                    clientObject.stream.BeginWrite(buffer, 0, buffer.Length, new AsyncCallback(Write), null);
-                } catch (Exception ex) {
-                    Console(ErrorMsg("CBW: " + ex.Message));
-                }
-            }
-        }
-        private void Write(IAsyncResult result)                                                     // Client Write 
-        {
-            if (clientObject.client.Connected) {
-                try {
-                    clientObject.stream.EndWrite(result);
-                } catch (Exception ex) {
-                    Console(ErrorMsg("CW: " + ex.Message));
-                }
-            }
-        }
-
-
-        private bool Authorize()                                                                    // Client - Handshake 
-        {
-            bool success = false;
-            Dictionary<string, string> handShake = new() {                                          // Collect info to send as object Handshake
-                { "username", clientObject.username },
-                { "roomkey", clientObject.key },
-                { "color" , Convert.ToString(cmdColor.SelectedColor.A) +","+ Convert.ToString(cmdColor.SelectedColor.R) +","+ Convert.ToString(cmdColor.SelectedColor.G) +","+ Convert.ToString(cmdColor.SelectedColor.B) }, // Send COLOURS to host
-            };
-            JavaScriptSerializer json = new();                                                      // Format the Handshake object
-            Send(json.Serialize(handShake));                                                        // Client send Handshake to Host
-            while (clientObject.client.Connected) {
-                try {
-                    clientObject.stream.BeginRead(clientObject.buffer, 0, clientObject.buffer.Length, new AsyncCallback(ReadAuth), null);
-                    clientObject.handle.WaitOne();
-                    if (connected) {                                                                // on connection
-                        success = true;
-                        break;
-                    }
-                } catch (Exception ex) {
-                    Console(ErrorMsg("CHS: " + ex.Message));
-                }
-            }
-            if (!connected) {                                                                       // Connection refused
-                Console(SystemMsg("Unauthorized: Confirm the RoomKey, or try another name."));
-                success = false;
-            }
-            return success;
-        }
         private void FileReceive()                                                                  // Client - Drawing File Receiver 
         {
             Console("Connecting..");
@@ -211,7 +416,6 @@ namespace Server
             networkStream.Close();                                                                  // Clean up
             client.Close();
         }
-
 
         #region Backwards Client Drawing Server
         // Client Server - Drawing File Transfer
