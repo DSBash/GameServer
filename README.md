@@ -1,4 +1,4 @@
-# GameServer (Multiplayer UI for Games) *Nolonger being updated*
+# GameServer (Multiplayer UI for Games) (Nolonger being updated)
 A single UI Client / Server application with public broadcast and private send methods. : [GameServer](https://github.com/DSBash/GameServer)
 
 ## Features
