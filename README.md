@@ -1,5 +1,5 @@
-# GameServer
-Client / Server application with public broadcast and private send methods. : [GameServer](https://github.com/DSBash/GameServer)
+# GameServer (Multiplayer UI for Games) *Nolonger being updated*
+A single UI Client / Server application with public broadcast and private send methods. : [GameServer](https://github.com/DSBash/GameServer)
 
 ## Features
 * Single WinForm Client/Server Interface
@@ -43,8 +43,3 @@ Transparancy and True-Transparancy to see items below.
 
 ### Known Issues
 - Fill tool causes out of memory error (carefull filling manual 'Pen' drawing and/or the open Canvas)
-
-### To Do:
-- add imagetext to drawings
-- flood control
-- incorporate with : [GridGame](https://github.com/DSBash/GridGame)
